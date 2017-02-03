@@ -22,16 +22,16 @@ genType line = let pieces = splitClean line
                 else
                   opcode
 
-parseRange :: String -> (Int, Int, Int)
+parseRange :: String -> (Int, Int, String)
 parseRange range = let pieces = splitOn "=" range
                        startEnd = map (read::String -> Int) $ splitOn "__" $ pieces !! 0
-                   in (startEnd !! 1, startEnd !! 0 + 1, read (pieces !! 1)::Int)
+                   in (startEnd !! 1, startEnd !! 0 + 1, pieces !! 1)
 
 genEntry :: String -> String
 genEntry line = let pieces = splitClean line
                     ranges = map parseRange $ filter (isDigit . head) (tail pieces)
                     opcode = (toUpper $ head $ head pieces):(tail $ head pieces)
-                in "(decode" ++ opcode ++ ", " ++ (show ranges) ++ ")"
+                in "(decode" ++ opcode ++ ", " ++ (filter (/= '"') (show ranges)) ++ ")"
 
 main :: IO ()
 main = do
