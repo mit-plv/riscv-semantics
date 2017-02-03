@@ -1,0 +1,10 @@
+Friday, 3rd February:
+* Finish the implementation of execute'
+* Define an instance for the RiscvProgram typeclass
+* Split the code between several files, requirements :
+  - One non scary file
+  - automatically generated code within one file not pushed on the repo.
+  - Create Makefile for the generation
+  - typeclasses and instances in different file.
+  - miscellaneous plumbing functions in different file.
+* Look for more polymorphism in the instruction type. (Some reading required)

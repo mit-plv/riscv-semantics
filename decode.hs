@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 import Data.Int
 import Data.Bits
 import Data.Word
@@ -213,6 +214,18 @@ u16 n = fromIntegral (fromIntegral n :: Word16) :: Int32
 
 lower5 :: Int32 -> Int
 lower5 x = fromIntegral $ bitSlice x 0 5
+
+class (Num t, Monad p) => RiscvProgram p t | p -> t where
+   readRegister :: Int32 -> p t
+   writeRegister :: Int32 -> t -> p ()
+   load :: t -> p t
+   store :: t -> t -> p ()
+
+-- execute' :: RiscvProgram p t => Instruction -> p ()
+execute' (Add rd rs1 rs2) = do
+   a1 <- readRegister rs1
+   a2 <- readRegister rs2
+   writeRegister rd (a1+a2)
 
 execute :: (Memory, Processor) -> Instruction -> (Memory, Processor)
 execute (mem, cpu) (Lui rd imm20) = (mem, setRegister rd imm20 cpu)
