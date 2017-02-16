@@ -1,123 +1,204 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, ScopedTypeVariables #-}
 module Execute where
 import Decode
 import Data.Bits
 import Data.Int
 import Data.Word
+import Control.Monad
+import Control.Monad.State
+import Control.Monad.Identity
 
 -- Utility function.
 setIndex :: Int -> a -> [a] -> [a]
 setIndex i x l = left ++ (x:(drop 1 right))
   where (left, right) = splitAt i l
 
-type Memory = (Int, [Int32])
+s8 :: (Integral t) => t -> t
+s8 n = fromIntegral (fromIntegral n :: Int8)
 
-createMemory :: Int -> Memory
-createMemory size = (size, take size $ cycle [0])
+s16 :: (Integral t) => t -> t
+s16 n = fromIntegral (fromIntegral n :: Int16)
 
-getSize :: Memory -> Int
-getSize (size, contents) = size
+s32 :: (Integral t) => t -> t
+s32 n = fromIntegral (fromIntegral n :: Int32)
 
-getAddress :: Int32 -> Memory -> Int32
-getAddress addr (size, content)
-  | addr >= 0 && iaddr < size = content !! iaddr
-  | otherwise = error "Invalid address."
-  where iaddr = fromIntegral addr
+u8 :: (Integral t) => t -> t
+u8 n = fromIntegral (fromIntegral n :: Word8)
 
-setAddress :: Int32 -> Int32 -> Memory -> Memory
-setAddress addr val (size, content)
-  | addr >= 0 && iaddr < size = (size, setIndex iaddr val content)
-  | otherwise = error "Invalid address."
-  where iaddr = fromIntegral addr
+u16 :: (Integral t) => t -> t
+u16 n = fromIntegral (fromIntegral n :: Word16)
 
-data Processor = Processor { registers :: [Int32], pc :: Int32 }
-               deriving (Read, Show)
+u32 :: (Integral t) => t -> t
+u32 n = fromIntegral (fromIntegral n :: Word32)
 
-getRegister :: Register -> Processor -> Int32
-getRegister reg cpu | reg == 0  = 0 -- always return 0 from register 0
-                    | otherwise = (registers cpu) !! ((fromIntegral reg :: Int)-1)
-
-setRegister :: Register -> Int32 -> Processor -> Processor
-setRegister reg val cpu | reg == 0  = cpu -- do nothing if register 0 is selected.
-                        | otherwise = cpu { registers = setIndex ((fromIntegral reg :: Int)-1) val (registers cpu) }
-
-getPC :: Processor -> Int32
-getPC = pc
-
-setPC :: Int32 -> Processor -> Processor
-setPC val cpu = cpu { pc = val }
-
-unsigned :: Int32 -> Word32
-unsigned = fromIntegral
-signed :: Word32 -> Int32
-signed = fromIntegral
-
-s8 :: Int32 -> Int32
-s8 n = fromIntegral (fromIntegral n :: Int8) :: Int32
-
-s16 :: Int32 -> Int32
-s16 n = fromIntegral (fromIntegral n :: Int16) :: Int32
-
-u8 :: Int32 -> Int32
-u8 n = fromIntegral (fromIntegral n :: Word8) :: Int32
-
-u16 :: Int32 -> Int32
-u16 n = fromIntegral (fromIntegral n :: Word16) :: Int32
-
-lower5 :: Int32 -> Int
+lower5 :: (Bits a, Integral a, Num b) => a -> b
 lower5 x = fromIntegral $ bitSlice x 0 5
 
-class (Num t, Monad p) => RiscvProgram p t | p -> t where
-   readRegister :: Int32 -> p t
-   writeRegister :: Int32 -> t -> p ()
-   load :: t -> p t
-   store :: t -> t -> p ()
+class (Monad p, Integral t, Bits t, Integral u, Bits u) => RiscvProgram p t u | p -> t, p -> u where
+   getRegister :: Register -> p t
+   setRegister :: (Integral s) => Register -> s -> p ()
+   load :: (Integral s) => s -> p t
+   store :: (Integral r, Integral s) => r -> s -> p ()
+   getPC :: p t
+   setPC :: (Integral s) => s -> p ()
 
--- execute' :: RiscvProgram p t => Instruction -> p ()
-execute' (Add rd rs1 rs2) = do
-   a1 <- readRegister rs1
-   a2 <- readRegister rs2
-   writeRegister rd (a1+a2)
+data Computer32 = Computer32 { registers :: [Int32], pc :: Int32, mem :: [Int32] }
+                deriving (Show)
 
-execute :: (Memory, Processor) -> Instruction -> (Memory, Processor)
-execute (mem, cpu) (Lui rd imm20) = (mem, setRegister rd imm20 cpu)
-execute (mem, cpu) (Auipc rd imm20) = (mem, setRegister rd (imm20 + getPC cpu) cpu)
-execute (mem, cpu) (Jal rd jimm20) = (mem, setPC (getPC cpu + jimm20) $ setRegister rd (getPC cpu + 4) cpu)
-execute (mem, cpu) (Jalr rd rs1 oimm12) = (mem, setPC (getRegister rs1 cpu + oimm12) $ setRegister rd (getPC cpu + 4) cpu)
-execute (mem, cpu) (Beq rs1 rs2 sbimm12) = (mem, if getRegister rs1 cpu == getRegister rs2 cpu then setPC sbimm12 cpu else cpu)
-execute (mem, cpu) (Bne rs1 rs2 sbimm12) = (mem, if getRegister rs1 cpu /= getRegister rs2 cpu then setPC sbimm12 cpu else cpu)
-execute (mem, cpu) (Blt rs1 rs2 sbimm12) = (mem, if getRegister rs1 cpu < getRegister rs2 cpu then setPC sbimm12 cpu else cpu)
-execute (mem, cpu) (Bge rs1 rs2 sbimm12) = (mem, if getRegister rs1 cpu < getRegister rs2 cpu then setPC sbimm12 cpu else cpu)
-execute (mem, cpu) (Bltu rs1 rs2 sbimm12) = (mem, if (unsigned $ getRegister rs1 cpu) < (unsigned $ getRegister rs2 cpu) then setPC sbimm12 cpu else cpu)
-execute (mem, cpu) (Bgeu rs1 rs2 sbimm12) = (mem, if (unsigned $ getRegister rs1 cpu) < (unsigned $ getRegister rs2 cpu) then setPC sbimm12 cpu else cpu)
-execute (mem, cpu) (Lb rd rs1 oimm12) = (mem, setRegister rd (s8 $ getAddress (getRegister rs1 cpu + oimm12) mem) cpu)
-execute (mem, cpu) (Lh rd rs1 oimm12) = (mem, setRegister rd (s16 $ getAddress (getRegister rs1 cpu + oimm12) mem) cpu)
-execute (mem, cpu) (Lw rd rs1 oimm12) = (mem, setRegister rd (getAddress (getRegister rs1 cpu + oimm12) mem) cpu)
-execute (mem, cpu) (Lbu rd rs1 oimm12) = (mem, setRegister rd (u8 $ getAddress (getRegister rs1 cpu + oimm12) mem) cpu)
-execute (mem, cpu) (Lhu rd rs1 oimm12) = (mem, setRegister rd (u8 $ getAddress (getRegister rs1 cpu + oimm12) mem) cpu)
-execute (mem, cpu) (Sb rs1 rs2 simm12) = (setAddress (getRegister rs1 cpu + simm12) (s8 $ getRegister rs2 cpu) mem, cpu)
-execute (mem, cpu) (Sh rs1 rs2 simm12) = (setAddress (getRegister rs1 cpu + simm12) (s16 $ getRegister rs2 cpu) mem, cpu)
-execute (mem, cpu) (Sw rs1 rs2 simm12) = (setAddress (getRegister rs1 cpu + simm12) (getRegister rs2 cpu) mem, cpu)
-execute (mem, cpu) (Addi rd rs1 imm12) = (mem, setRegister rd (getRegister rs1 cpu + imm12) cpu)
-execute (mem, cpu) (Slti rd rs1 imm12) = (mem, setRegister rd (if getRegister rs1 cpu < imm12 then 1 else 0) cpu)
-execute (mem, cpu) (Sltiu rd rs1 imm12) = (mem, setRegister rd (if (unsigned $ getRegister rs1 cpu) < (unsigned $ imm12) then 1 else 0) cpu)
-execute (mem, cpu) (Xori rd rs1 imm12) = (mem, setRegister rd (xor (getRegister rs1 cpu) imm12) cpu)
-execute (mem, cpu) (Ori rd rs1 imm12) = (mem, setRegister rd ((.|.) (getRegister rs1 cpu) imm12) cpu)
-execute (mem, cpu) (Andi rd rs1 imm12) = (mem, setRegister rd ((.&.) (getRegister rs1 cpu) imm12) cpu)
-execute (mem, cpu) (Slli rd rs1 imm12) = (mem, setRegister rd (shiftL (getRegister rs1 cpu) (lower5 imm12)) cpu)
-execute (mem, cpu) (Srli rd rs1 imm12) = (mem, setRegister rd (signed $ shiftR (unsigned $ getRegister rs1 cpu) (lower5 imm12)) cpu)
-execute (mem, cpu) (Srai rd rs1 imm12) = (mem, setRegister rd (shiftR (getRegister rs1 cpu) (lower5 imm12)) cpu)
-execute (mem, cpu) (Add rd rs1 rs2) = (mem, setRegister rd (getRegister rs1 cpu + getRegister rs2 cpu) cpu)
-execute (mem, cpu) (Sub rd rs1 rs2) = (mem, setRegister rd (getRegister rs1 cpu - getRegister rs2 cpu) cpu)
-execute (mem, cpu) (Sll rd rs1 rs2) = (mem, setRegister rd (shiftL (getRegister rs1 cpu) (lower5 $ getRegister rs2 cpu)) cpu)
-execute (mem, cpu) (Slt rd rs1 rs2) = (mem, setRegister rd (if getRegister rs1 cpu < getRegister rs2 cpu then 1 else 0) cpu)
-execute (mem, cpu) (Sltu rd rs1 rs2) = (mem, setRegister rd (if (unsigned $ getRegister rs1 cpu) < (unsigned $ getRegister rs2 cpu) then 1 else 0) cpu)
-execute (mem, cpu) (Xor rd rs1 rs2) = (mem, setRegister rd (xor (getRegister rs1 cpu) (getRegister rs2 cpu)) cpu)
-execute (mem, cpu) (Or rd rs1 rs2) = (mem, setRegister rd ((.|.) (getRegister rs1 cpu) (getRegister rs2 cpu)) cpu)
-execute (mem, cpu) (Srl rd rs1 rs2) = (mem, setRegister rd (signed $ shiftR (unsigned $ getRegister rs1 cpu) (lower5 $ getRegister rs2 cpu)) cpu)
-execute (mem, cpu) (Sra rd rs1 rs2) = (mem, setRegister rd (shiftR (getRegister rs1 cpu) (lower5 $ getRegister rs2 cpu)) cpu)
-execute (mem, cpu) (And rd rs1 rs2) = (mem, setRegister rd ((.&.) (getRegister rs1 cpu) (getRegister rs2 cpu)) cpu)
+instance RiscvProgram (State Computer32) Int32 Word32 where
+  getRegister reg = state $ \comp -> ((registers comp) !! (fromIntegral reg-1), comp)
+  setRegister reg val = state $ \comp -> ((), comp { registers = setIndex (fromIntegral reg-1) (fromIntegral val) (registers comp) })
+  load addr = state $ \comp -> ((mem comp) !! (fromIntegral addr), comp)
+  store addr val = state $ \comp -> ((), comp { mem = setIndex (fromIntegral addr) (fromIntegral val) (mem comp) })
+  getPC = state $ \comp -> (pc comp, comp)
+  setPC val = state $ \comp -> ((), comp { pc = fromIntegral val })
+
+execute :: forall p t u. (RiscvProgram p t u) => Instruction -> p ()
+execute (Lui rd imm20) = setRegister rd (fromIntegral imm20)
+execute (Auipc rd imm20) = do
+  pc <- getPC
+  setRegister rd (fromIntegral imm20 + pc)
+execute (Jal rd jimm20) = do
+  pc <- getPC
+  setRegister rd (fromIntegral pc + (4 :: t))
+  setPC (pc + (fromIntegral jimm20))
+execute (Jalr rd rs1 oimm12) = do
+  x <- getRegister rs1
+  pc <- getPC
+  setPC (x + fromIntegral oimm12)
+  setRegister rd (fromIntegral pc + 4)
+execute (Beq rs1 rs2 sbimm12) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  when (x == y) $ setPC sbimm12
+execute (Bne rs1 rs2 sbimm12) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  when (x /= y) $ setPC sbimm12
+execute (Blt rs1 rs2 sbimm12) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  when (x < y) $ setPC sbimm12
+execute (Bge rs1 rs2 sbimm12) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  when (x > y) $ setPC sbimm12
+execute (Bltu rs1 rs2 sbimm12) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  when ((fromIntegral x :: u) < (fromIntegral y :: u)) $ setPC sbimm12
+execute (Bgeu rs1 rs2 sbimm12) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  when ((fromIntegral x :: u) > (fromIntegral y :: u)) $ setPC sbimm12
+execute (Lb rd rs1 oimm12) = do
+  a <- getRegister rs1
+  x <- load (a + fromIntegral oimm12)
+  setRegister rd (s8 x)
+execute (Lh rd rs1 oimm12) = do
+  a <- getRegister rs1
+  x <- load (a + fromIntegral oimm12)
+  setRegister rd (s16 x)
+execute (Lw rd rs1 oimm12) = do
+  a <- getRegister rs1
+  x <- load (a + fromIntegral oimm12)
+  setRegister rd (s32 x)
+execute (Lbu rd rs1 oimm12) = do
+  a <- getRegister rs1
+  x <- load (a + fromIntegral oimm12)
+  setRegister rd (u8 x)
+execute (Lhu rd rs1 oimm12) = do
+  a <- getRegister rs1
+  x <- load (a + fromIntegral oimm12)
+  setRegister rd (u16 x)
+execute (Sb rs1 rs2 simm12) = do
+  a <- getRegister rs1
+  x <- getRegister rs2
+  store (a + fromIntegral simm12) (s8 x)
+execute (Sh rs1 rs2 simm12) = do
+  a <- getRegister rs1
+  x <- getRegister rs2
+  store (a + fromIntegral simm12) (s16 x)
+execute (Sw rs1 rs2 simm12) = do
+  a <- getRegister rs1
+  x <- getRegister rs2
+  store (a + fromIntegral simm12) (s32 x)
+execute (Addi rd rs1 imm12) = do
+  x <- getRegister rs1
+  setRegister rd (x + fromIntegral imm12)
+execute (Slti rd rs1 imm12) = do
+  x <- getRegister rs1
+  setRegister rd (if x < fromIntegral imm12 then 1 else 0)
+execute (Sltiu rd rs1 imm12) = do
+  x <- getRegister rs1
+  setRegister rd (if (fromIntegral x :: u) < (fromIntegral imm12 :: u) then 1 else 0)
+execute (Xori rd rs1 imm12) = do
+  x <- getRegister rs1
+  setRegister rd (xor x (fromIntegral imm12))
+execute (Ori rd rs1 imm12) = do
+  x <- getRegister rs1
+  setRegister rd ((.|.) x (fromIntegral imm12))
+execute (Andi rd rs1 imm12) = do
+  x <- getRegister rs1
+  setRegister rd ((.&.) x (fromIntegral imm12))
+execute (Slli rd rs1 imm12) = do
+  x <- getRegister rs1
+  setRegister rd (shiftL x (lower5 imm12))
+execute (Srli rd rs1 imm12) = do
+  x <- getRegister rs1
+  setRegister rd (shiftR (fromIntegral x :: u) (lower5 imm12))
+execute (Srai rd rs1 imm12) = do
+  x <- getRegister rs1
+  setRegister rd (shiftR x (lower5 imm12))
+execute (Add rd rs1 rs2) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  setRegister rd (x + y)
+execute (Sub rd rs1 rs2) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  setRegister rd (x - y)
+execute (Sll rd rs1 rs2) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  setRegister rd (shiftL x (lower5 y))
+execute (Slt rd rs1 rs2) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  setRegister rd (if x < y then 1 else 0)
+execute (Sltu rd rs1 rs2) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  setRegister rd (if (fromIntegral x :: u) < (fromIntegral y :: u) then 1 else 0)
+execute (Xor rd rs1 rs2) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  setRegister rd (xor x y)
+execute (Or rd rs1 rs2) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  setRegister rd ((.|.) x y)
+execute (Srl rd rs1 rs2) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  setRegister rd (shiftR (fromIntegral x :: u) (lower5 y))
+execute (Sra rd rs1 rs2) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  setRegister rd (shiftR x (lower5 y))
+execute (And rd rs1 rs2) = do
+  x <- getRegister rs1
+  y <- getRegister rs2
+  setRegister rd ((.&.) x y)
 -- TODO: Fence/Fence.i?
 
-mem = createMemory 10
-cpu = Processor (take 8 $ cycle [0]) 78
+-- Example usage:
+c = Computer32 { registers = [0,0,0,0], pc = 5, mem = [0,0,0,0] }
+action :: State Computer32 ()
+action = do
+  execute (Lui 1 19)
+  execute (Lui 2 23)
+  execute (Lui 4 1)
+  execute (Add 3 1 2)
+  execute (Sw 4 3 0)
+cp = runState action c

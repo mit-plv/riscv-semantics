@@ -5,36 +5,36 @@ import Data.Word
 import Data.Maybe
 import Data.List
 
-type Register = Int32
+type Register = Int
 
 data Instruction =
-  Lui   { rd :: Register, imm20 :: Int32 } |
-  Auipc { rd :: Register, oimm20 :: Int32 } |
-  Jal   { rd :: Register, jimm20 :: Int32 } |
-  Jalr  { rd :: Register, rs1 :: Register, oimm12 :: Int32 } |
-  Beq   { rs1 :: Register, rs2 :: Register, sbimm12 :: Int32 } |
-  Bne   { rs1 :: Register, rs2 :: Register, sbimm12 :: Int32 } |
-  Blt   { rs1 :: Register, rs2 :: Register, sbimm12 :: Int32 } |
-  Bge   { rs1 :: Register, rs2 :: Register, sbimm12 :: Int32 } |
-  Bltu  { rs1 :: Register, rs2 :: Register, sbimm12 :: Int32 } |
-  Bgeu  { rs1 :: Register, rs2 :: Register, sbimm12 :: Int32 } |
-  Lb    { rd :: Register, rs1 :: Register, oimm12 :: Int32 } |
-  Lh    { rd :: Register, rs1 :: Register, oimm12 :: Int32 } |
-  Lw    { rd :: Register, rs1 :: Register, oimm12 :: Int32 } |
-  Lbu   { rd :: Register, rs1 :: Register, oimm12 :: Int32 } |
-  Lhu   { rd :: Register, rs1 :: Register, oimm12 :: Int32 } |
-  Sb    { rs1 :: Register, rs2 :: Register, simm12 :: Int32 } |
-  Sh    { rs1 :: Register, rs2 :: Register, simm12 :: Int32 } |
-  Sw    { rs1 :: Register, rs2 :: Register, simm12 :: Int32 } |
-  Addi  { rd :: Register, rs1 :: Register, imm12 :: Int32 } |
-  Slti  { rd :: Register, rs1 :: Register, imm12 :: Int32 } |
-  Sltiu { rd :: Register, rs1 :: Register, imm12 :: Int32 } |
-  Xori  { rd :: Register, rs1 :: Register, imm12 :: Int32 } |
-  Ori   { rd :: Register, rs1 :: Register, imm12 :: Int32 } |
-  Andi  { rd :: Register, rs1 :: Register, imm12 :: Int32 } |
-  Slli  { rd :: Register, rs1 :: Register, shamt5 :: Int32 } |
-  Srli  { rd :: Register, rs1 :: Register, shamt5 :: Int32 } |
-  Srai  { rd :: Register, rs1 :: Register, shamt5 :: Int32 } |
+  Lui   { rd :: Register, imm20 :: Int } |
+  Auipc { rd :: Register, oimm20 :: Int } |
+  Jal   { rd :: Register, jimm20 :: Int } |
+  Jalr  { rd :: Register, rs1 :: Register, oimm12 :: Int } |
+  Beq   { rs1 :: Register, rs2 :: Register, sbimm12 :: Int } |
+  Bne   { rs1 :: Register, rs2 :: Register, sbimm12 :: Int } |
+  Blt   { rs1 :: Register, rs2 :: Register, sbimm12 :: Int } |
+  Bge   { rs1 :: Register, rs2 :: Register, sbimm12 :: Int } |
+  Bltu  { rs1 :: Register, rs2 :: Register, sbimm12 :: Int } |
+  Bgeu  { rs1 :: Register, rs2 :: Register, sbimm12 :: Int } |
+  Lb    { rd :: Register, rs1 :: Register, oimm12 :: Int } |
+  Lh    { rd :: Register, rs1 :: Register, oimm12 :: Int } |
+  Lw    { rd :: Register, rs1 :: Register, oimm12 :: Int } |
+  Lbu   { rd :: Register, rs1 :: Register, oimm12 :: Int } |
+  Lhu   { rd :: Register, rs1 :: Register, oimm12 :: Int } |
+  Sb    { rs1 :: Register, rs2 :: Register, simm12 :: Int } |
+  Sh    { rs1 :: Register, rs2 :: Register, simm12 :: Int } |
+  Sw    { rs1 :: Register, rs2 :: Register, simm12 :: Int } |
+  Addi  { rd :: Register, rs1 :: Register, imm12 :: Int } |
+  Slti  { rd :: Register, rs1 :: Register, imm12 :: Int } |
+  Sltiu { rd :: Register, rs1 :: Register, imm12 :: Int } |
+  Xori  { rd :: Register, rs1 :: Register, imm12 :: Int } |
+  Ori   { rd :: Register, rs1 :: Register, imm12 :: Int } |
+  Andi  { rd :: Register, rs1 :: Register, imm12 :: Int } |
+  Slli  { rd :: Register, rs1 :: Register, shamt5 :: Int } |
+  Srli  { rd :: Register, rs1 :: Register, shamt5 :: Int } |
+  Srai  { rd :: Register, rs1 :: Register, shamt5 :: Int } |
   Add   { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Sub   { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Sll   { rd :: Register, rs1 :: Register, rs2 :: Register } |
@@ -45,7 +45,7 @@ data Instruction =
   Sra   { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Or    { rd :: Register, rs1 :: Register, rs2 :: Register } |
   And   { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Fence { pred :: Int32, succ :: Int32 } |
+  Fence { pred :: Int, succ :: Int } |
   Fence_i
   deriving (Eq, Read, Show)
 
@@ -110,7 +110,7 @@ decodeFence inst = Fence (getPred inst) (getSucc inst)
 decodeFence_i inst = Fence_i
 
 -- (decodeLui, [(2, 7, 0x0D), (0, 2, 3)]) corresponds to (lui 6..2=0x0D 1..0=3) in opcodes file.
-opcodeTable :: [(Int32 -> Instruction, [(Int, Int, Int32)])]
+opcodeTable :: [(Int -> Instruction, [(Int, Int, Int)])]
 opcodeTable = [(decodeLui, [(2,7,0x0D),(0,2,3)]),
                (decodeAuipc, [(2,7,0x05),(0,2,3)]),
                (decodeJal, [(2,7,0x1b),(0,2,3)]),
@@ -151,6 +151,6 @@ opcodeTable = [(decodeLui, [(2,7,0x0D),(0,2,3)]),
                (decodeFence, [(12,15,0),(2,7,0x03),(0,2,3)]),
                (decodeFence_i, [(12,15,1),(2,7,0x03),(0,2,3)])]
 
-decode :: Int32 -> Instruction
+decode :: Int -> Instruction
 decode inst = (fst $ fromJust $ find (\e -> all match (snd e)) opcodeTable) inst
               where match (start, end, val) = bitSlice inst start end == val
