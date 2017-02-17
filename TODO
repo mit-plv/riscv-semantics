@@ -1,10 +1,19 @@
 Friday, 3rd February:
-* Finish the implementation of execute'
-* Define an instance for the RiscvProgram typeclass
-* Split the code between several files, requirements :
+DONE * Finish the implementation of execute'
+DONE * Define an instance for the RiscvProgram typeclass
+DONE * Split the code between several files, requirements :
   - One non scary file
   - automatically generated code within one file not pushed on the repo.
   - Create Makefile for the generation
-  - typeclasses and instances in different file.
+ X - typeclasses and instances in different file(s).
   - miscellaneous plumbing functions in different file.
-* Look for more polymorphism in the instruction type. (Some reading required)
+DONE * Look for more polymorphism in the instruction type. (Some reading required)
+
+Friday, 17 september:
+* Change memory : addresses in the processor are in bytes. Now there are in words.
+* elf library in haskell or elf2hex + custom parsing Tcl/Tk.
+* Add State monad to avoid dependency with mtl
+* MonadPlus would allow us to define execute functions specific to each
+  extensions (in different files) with execute _ = mzero. Then our step function
+  would cascade those different functions (with mplus).
+* For the different modules of RISCV, reuse the naming convention of riscv.
