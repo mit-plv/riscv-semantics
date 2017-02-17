@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Execute where
 import Decode
 import Program

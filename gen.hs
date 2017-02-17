@@ -11,16 +11,30 @@ splitClean line = let repl '.' = '_'
                       repl c = c
                   in filter (not . (isSuffixOf "=ignore")) $ words $ map repl line
 
-genType :: String -> String
-genType line = let pieces = splitClean line
+capitalize :: String -> String
+capitalize (x:xs) = (toUpper x):xs
+capitalize "" = ""
+
+parseOp :: String -> (String, [String])
+parseOp line = let pieces = splitClean line
                    args = takeWhile (not . isDigit . head) (tail pieces)
-                   fields = map (++ " :: Int32") args
-                   opcode = (toUpper $ head $ head pieces):(tail $ head pieces)
+                   op = capitalize (head pieces)
+               in (op, args)
+
+genType :: String -> String
+genType line = let (opcode, args) = parseOp line
+                   addType arg = arg ++ " :: " ++ (if (arg !! 0 == 'r') then "Register" else "Int")
+                   fields = map addType args
                in
                 if length fields > 0 then
                   opcode ++ " { " ++ intercalate ", " fields ++ " }"
                 else
                   opcode
+
+genFunction :: String -> String
+genFunction line = let (opcode, args) = parseOp line
+                       cargs = map (("(get" ++) . (++ " inst)") . capitalize) args
+                   in "decode" ++ opcode ++ " inst = " ++ opcode ++ " " ++ unwords cargs
 
 parseRange :: String -> (Int, Int, String)
 parseRange range = let pieces = splitOn "=" range
@@ -33,9 +47,30 @@ genEntry line = let pieces = splitClean line
                     opcode = (toUpper $ head $ head pieces):(tail $ head pieces)
                 in "(decode" ++ opcode ++ ", " ++ (filter (/= '"') (show ranges)) ++ ")"
 
+filterLines :: String -> [String]
+filterLines = takeWhile (not . isPrefixOf "lwu") . removeComments . lines
+
+defineInstruction :: [String] -> String
+defineInstruction xs = "data Instruction =\n" ++
+                       intercalate " |\n" (map (("  " ++) . genType) xs) ++
+                       "\n  deriving (Eq, Read, Show)"
+
+defineFunctions :: [String] -> String
+defineFunctions = intercalate "\n" . map genFunction
+
+-- (decodeLui, [(2, 7, 0x0D), (0, 2, 3)]) corresponds to (lui 6..2=0x0D 1..0=3) in opcodes file.
+defineTable :: [String] -> String
+defineTable xs = "opcodeTable :: [(Int -> Instruction, [(Int, Int, Int)])]\n" ++
+                 "opcodeTable = [" ++ (intercalate ", \n               " $ map genEntry xs) ++ "]"
+
+generateCode :: [String] -> String
+generateCode xs = defineInstruction xs ++ "\n\n" ++
+                  defineFunctions xs ++ "\n\n" ++
+                  defineTable xs ++ "\n"
+
 main :: IO ()
 main = do
-  xs <- readFile "opcodes" >>= (return . removeComments . lines)
-  putStrLn (intercalate " |\n" $ map genType xs)
-  putStrLn (intercalate ", \n" $ map genEntry xs)
+  template <- readFile "Decode_base.hs"
+  xs <- fmap filterLines $ readFile "opcodes"
+  writeFile "Decode.hs" $ template ++ generateCode xs
   
