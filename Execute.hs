@@ -2,9 +2,9 @@
 module Execute where
 import Decode
 import Program
+import Utility
 import Data.Bits
 import Control.Monad
-import Control.Monad.State
 
 execute :: forall p t u. (RiscvProgram p t u) => Instruction -> p ()
 execute (Lui rd imm20) = setRegister rd (fromIntegral imm20)
@@ -144,13 +144,3 @@ execute (And rd rs1 rs2) = do
   y <- getRegister rs2
   setRegister rd ((.&.) x y)
 -- TODO: Fence/Fence.i?
-
--- Example usage:
-c = Computer32 { registers = [0,0,0,0], pc = 5, mem = [0,0,0,0] }
-action = do
-  execute (Lui 1 19)
-  execute (Lui 2 23)
-  execute (Lui 4 1)
-  execute (Add 3 1 2)
-  execute (Sw 4 3 0)
-cp = runState action c

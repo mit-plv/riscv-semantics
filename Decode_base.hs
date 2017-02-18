@@ -1,14 +1,10 @@
 module Decode where
-import Data.Int
+import Utility
 import Data.Bits
-import Data.Word
 import Data.Maybe
 import Data.List
 
 type Register = Int
-
-bitSlice :: (Bits a, Num a) => a -> Int -> Int -> a
-bitSlice x start end = (.&.) (shiftR x start) (complement $ shiftL (-1) (end - start))
 
 getRd inst = bitSlice inst 7 12
 getRs1 inst = bitSlice inst 15 20
