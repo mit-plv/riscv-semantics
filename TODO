@@ -9,7 +9,7 @@ DONE * Split the code between several files, requirements :
   - miscellaneous plumbing functions in different file.
 DONE * Look for more polymorphism in the instruction type. (Some reading required)
 
-Friday, 17 september:
+Friday, 17 february:
 * Change memory : addresses in the processor are in bytes. Now there are in words.
 * elf library in haskell or elf2hex + custom parsing Tcl/Tk.
 * Add State monad to avoid dependency with mtl
@@ -17,3 +17,11 @@ Friday, 17 september:
   extensions (in different files) with execute _ = mzero. Then our step function
   would cascade those different functions (with mplus).
 * For the different modules of RISCV, reuse the naming convention of riscv.
+
+
+Monday, 27 february:
+* Decode stage : Change Int to Integer wherever it is needed.
+* avoid the use of functions for infix operators.
+* elf library in haskell or elf2hex + custom parsing Tcl/Tk.
+* For the different modules of RISCV, reuse the naming convention of riscv.
+* testing with riscv toolchain.
