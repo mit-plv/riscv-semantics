@@ -1,7 +1,6 @@
 import Computer32
 import Decode
 import Execute
-import Control.Monad.State
 
 c = Computer32 { registers = [0,0,0,0], pc = 5, mem = [0,0,0,0] }
 action = do

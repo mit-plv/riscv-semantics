@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 module Utility where
 import Data.Bits
 import Data.Int
@@ -28,5 +29,25 @@ u16 n = fromIntegral (fromIntegral n :: Word16)
 u32 :: (Integral t) => t -> t
 u32 n = fromIntegral (fromIntegral n :: Word32)
 
-lower5 :: (Bits a, Integral a, Num b) => a -> b
-lower5 x = fromIntegral $ bitSlice x 0 5
+lower :: (Bits a, Integral a, Num b) => Int -> a -> b
+lower n x = fromIntegral $ bitSlice x 0 n
+
+class (Integral s, Integral u) => Convertible s u | s -> u, u -> s where
+  unsigned :: s -> u
+  unsigned = fromIntegral
+  signed :: u -> s
+  signed = fromIntegral
+
+instance Convertible Int8 Word8
+instance Convertible Int16 Word16
+instance Convertible Int32 Word32
+instance Convertible Int64 Word64
+
+class MachineWidth t where
+  shiftBits :: t -> Int
+
+instance MachineWidth Int32 where
+  shiftBits = lower 5
+
+instance MachineWidth Int64 where
+  shiftBits = lower 6
