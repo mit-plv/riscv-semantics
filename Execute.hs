@@ -91,10 +91,10 @@ execute (Xori rd rs1 imm12) = do
   setRegister rd (xor x (fromIntegral imm12))
 execute (Ori rd rs1 imm12) = do
   x <- getRegister rs1
-  setRegister rd ((.|.) x (fromIntegral imm12))
+  setRegister rd (x .|. (fromIntegral imm12))
 execute (Andi rd rs1 imm12) = do
   x <- getRegister rs1
-  setRegister rd ((.&.) x (fromIntegral imm12))
+  setRegister rd (x .&. (fromIntegral imm12))
 execute (Slli rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (shiftL x (shiftBits (fromIntegral imm12 :: t)))
@@ -131,7 +131,7 @@ execute (Xor rd rs1 rs2) = do
 execute (Or rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd ((.|.) x y)
+  setRegister rd (x .|. y)
 execute (Srl rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -143,6 +143,6 @@ execute (Sra rd rs1 rs2) = do
 execute (And rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd ((.&.) x y)
+  setRegister rd (x .&. y)
 execute _ = mzero
 -- TODO: Fence/Fence.i?

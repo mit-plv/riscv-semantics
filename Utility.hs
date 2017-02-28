@@ -5,7 +5,7 @@ import Data.Int
 import Data.Word
 
 bitSlice :: (Bits a, Num a) => a -> Int -> Int -> a
-bitSlice x start end = (.&.) (shiftR x start) (complement $ shiftL (-1) (end - start))
+bitSlice x start end = (shiftR x start) .&. (complement $ shiftL (-1) (end - start))
 
 setIndex :: Int -> a -> [a] -> [a]
 setIndex i x l = left ++ (x:(drop 1 right))
