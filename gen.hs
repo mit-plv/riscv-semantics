@@ -23,7 +23,7 @@ parseOp line = let pieces = splitClean line
 
 genType :: String -> String
 genType line = let (opcode, args) = parseOp line
-                   addType arg = arg ++ " :: " ++ (if (arg !! 0 == 'r') then "Register" else "Int")
+                   addType arg = arg ++ " :: " ++ (if (arg !! 0 == 'r') then "Register" else "Integer")
                    fields = map addType args
                in
                 if length fields > 0 then
@@ -60,7 +60,7 @@ defineFunctions = intercalate "\n" . map genFunction
 
 -- (decodeLui, [(2, 7, 0x0D), (0, 2, 3)]) corresponds to (lui 6..2=0x0D 1..0=3) in opcodes file.
 defineTable :: [String] -> String
-defineTable xs = "opcodeTable :: [(Int -> Instruction, [(Int, Int, Int)])]\n" ++
+defineTable xs = "opcodeTable :: [(Integer -> Instruction, [(Int, Int, Integer)])]\n" ++
                  "opcodeTable = [" ++ (intercalate ", \n               " $ map genEntry xs) ++ "]"
 
 generateCode :: [String] -> String

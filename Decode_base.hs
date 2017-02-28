@@ -6,9 +6,9 @@ import Data.List
 
 type Register = Int
 
-getRd inst = bitSlice inst 7 12
-getRs1 inst = bitSlice inst 15 20
-getRs2 inst = bitSlice inst 20 25
+getRd inst = fromIntegral $ bitSlice inst 7 12
+getRs1 inst = fromIntegral $ bitSlice inst 15 20
+getRs2 inst = fromIntegral $ bitSlice inst 20 25
 getPred inst = bitSlice inst 24 28
 getSucc inst = bitSlice inst 20 24
 getImm20 inst = shift (bitSlice inst 12 32) 12
@@ -23,7 +23,7 @@ getSbimm12 inst = (.|.) (shift (bitSlice inst 31 32) 12) $ (.|.) (shift (bitSlic
                   (.|.) (shift (bitSlice inst 8 12) 1) (shift (bitSlice inst 7 8) 11)
 getShamt5 inst = bitSlice inst 20 25
 
-decode :: Int -> Instruction
+decode :: Integer -> Instruction
 decode inst = (fst $ fromJust $ find (\e -> all match (snd e)) opcodeTable) inst
               where match (start, end, val) = bitSlice inst start end == val
 
