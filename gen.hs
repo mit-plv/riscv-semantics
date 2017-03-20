@@ -48,7 +48,7 @@ genEntry line = let pieces = splitClean line
                 in "(decode" ++ opcode ++ ", " ++ (filter (/= '"') (show ranges)) ++ ")"
 
 filterLines :: String -> [String]
-filterLines = takeWhile (not . isPrefixOf "lwu") . removeComments . lines
+filterLines = map snd . filter (\(i, _) -> i `elem` ([0..38] ++ [69..76])) . zip [0..] . removeComments . lines
 
 defineInstruction :: [String] -> String
 defineInstruction xs = "data Instruction =\n" ++

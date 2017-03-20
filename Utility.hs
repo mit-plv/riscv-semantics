@@ -54,9 +54,12 @@ instance Convertible Int64 Word64
 
 class MachineWidth t where
   shiftBits :: t -> Int
+  highBits :: Int -> t
 
 instance MachineWidth Int32 where
   shiftBits = lower 5
+  highBits n = fromIntegral $ bitSlice n 32 64
 
 instance MachineWidth Int64 where
   shiftBits = lower 6
+  highBits n = fromIntegral $ bitSlice n 64 128

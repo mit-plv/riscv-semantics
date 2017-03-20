@@ -6,7 +6,7 @@ import Data.Int
 import Data.Bits
 import Control.Monad
 
-class (MonadPlus p, Convertible t u, Bits t, Bits u, MachineWidth t) => RiscvProgram p t u | p -> t, t -> u where
+class (MonadPlus p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => RiscvProgram p t u | p -> t, t -> u where
    getRegister :: Register -> p t
    setRegister :: (Integral s) => Register -> s -> p ()
    loadByte :: (Integral s) => s -> p Int8
