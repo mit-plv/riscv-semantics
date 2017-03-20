@@ -1,1 +1,4 @@
 Decode.hs
+elf2hex/elf2hex
+*.o
+*.hex

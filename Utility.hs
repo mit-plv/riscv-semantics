@@ -32,6 +32,15 @@ u32 n = fromIntegral (fromIntegral n :: Word32)
 lower :: (Bits a, Integral a, Num b) => Int -> a -> b
 lower n x = fromIntegral $ bitSlice x 0 n
 
+combineBytes :: (Bits a, Integral a) => [Word8] -> a
+combineBytes bytes = sum $ map (\(x,n) -> shiftL (fromIntegral n) (8*x)) $ zip [0..] bytes
+
+splitHalf :: (Bits a, Integral a) => a -> [Word8]
+splitHalf w = map fromIntegral [bitSlice w 0 8, bitSlice w 8 16]
+
+splitWord :: (Bits a, Integral a) => a -> [Word8]
+splitWord w = map fromIntegral [bitSlice w 0 8, bitSlice w 8 16, bitSlice w 16 24, bitSlice w 24 32]
+
 class (Integral s, Integral u) => Convertible s u | s -> u, u -> s where
   unsigned :: s -> u
   unsigned = fromIntegral
