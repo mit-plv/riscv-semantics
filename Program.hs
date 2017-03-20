@@ -17,3 +17,4 @@ class (MonadPlus p, Convertible t u, Bits t, Bits u, MachineWidth t) => RiscvPro
    storeWord :: (Integral r, Integral s, Bits r, Bits s) => r -> s -> p ()
    getPC :: p t
    setPC :: (Integral s) => s -> p ()
+   step :: p ()
