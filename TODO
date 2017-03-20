@@ -25,3 +25,8 @@ Monday, 27 february:
 * elf library in haskell or elf2hex + custom parsing Tcl/Tk.
 * For the different modules of RISCV, reuse the naming convention of riscv.
 * testing with riscv toolchain.
+
+Monday, 20th March:
+* Build regression test harness (integration with spike?)
+* Implement CSRs for machine mode (exceptions, interrupts)
+* Supervisor mode
