@@ -1,3 +1,5 @@
+module Run (runProgram, runFile) where
+
 import System.IO
 import System.Environment
 import Data.Int
@@ -44,10 +46,15 @@ helper = do
 runProgram :: Computer32 -> Int32
 runProgram = fst . fromJust . runState helper
 
+runFile :: String -> IO Int32
+runFile f = do
+  h <- openFile f ReadMode
+  m <- readELF h []
+  let c = Computer32 { registers = (take 31 $ repeat 0), pc = 0x200, nextPC = 0, mem = (m ++ (take 65520 $ repeat (0::Word8))) } in
+    return $ runProgram c
+
 main :: IO ()
 main = do
   a <- getArgs
-  h <- openFile (head a) ReadMode
-  m <- readELF h []
-  let c = Computer32 { registers = (take 31 $ repeat 0), pc = 0x200, nextPC = 0, mem = (m ++ (take 65520 $ repeat (0::Word8))) } in
-    putStrLn ("Return value: " ++ (show $ runProgram c))
+  result <- runFile (head a)
+  putStrLn ("Return value: " ++ (show result))
