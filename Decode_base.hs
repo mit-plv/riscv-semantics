@@ -27,6 +27,7 @@ getSimm12 inst = signExtend $ shift (bitSlice inst 25 32) 5 .|. bitSlice inst 7 
 getSbimm12 inst = shift (bitSlice inst 31 32) 12 .|. shift (bitSlice inst 25 31) 5 .|.
                   shift (bitSlice inst 8 12) 1 .|. shift (bitSlice inst 7 8) 11
 getShamt5 inst = bitSlice inst 20 25
+getZimm inst = bitSlice inst 15 20
 
 decode :: Integer -> Instruction
 decode inst = (fst $ fromJust $ find (\e -> all match (snd e)) opcodeTable) inst
