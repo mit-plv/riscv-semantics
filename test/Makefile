@@ -1,6 +1,7 @@
 .PHONY: all clean
 
-TESTS=add sub mul
+SOURCES=$(wildcard *.c)
+TESTS=$(basename $(SOURCES))
 HEX=$(addsuffix .hex,$(TESTS))
 ELF2HEX=../elf2hex
 

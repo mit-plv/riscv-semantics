@@ -19,9 +19,12 @@ runTest f expected = do
   return $ result == expected
 
 tests :: [(String, Int32)]
-tests = [("add", 11),
-         ("sub", 7),
-         ("mul", 42)]
+tests = [("add",  11),
+         ("sub",   7),
+         ("mul",  42),
+         ("and",  35),
+         ("or" , 111),
+         ("xor",  76)]
 
 main :: IO ()
 main = do
