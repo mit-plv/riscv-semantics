@@ -2,12 +2,13 @@ module Run (runProgram, runFile) where
 
 import System.IO
 import System.Environment
+import System.Exit
 import Data.Int
 import Data.Word
 import Data.Maybe
 import Utility
 import Program
-import Computer32
+import MMIO32
 import Decode
 import Execute
 import Debug.Trace
@@ -31,10 +32,8 @@ helper :: (RiscvProgram p t u) => p t
 helper = do
   pc <- getPC
   inst <- loadWord pc
-  -- tmp <- mapM getRegister [1..31]
-  -- trace (showHex (fromIntegral pc) "") (return ())
+  -- trace (showHex (fromIntegral inst :: Word32) "") (return ())
   -- trace (show (decode $ fromIntegral inst)) (return ())
-  -- trace (show $ map fromIntegral tmp) (return ())
   if inst == 0x6f -- Stop on infinite loop instruction.
     then getRegister 10
     else do
@@ -43,18 +42,22 @@ helper = do
     step
     helper
 
-runProgram :: Computer32 -> Int32
-runProgram = fst . fromJust . runState helper
+runProgram :: MMIO32 -> (Int32, MMIO32)
+runProgram = fromJust . runState helper
 
-runFile :: String -> IO Int32
+runFile :: String -> IO (Int32, String)
 runFile f = do
   h <- openFile f ReadMode
   m <- readELF h []
-  let c = Computer32 { registers = (take 31 $ repeat 0), pc = 0x200, nextPC = 0, mem = (m ++ (take 65520 $ repeat (0::Word8))) } in
-    return $ runProgram c
+  let c = MMIO32 { registers = (take 31 $ repeat 0), pc = 0x200, nextPC = 0,
+                   mem = (m ++ (take (65520 - length m) $ repeat (0::Word8))),
+                   mmio = baseMMIO, input = "", output = "" }
+      (retval, cp) = runProgram c in
+    return (retval, output cp)
 
 main :: IO ()
 main = do
   a <- getArgs
-  result <- runFile (head a)
-  putStrLn ("Return value: " ++ (show result))
+  (retval, out) <- runFile (head a)
+  putStr out
+  exitWith (if retval == 0 then ExitSuccess else ExitFailure $ fromIntegral retval)

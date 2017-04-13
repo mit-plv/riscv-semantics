@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-SOURCES=$(wildcard *.c)
+SOURCES=$(wildcard tests/*.c)
 TESTS=$(basename $(SOURCES))
 HEX=$(addsuffix .hex,$(TESTS))
 ELF2HEX=../elf2hex
@@ -15,11 +15,14 @@ $(ELF2HEX)/elf2hex:
 init.o: init.S
 	$(RISCVCC) -c init.S
 
-%.hex: $(ELF2HEX)/elf2hex %.c init.o link.ld
+mmio.o: mmio.c
+	$(RISCVCC) -c mmio.c
+
+%.hex: $(ELF2HEX)/elf2hex %.c init.o mmio.o link.ld
 	$(RISCVCC) -c $*.c -o intermediate.o
-	$(RISCVCC) -o $* -Tlink.ld intermediate.o init.o
+	$(RISCVCC) -o $* -Tmmio.ld intermediate.o init.o mmio.o
 	$(ELF2HEX)/elf2hex $*
 	rm intermediate.o $*
 
 clean:
-	rm -f intermediate.o init.o $(TESTS) $(HEX)
+	rm -f intermediate.o init.o mmio.o $(TESTS) $(HEX)
