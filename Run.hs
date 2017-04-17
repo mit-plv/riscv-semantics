@@ -45,19 +45,20 @@ helper = do
 runProgram :: MMIO32 -> (Int32, MMIO32)
 runProgram = fromJust . runState helper
 
-runFile :: String -> IO (Int32, String)
-runFile f = do
+runFile :: String -> String -> IO (Int32, String)
+runFile f input = do
   h <- openFile f ReadMode
   m <- readELF h []
   let c = MMIO32 { registers = (take 31 $ repeat 0), pc = 0x200, nextPC = 0,
                    mem = (m ++ (take (65520 - length m) $ repeat (0::Word8))),
-                   mmio = baseMMIO, input = "", output = "" }
+                   mmio = baseMMIO, input = input, output = "" }
       (retval, cp) = runProgram c in
     return (retval, output cp)
 
 main :: IO ()
 main = do
-  a <- getArgs
-  (retval, out) <- runFile (head a)
+  file:rest <- getArgs
+  let input = (if length rest > 0 then head rest else "")
+  (retval, out) <- runFile file input
   putStr out
   exitWith (if retval == 0 then ExitSuccess else ExitFailure $ fromIntegral retval)
