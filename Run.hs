@@ -13,6 +13,7 @@ import Decode
 import Execute
 import Debug.Trace
 import Numeric
+import Control.Monad.Trans.Maybe
 
 processLine :: String -> [Word8] -> [Word8]
 processLine ('@':xs) l = l ++ take (4*(read ("0x" ++ xs) :: Int) - (length l)) (repeat 0)
@@ -42,23 +43,20 @@ helper = do
     step
     helper
 
-runProgram :: MMIO32 -> (Int32, MMIO32)
-runProgram = fromJust . runState helper
+runProgram :: MMIO32 -> IO (Int32, MMIO32)
+runProgram = (fmap fromJust) . runMaybeT . (runState helper)
 
-runFile :: String -> String -> IO (Int32, String)
-runFile f input = do
+runFile :: String -> IO Int32
+runFile f = do
   h <- openFile f ReadMode
   m <- readELF h []
   let c = MMIO32 { registers = (take 31 $ repeat 0), pc = 0x200, nextPC = 0,
                    mem = (m ++ (take (65520 - length m) $ repeat (0::Word8))),
-                   mmio = baseMMIO, input = input, output = "" }
-      (retval, cp) = runProgram c in
-    return (retval, output cp)
+                   mmio = baseMMIO } in
+    fmap fst $ runProgram c
 
 main :: IO ()
 main = do
-  file:rest <- getArgs
-  let input = (if length rest > 0 then head rest else "")
-  (retval, out) <- runFile file input
-  putStr out
+  file:_ <- getArgs
+  retval <- runFile file
   exitWith (if retval == 0 then ExitSuccess else ExitFailure $ fromIntegral retval)

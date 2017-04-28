@@ -36,3 +36,7 @@ Monday, 3rd April:
 * Memory-mapped IO for printing characters (test via looking at output rather than state)
   - New instance of RiscvProgram with alternate impl. of storeWord
 * Implement CSRs (packing, look at prior implementation)
+
+Monday, 17th April:
+* CSRs, IO-monad based MMIO, Newlib, Spike testing harness.
+
