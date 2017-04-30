@@ -34,8 +34,25 @@ instance Alternative (MState s) where
 
 instance MonadPlus (MState s)
 
+-- data CSR = MStatus { field1 :: Int, field2 :: Int, ... }
+--          | MHartid { hartid :: Int }
+
+-- encode :: CSR -> Int32
+-- encode (MStatus f1 f2 ..) = 
+
+-- decode :: Int -> Int32 -> CSR
+-- decode index dat
+--   | index == 0x300 = MStatus { field1 = _, field2 = _ }
+--   | index == 0x301 = MHartid { hartid }
+--   | index == 0x302 = 
+
+--data MMIO32 = MMIO32 { registers :: [Int32], pc :: Int32, nextPC :: Int32, mem :: [Word8], mmio :: [(LoadFunc, StoreFunc)], csrs :: [(Int, Bool, CSR)] }
+--                deriving (Show)
+
 data MMIO32 = MMIO32 { registers :: [Int32], pc :: Int32, nextPC :: Int32, mem :: [Word8], mmio :: [(LoadFunc, StoreFunc)] }
-                deriving (Show)
+              deriving (Show)
+
+-- open, close, read, write
 
 type LoadFunc = MState MMIO32 Int32
 type StoreFunc = Int32 -> MState MMIO32 ()
