@@ -11,10 +11,13 @@ data CSR = MISA { base :: Int, extensions :: Int }
          | MOther { val :: Int }
          deriving Show
 
-csrs :: [(Int, Int32 -> CSR)]
-csrs = [(0xF11, decodeOther),
-        (0x300, decodeMStatus),
-        (0x301, decodeMISA)]
+csrMap :: [(Int, Int32 -> CSR)]
+csrMap = [(0xF11, decodeOther),
+          (0x300, decodeMStatus),
+          (0x301, decodeMISA)]
+
+defaultCSRs :: [(Int, CSR)]
+defaultCSRs = map (\(addr, f) -> (addr, f 0)) csrMap
 
 decodeOther = MOther . fromIntegral
 decodeMISA val = MISA { base = bitSlice v 30 32, extensions = bitSlice v 0 26 }
@@ -31,7 +34,7 @@ decodeMStatus val = MStatus { sd = testBit v 31, vm = bitSlice v 24 29,
   where v = fromIntegral val
 
 decode :: Int -> Int32 -> CSR
-decode idx = fromJust (lookup idx csrs)
+decode idx = fromJust (lookup idx csrMap)
 
 boolBit :: (Bits a) => Bool -> Int -> a
 boolBit b i = if b then bit i else zeroBits

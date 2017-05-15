@@ -15,8 +15,8 @@ class (MonadPlus p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, Machi
    storeByte :: (Integral r, Integral s, Bits r, Bits s) => r -> s -> p ()
    storeHalf :: (Integral r, Integral s, Bits r, Bits s) => r -> s -> p ()
    storeWord :: (Integral r, Integral s, Bits r, Bits s) => r -> s -> p ()
--- loadCSR :: Int -> p Int32
--- storeCSR :: (Integral s) => Int -> s -> p ()
+   loadCSR :: Int -> p Int32
+   storeCSR :: (Integral s) => Int -> s -> p ()
    getPC :: p t
    setPC :: (Integral s) => s -> p ()
    step :: p ()

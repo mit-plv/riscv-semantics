@@ -8,6 +8,8 @@ import Data.Int
 import Data.Word
 import Data.Bits
 import Data.Char
+import Data.Maybe
+import Data.List
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
@@ -83,6 +85,9 @@ instance RiscvProgram (MState MMIO32) Int32 Word32 where
   storeWord addr val = MState $ \comp -> if
     | addr > (mmioStart comp) -> runState (snd ((mmio comp) !! ((fromIntegral $ addr - mmioStart comp) `div` 4)) (fromIntegral val)) comp
     | otherwise -> return ((), comp { mem = helpStore (mem comp) (fromIntegral addr) (splitWord val) })
+  loadCSR addr = MState $ \comp -> return (encode $ fromJust $ lookup addr (csrs comp), comp)
+  storeCSR addr val = MState $ \comp -> return ((), comp { csrs = setIndex (fromJust $ elemIndex addr (map fst $ csrs comp))
+                                                                           (addr, decode addr $ fromIntegral val) (csrs comp) })
   getPC = MState $ \comp -> return (pc comp, comp)
   setPC val = MState $ \comp -> return ((), comp { nextPC = fromIntegral val })
   step = MState $ \comp -> return ((), comp { pc = nextPC comp })

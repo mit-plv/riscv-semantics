@@ -7,6 +7,7 @@ import Data.Maybe
 import Utility
 import Program
 import MMIO32
+import CSR (defaultCSRs)
 import Decode
 import Execute
 import Debug.Trace
@@ -48,9 +49,8 @@ runFile :: String -> IO Int32
 runFile f = do
   h <- openFile f ReadMode
   m <- readELF h []
-  let c = MMIO32 { registers = (take 31 $ repeat 0), pc = 0x200, nextPC = 0,
-                   mem = (m ++ (take (65520 - length m) $ repeat (0::Word8))),
-                   mmio = baseMMIO } in
+  let c = MMIO32 { registers = (take 31 $ repeat 0), csrs = defaultCSRs, pc = 0x200,nextPC = 0,
+                   mem = (m ++ (take (65520 - length m) $ repeat (0::Word8))), mmio = baseMMIO } in
     fmap fst $ runProgram c
 
 main :: IO ()
