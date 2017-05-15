@@ -40,3 +40,10 @@ Monday, 3rd April:
 Monday, 17th April:
 * CSRs, IO-monad based MMIO, Newlib, Spike testing harness.
 
+Monday, May 1st:
+* Search for CSR structure info, otherwise file bug report
+* Finish basic CSR implementation (write tests).
+* Spike testing harness (Run spike to find correct output, compare against Run.hs).
+* (Fix jimm20. -> Working mandelbrot!)
+Eventually: lots of testing, memory typeclass, faster memory implementation.
+

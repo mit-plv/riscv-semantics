@@ -18,7 +18,7 @@ getPred inst = bitSlice inst 24 28
 getSucc inst = bitSlice inst 20 24
 getImm20 inst = shift (bitSlice inst 12 32) 12
 getOimm20 inst = shift (bitSlice inst 12 32) 12
-getJimm20 inst = shift (bitSlice inst 31 32) 20 .|. shift (bitSlice inst 21 31) 1 .|.
+getJimm20 inst = signExtend 21 $ shift (bitSlice inst 31 32) 20 .|. shift (bitSlice inst 21 31) 1 .|.
                  shift (bitSlice inst 20 21) 11 .|. shift (bitSlice inst 12 20) 12
 getImm12 inst = signExtend 12 $ bitSlice inst 20 32
 getOimm12 inst = signExtend 12 $ bitSlice inst 20 32
