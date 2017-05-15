@@ -40,7 +40,7 @@ _start:
   li  x30,0
   li  x31,0
 
-  li sp, 0xFFF0 # Should probably investigate where precisely
+  li sp, 0xFFF0
 
   call main
 1:
