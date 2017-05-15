@@ -30,7 +30,7 @@ decodeMStatus val = MStatus { sd = testBit v 31, vm = bitSlice v 24 29,
                               mpie = testBit v 7, hpie = testBit v 6,
                               spie = testBit v 5, upie = testBit v 4,
                               mie = testBit v 3, hie = testBit v 2,
-                              sie = testBit v 1, uie = testBit v 1 }
+                              sie = testBit v 1, uie = testBit v 0 }
   where v = fromIntegral val
 
 decode :: Int -> Int32 -> CSR
@@ -40,9 +40,9 @@ boolBit :: (Bits a) => Bool -> Int -> a
 boolBit b i = if b then bit i else zeroBits
 
 encode :: CSR -> Int32
-encode (MISA base extensions) = fromIntegral $ shift base 30 .&. extensions
+encode (MISA base extensions) = fromIntegral $ shift base 30 .|. extensions
 encode (MStatus sd vm mxr pum mprv xs fs mpp hpp spp mpie hpie spie upie mie hie sie uie) = fromIntegral $
-  boolBit sd 31 .&. shift vm 24 .&. boolBit mxr 19 .&. boolBit pum 18 .&. boolBit mprv 17 .&. shift xs 15 .&.
-  shift fs 13 .&. shift mpp 11 .&. shift hpp 9 .&. boolBit spp 8 .&. boolBit mpie 7 .&. boolBit hpie 6 .&.
-  boolBit spie 5 .&. boolBit upie 4 .&. boolBit mie 3 .&. boolBit hie 2 .&. boolBit sie 1 .&. boolBit uie 0
+  boolBit sd 31 .|. shift vm 24 .|. boolBit mxr 19 .|. boolBit pum 18 .|. boolBit mprv 17 .|. shift xs 15 .|.
+  shift fs 13 .|. shift mpp 11 .|. shift hpp 9 .|. boolBit spp 8 .|. boolBit mpie 7 .|. boolBit hpie 6 .|.
+  boolBit spie 5 .|. boolBit upie 4 .|. boolBit mie 3 .|. boolBit hie 2 .|. boolBit sie 1 .|. boolBit uie 0
 encode (MOther val) = fromIntegral val
