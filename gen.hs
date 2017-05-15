@@ -23,7 +23,10 @@ parseOp line = let pieces = splitClean line
 
 genType :: String -> String
 genType line = let (opcode, args) = parseOp line
-                   addType arg = arg ++ " :: " ++ (if (arg !! 0 == 'r') then "Register" else "Integer")
+                   addType arg = arg ++ " :: " ++ (case (arg !! 0) of
+                                                      'r' -> "Register"
+                                                      'c' -> "Int"
+                                                      _  -> "Integer")
                    fields = map addType args
                in
                 if length fields > 0 then
