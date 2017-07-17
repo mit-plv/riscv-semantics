@@ -47,3 +47,8 @@ Monday, May 1st:
 * (Fix jimm20. -> Working mandelbrot!)
 Eventually: lots of testing, memory typeclass, faster memory implementation.
 
+Monday, May 15th:
+* Make fromIntegral prettier. (infix?)
+* Memory typeclass, faster implementation
+* Agreed to resume next Fall, low-priority thread to keep info fresh
+* (Finish Spike harness.)
