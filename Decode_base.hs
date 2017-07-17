@@ -22,7 +22,7 @@ getJimm20 inst = signExtend 21 $ shift (bitSlice inst 31 32) 20 .|. shift (bitSl
                  shift (bitSlice inst 20 21) 11 .|. shift (bitSlice inst 12 20) 12
 getImm12 inst = signExtend 12 $ bitSlice inst 20 32
 getOimm12 inst = signExtend 12 $ bitSlice inst 20 32
-getCsr12 inst = bitSlice inst 20 32
+getCsr12 inst = fromIntegral $ bitSlice inst 20 32
 getSimm12 inst = signExtend 12 $ shift (bitSlice inst 25 32) 5 .|. bitSlice inst 7 12
 getSbimm12 inst = signExtend 13 $ shift (bitSlice inst 31 32) 12 .|. shift (bitSlice inst 25 31) 5 .|.
                   shift (bitSlice inst 8 12) 1 .|. shift (bitSlice inst 7 8) 11
