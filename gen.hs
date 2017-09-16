@@ -37,7 +37,7 @@ genType line = let (opcode, args) = parseOp line
 genFunction :: String -> String
 genFunction line = let (opcode, args) = parseOp line
                        cargs = map (("(get" ++) . (++ " inst)") . capitalize) args
-                   in "decode" ++ opcode ++ " inst = " ++ opcode ++ " " ++ unwords cargs
+                   in "decode" ++ opcode ++ " inst = " ++ opcode ++ " " ++ unwords cargs ++ "\n{-# INLINE decode" ++opcode ++ " #-}"  
 
 parseRange :: String -> (Int, Int, String)
 parseRange range = let pieces = splitOn "=" range

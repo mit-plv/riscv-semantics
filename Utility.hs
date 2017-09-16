@@ -6,41 +6,53 @@ import Data.Word
 
 bitSlice :: (Bits a, Num a) => a -> Int -> Int -> a
 bitSlice x start end = (shiftR x start) .&. (complement $ shiftL (-1) (end - start))
-
+{-# SPECIALIZE bitSlice :: Word32 -> Int -> Int -> Word32 #-}
+{-# INLINE bitSlice #-}
 setIndex :: Int -> a -> [a] -> [a]
 setIndex i x l = left ++ (x:(drop 1 right))
   where (left, right) = splitAt i l
 
 s8 :: (Integral t) => t -> t
 s8 n = fromIntegral (fromIntegral n :: Int8)
+{-# INLINE s8 #-}
 
 s16 :: (Integral t) => t -> t
 s16 n = fromIntegral (fromIntegral n :: Int16)
+{-# INLINE s16 #-}
 
 s32 :: (Integral t) => t -> t
 s32 n = fromIntegral (fromIntegral n :: Int32)
+{-# INLINE s32 #-}
 
 u8 :: (Integral t) => t -> t
 u8 n = fromIntegral (fromIntegral n :: Word8)
+{-# INLINE u8 #-}
 
 u16 :: (Integral t) => t -> t
 u16 n = fromIntegral (fromIntegral n :: Word16)
+{-# INLINE u16 #-}
 
 u32 :: (Integral t) => t -> t
 u32 n = fromIntegral (fromIntegral n :: Word32)
+{-# INLINE u32 #-}
 
 lower :: (Bits a, Integral a, Num b) => Int -> a -> b
 lower n x = fromIntegral $ bitSlice x 0 n
+{-# INLINE lower #-}
 
 combineBytes :: (Bits a, Integral a) => [Word8] -> a
-combineBytes bytes = sum $ map (\(x,n) -> shiftL (fromIntegral n) (8*x)) $ zip [0..] bytes
+combineBytes bytes = foldr (\(x,n) res -> res .|. shiftL (fromIntegral n) (8*x)) 0 $ zip [0..] bytes
+{-# INLINE combineBytes #-}
+{-# SPECIALIZE combineBytes :: [Word8] -> Word32 #-}
+{-# SPECIALIZE combineBytes :: [Word8] -> Word16 #-}
 
 splitHalf :: (Bits a, Integral a) => a -> [Word8]
 splitHalf w = map fromIntegral [bitSlice w 0 8, bitSlice w 8 16]
+{-# INLINE splitHalf #-}
 
 splitWord :: (Bits a, Integral a) => a -> [Word8]
 splitWord w = map fromIntegral [bitSlice w 0 8, bitSlice w 8 16, bitSlice w 16 24, bitSlice w 24 32]
-
+{-# INLINE splitWord #-}
 class (Integral s, Integral u) => Convertible s u | s -> u, u -> s where
   unsigned :: s -> u
   unsigned = fromIntegral

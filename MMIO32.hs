@@ -76,8 +76,8 @@ rvPutChar val = MState $ \comp -> liftIO (putChar $ chr32 val) >> return ((), co
 
 baseMMIO = [(rvGetChar, rvPutChar)]
 
---mmioStart :: (Num a) => MMIO32 -> a
-mmioStart d = 65521--(+1) . fromIntegral . length . mem
+mmioStart :: (Num a) => MMIO32 -> a
+mmioStart = (+1) . fromIntegral . length . mem
 
 instance RiscvProgram (MState MMIO32) Int32 Word32 where
   getRegister reg = MState $ \comp -> return (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
