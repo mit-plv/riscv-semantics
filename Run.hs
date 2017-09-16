@@ -13,7 +13,7 @@ import Execute
 import Debug.Trace
 import Numeric
 import Control.Monad.Trans.Maybe
-
+import qualified Data.Sequence as S
 processLine :: String -> [Word8] -> [Word8]
 processLine ('@':xs) l = l ++ take (4*(read ("0x" ++ xs) :: Int) - (length l)) (repeat 0)
 processLine s l = l ++ splitWord (read ("0x" ++ s) :: Word32)
@@ -50,7 +50,7 @@ runFile f = do
   h <- openFile f ReadMode
   m <- readELF h []
   let c = MMIO32 { registers = (take 31 $ repeat 0), csrs = defaultCSRs, pc = 0x200,nextPC = 0,
-                   mem = (m ++ (take (65520 - length m) $ repeat (0::Word8))), mmio = baseMMIO } in
+                   mem = S.fromList $(m ++ (take (65520 - length m) $ repeat (0::Word8))), mmio = baseMMIO } in
     fmap fst $ runProgram c
 
 main :: IO ()

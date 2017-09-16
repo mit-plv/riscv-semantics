@@ -15,6 +15,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import System.IO.Error
+import qualified Data.Sequence as S
 
 newtype MState s a = MState { runState :: s -> (MaybeT IO) (a, s) }
 
@@ -37,7 +38,7 @@ instance Alternative (MState s) where
 
 instance MonadPlus (MState s)
 
-data MMIO32 = MMIO32 { registers :: [Int32], csrs :: [(Int, CSR)], pc :: Int32, nextPC :: Int32, mem :: [Word8], mmio :: [(LoadFunc, StoreFunc)] }
+data MMIO32 = MMIO32 { registers :: [Int32], csrs :: [(Int, CSR)], pc :: Int32, nextPC :: Int32, mem :: S.Seq Word8, mmio :: [(LoadFunc, StoreFunc)] }
               deriving (Show)
 
 -- open, close, read, write
@@ -50,8 +51,14 @@ instance (Show LoadFunc) where
 instance (Show StoreFunc) where
   show x = "<storefunc>"
 
-helpStore mem addr bytes = f ++ bytes ++ drop (length bytes) s
-  where (f,s) = splitAt addr mem
+readM mem addr = 
+    fromJust $S.lookup addr mem
+
+writeM addr val mem =
+    S.update addr val mem
+
+helpStore mem addr bytes =
+    foldr (\(b,a) m-> writeM a b m) mem $ zip bytes [addr + i | i<-[0..]] 
 
 ord32 :: Char -> Int32
 ord32 = fromIntegral . ord
@@ -69,18 +76,18 @@ rvPutChar val = MState $ \comp -> liftIO (putChar $ chr32 val) >> return ((), co
 
 baseMMIO = [(rvGetChar, rvPutChar)]
 
-mmioStart :: (Num a) => MMIO32 -> a
-mmioStart = (+1) . fromIntegral . length . mem
+--mmioStart :: (Num a) => MMIO32 -> a
+mmioStart d = 65521--(+1) . fromIntegral . length . mem
 
 instance RiscvProgram (MState MMIO32) Int32 Word32 where
   getRegister reg = MState $ \comp -> return (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = MState $ \comp -> return ((), if reg == 0 then comp else comp { registers = setIndex (fromIntegral reg-1) (fromIntegral val) (registers comp) })
-  loadByte addr = MState $ \comp -> return (fromIntegral $ (mem comp) !! (fromIntegral addr), comp)
-  loadHalf addr = MState $ \comp -> return (combineBytes $ take 2 $ drop (fromIntegral addr) (mem comp), comp)
+  loadByte addr = MState $ \comp -> return (fromIntegral $ readM (mem comp) (fromIntegral addr), comp)
+  loadHalf addr = MState $ \comp -> return (combineBytes $ fmap (\addr -> readM (mem comp) addr) [(fromIntegral addr)..(fromIntegral addr+1)], comp)
   loadWord addr = MState $ \comp -> if
     | addr > (mmioStart comp) -> runState (fst $ (mmio comp) !! ((fromIntegral $ addr - mmioStart comp) `div` 4)) comp
-    | otherwise -> return (combineBytes $ take 4 $ drop (fromIntegral addr) (mem comp), comp)
-  storeByte addr val = MState $ \comp -> return ((), comp { mem = setIndex (fromIntegral addr) (fromIntegral val) (mem comp) })
+    | otherwise -> return (combineBytes $ fmap (\addr -> readM (mem comp) addr) [(fromIntegral addr)..(fromIntegral addr+3)], comp)
+  storeByte addr val = MState $ \comp -> return ((), comp { mem = writeM (fromIntegral addr) (fromIntegral val) (mem comp) })
   storeHalf addr val = MState $ \comp -> return ((), comp { mem = helpStore (mem comp) (fromIntegral addr) (splitHalf val) })
   storeWord addr val = MState $ \comp -> if
     | addr > (mmioStart comp) -> runState (snd ((mmio comp) !! ((fromIntegral $ addr - mmioStart comp) `div` 4)) (fromIntegral val)) comp
