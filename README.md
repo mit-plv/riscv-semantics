@@ -1,10 +1,5 @@
 # riscv-semantic
 
-Tested in GHC 8.0.1.
-
-Dependencies: containers that we can install with "cabal update; cabal install containers"
-
-to build the decode function and the tests (require a riscv gcc):
 
 '''
 make

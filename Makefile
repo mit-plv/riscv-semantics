@@ -3,7 +3,7 @@
 all: Decode.hs elf2hex test
 
 Decode.hs: src/gen.hs src/Decode_base.hs
-	cd src; runhaskell gen.hs
+	cd src; runhaskell gen.hs; cd ..; cabal build
 
 elf2hex:
 	$(MAKE) -C elf2hex
