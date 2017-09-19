@@ -15,7 +15,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import System.IO.Error
-import qualified Data.Sequence as S
+import qualified Data.Map as S
 
 newtype MState s a = MState { runState :: s -> (MaybeT IO) (a, s) }
 
@@ -38,7 +38,7 @@ instance Alternative (MState s) where
 
 instance MonadPlus (MState s)
 
-data MMIO32 = MMIO32 { registers :: [Int32], csrs :: [(Int, CSR)], pc :: Int32, nextPC :: Int32, mem :: S.Seq Word8, mmio :: [(LoadFunc, StoreFunc)] }
+data MMIO32 = MMIO32 { registers :: [Int32], csrs :: [(Int, CSR)], pc :: Int32, nextPC :: Int32, mem :: S.Map Int Word8, mmio :: [(LoadFunc, StoreFunc)] }
               deriving (Show)
 
 -- open, close, read, write
@@ -55,7 +55,7 @@ readM mem addr =
     fromJust $S.lookup addr mem
 
 writeM addr val mem =
-    S.update addr val mem
+    S.insert addr val mem
 
 helpStore mem addr bytes =
     foldr (\(b,a) m-> writeM a b m) mem $ zip bytes [addr + i | i<-[0..]] 

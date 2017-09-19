@@ -1,6 +1,6 @@
 # riscv-semantic
 
-to build the decode function and the tests:
+to build the decode function and the tests (require a riscv gcc):
 
 '''
 make
@@ -22,4 +22,3 @@ Then you can run a program with:
 '''
 ./Run test/tests/thuemorse.hex
 '''
-

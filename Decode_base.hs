@@ -3,7 +3,7 @@ import Utility
 import Data.Bits
 import Data.Maybe
 import Data.List
-import Data.Function.Memoize
+--import Data.Function.Memoize
 type Register = Int
 
 signExtend :: Int -> Integer -> Integer
@@ -30,7 +30,7 @@ getShamt5 inst = bitSlice inst 20 25
 getZimm inst = bitSlice inst 15 20
 
 decode :: Integer -> Instruction
-decode = memoize decode_notmemo
+decode = decode_notmemo
 decode_notmemo :: Integer -> Instruction
 decode_notmemo inst = (fst $ fromJust $ find (\e -> all match (snd e)) opcodeTable) inst
               where match (start, end, val) = bitSlice inst start end == val
