@@ -1,23 +1,15 @@
 # riscv-semantic
 
+This project started using stack:
+https://docs.haskellstack.org/en/stable/README/
 
-'''
+This project assume you have a riscv32 gcc compiler.
+(Depending on the version you have you may need to adjust test/Makefile)
+
+After installing stack:
+
 make
-'''
 
 To run (interpret) the simulator on a compiled program:
 
-'''
-runhaskell Run.hs test/tests/thuemorse.hex
-'''
-
-to compile the simulator (better performances):
-
-'''
-ghc --make -O2 -optc-O3 -funfolding-use-threshold=30 Run.hs
-'''
-
-Then you can run a program with:
-'''
-./Run test/tests/thuemorse.hex
-'''
+stack exec riscv-semantics test/tests/thuemorse.hex
