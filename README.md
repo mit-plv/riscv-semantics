@@ -1,6 +1,6 @@
 # riscv-semantic
 
-This project started using stack:
+This project started using stack (In some distributions, stack has not been packaged for a long time, it is recommended to follow the install directions):
 https://docs.haskellstack.org/en/stable/README/
 
 This project assume you have a riscv32 gcc compiler.
