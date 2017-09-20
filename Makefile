@@ -3,7 +3,7 @@
 all: Decode.hs elf2hex test
 
 Decode.hs: src/gen.hs src/Decode_base.hs
-	stack setup; cd src; runhaskell gen.hs; cd ..; stack build
+	stack setup; stack install split; stack runhaskell src/gen.hs; stack build
 
 elf2hex:
 	$(MAKE) -C elf2hex
