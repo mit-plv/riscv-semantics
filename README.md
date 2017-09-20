@@ -10,8 +10,7 @@ After installing stack:
 
 make
 
-If your riscv32 gcc compiler is not set up, you pushed a compiled
-and in hex form version of thuemorse.
+If your riscv32 gcc compiler is not set up,  wepushed a compiled version of thuemorse.
 
 To run (interpret) the simulator on a compiled program:
 
