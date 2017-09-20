@@ -1,8 +1,8 @@
 .PHONY: elf2hex test clean all
 
-all: Decode.hs elf2hex test
+all: src/Decode.hs elf2hex test
 
-Decode.hs: src/gen.hs src/Decode_base.hs
+src/Decode.hs: src/gen.hs src/Decode_base.hs
 	stack setup; stack install split; stack install text; cd src; stack runhaskell gen.hs; cd ..; stack build
 
 elf2hex:

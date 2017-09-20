@@ -1,17 +1,37 @@
 # riscv-semantic
 
-This project started using stack (In some distributions, stack has not been packaged for a long time, it is recommended to follow the install directions):
-https://docs.haskellstack.org/en/stable/README/
+riscv-semantics is a formal specification of the RISC-V ISA written in Haskell.
 
-This project assume you have a riscv32 gcc compiler.
-(Depending on the version you have you may need to adjust test/Makefile)
+### Getting Started
 
-After installing stack:
+1. Install Stack
 
-make
+This project uses stack to manage the Haskell compiler and the project's dependencies.
+Even though there is a package for stack that can be installed using apt-get, this will not work due to known bugs in the version in the repository.
+To install stack, follow the directions found here https://docs.haskellstack.org/en/stable/README/ or run the following code in a Unix-based machine:
 
-If your riscv32 gcc compiler is not set up,  wepushed a compiled version of thuemorse.
+    $ curl -sSL https://get.haskellstack.org/ | sh
 
-To run (interpret) the simulator on a compiled program:
+2. Compile the Project
 
-stack exec riscv-semantics test/tests/thuemorse.hex
+There is a makefile with recipes to compile the project, the elf2hex utility, and all the tests.
+Building the tests requires a recent version of `riscv32-unknown-elf-gcc` in your path.
+To build everything, run:
+
+    $ make
+
+If you do not have the compiler in your path, this command will fail saying
+
+    make[1]: riscv32-unknown-elf-gcc: Command not found
+
+This repo has a pre-compiled test `thuemorse.hex` if you don't have the RISC-V compiler.
+
+3. Simulating an Example Program
+
+To simulate an example program, run the command
+
+    $ stack exec riscv-semantics test/tests/thuemorse.hex
+
+This should produce the output
+
+    01101001100101101001011001101001100101100110100101101001100101101001011001101001011010011001011001101001100101101001011001101001
