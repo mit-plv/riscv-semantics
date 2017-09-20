@@ -13,6 +13,7 @@ test:
 
 clean:
 	rm -f src/Decode.hs
+	rm -rf .stack-work/
 	$(MAKE) -C elf2hex clean
 	$(MAKE) -C test clean
 	rm src/*.o src/*.hi
