@@ -37,8 +37,9 @@ This should produce the output
     01101001100101101001011001101001100101100110100101101001100101101001011001101001011010011001011001101001100101101001011001101001
 
 
-4. Building the parser of execute to JSON:
+4. Building the parser (work in progress) to JSON:
 
    $ stack install aeson; stack install generic-aeson; stack install happy; cd src/; happy ParseToJson.y 
 
+It's failing on some of the entries but I think it means that we will just simplify the corresponding entries.
 
