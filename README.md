@@ -35,3 +35,10 @@ To simulate an example program, run the command
 This should produce the output
 
     01101001100101101001011001101001100101100110100101101001100101101001011001101001011010011001011001101001100101101001011001101001
+
+
+4. Building the parser of execute to JSON:
+
+   $ stack install aeson; stack install generic-aeson; stack install happy; cd src/; happy ParseToJson.y 
+
+
