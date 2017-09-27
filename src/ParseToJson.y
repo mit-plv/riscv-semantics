@@ -1,6 +1,12 @@
 {
+{-# LANGUAGE DeriveGeneric #-}
 module Main where
+
 import Data.Char
+import GHC.Generics
+import Generics.Generic.Aeson
+import Data.Aeson
+
 }
 %name riscv
 %tokentype {Token}
@@ -35,13 +41,14 @@ import Data.Char
 %nonassoc field instrToken primToken ident num if '('
 %nonassoc APP
 %%
+TotExecute : Execute nl TotExecute {$1:$3}
+| Execute {[$1]}
 
-Execute : execute Exp '=' do Assignments {ExecuteCase $2 $5}
+Execute : execute Exp '=' do nl Assignments {ExecuteCase $2 $6}
+        | execute Exp '=' Exp {ExecuteCase $2 [Return $4]}
 
 Assignment : ident '<-' Exp {Bind ($1) $3}
            |  Exp {Return $1}
-
-
 
 Assignments : Assignment nl Assignments {$1 : $3}
            | Assignment {[$1]}
@@ -61,20 +68,25 @@ Exp : Exp Exp %prec APP {App $1 $2}
     | num {Num $1}
     | if Exp then Exp else Exp {If $2 $4 $6}
 
-
 {
 
 parseError _ = error "Parse error"
+type TotExecute = [Execute]
 
 data Execute =
    ExecuteCase Exp Assignments
-  deriving(Show)
+  deriving(Show,Generic)
+
+instance ToJSON Execute where toJSON = gtoJson
+
 type Assignments = [Assignment]
 
 data Assignment =
     Bind String Exp
     | Return Exp
-  deriving(Show)
+  deriving(Show,Generic)
+
+instance ToJSON Assignment where toJSON = gtoJson
 
 data Exp
     = Paren Exp
@@ -84,7 +96,9 @@ data Exp
       | Num Integer
       | If Exp Exp Exp --When is syntaxic sugar
       | Arith Token [Exp]
-  deriving(Show)
+  deriving (Show,Generic)
+
+instance ToJSON Exp where toJSON = gtoJson
 data Token =
   TokenNl
     --field
@@ -120,8 +134,8 @@ data Token =
    | TokenMTYPEOF
 --   | TokenLEQ
 --   | TokenGEQ
-    deriving (Show)
-
+  deriving (Show,Generic)
+instance ToJSON Token where toJSON = gtoJson
 lexer :: String -> [Token]
 lexer [] = []
 lexer ('\n':cs) = TokenNl : lexer cs
@@ -249,6 +263,6 @@ lexerAlphaNumerical cs=
       ("else", rest) -> TokenMELSE : lexer rest
       ("do", rest) -> TokenMDO: lexer rest
       (varname, rest) -> TokenMVar varname : lexer rest
-main = undefined
+main = getContents >>= print. encode . riscv . lexer
 }
 
