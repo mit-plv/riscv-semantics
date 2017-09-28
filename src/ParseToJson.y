@@ -23,7 +23,8 @@ import Data.Maybe
  '(' {TokenMLPAREN}
  ')' {TokenMRPAREN}
  '+' {TokenMPLUS}
- '-' {TokenMMINUS}
+'-' {TokenMMINUS}
+ '*' {TokenMTIMES}
  '==' {TokenMEQUAL}
  '<-' {TokenMBIND}
  '/=' {TokenMDIFF}
@@ -33,45 +34,62 @@ import Data.Maybe
  '::' {TokenMTYPEOF}
  '.|.' {TokenMOR}
  '.&.' {TokenMAND}
+ let {TokenMLET}
+ in {TokenMIN}
+ '|' {TokenMPIPE}
+ '&&' {TokenMBAND}
+ '||' {TokenMBOR}
  do {TokenMDO}
  ident {TokenMVar $$}
  num {TokenMNum $$}
 
 %left '\=' '::' '==' '<' '>'
-%left '.|.'
-%left '.&.'
-%left '+' '-'
+%left '+' '-' '.|.'
+%left '.&.' '*'
 %nonassoc ident num if when '('
 %nonassoc APP
 %%
+
 TotExecute  : Execute nl TotExecute {$1:$3}
 | Execute TotExecute {$1:$2}
 | {[]}
 
-Execute : execute Exp '=' do nl Assignments {ExecuteCase $2 $6}
-        | execute Exp '=' Exp {ExecuteCase $2 [Return $4]}
+Execute : Mnl execute Exp '=' do nl Assignments{ExecuteCase $3 $7}
+        | Mnl execute Exp '=' Assignments {ExecuteCase $3 $5}
 
-Assignment : ident '<-' Exp {Bind ($1) $3}
-           |  Exp {Return $1}
+Assignment : ident '<-' Exp {Bind $1 $3}
+           | Exp {Direct $1}
 
-Assignments : Assignment nl Assignments {$1 : $3}
+Mnl: nl Mnl {}
+     | {}
+
+Assignments : Assignment Mnl Assignments {$1 : $3}
            | {[]}
 
 Exp : Exp Exp %prec APP {App $1 $2}
     | '(' Exp ')' {$2}
     | Exp '+' Exp {Arith TokenMPLUS [$1,$3]}
+    | Exp '*' Exp {Arith TokenMTIMES [$1,$3]}
     | Exp '.|.' Exp {Arith TokenMOR [$1,$3]}
     | Exp '.&.' Exp {Arith TokenMAND [$1,$3]}
+    | Exp '&&' Exp {Arith TokenMBAND [$1,$3]}
+    | Exp '||' Exp {Arith TokenMBOR [$1,$3]}
     | Exp '::' Exp {Arith TokenMTYPEOF [$1,$3]}
     | Exp '-' Exp {Arith TokenMMINUS [$1,$3]}
     | Exp '==' Exp {Arith TokenMEQUAL [$1,$3]}
     | Exp '/=' Exp {Arith TokenMDIFF [$1,$3]}
     | Exp '<' Exp {Arith TokenMLT [$1,$3]}
     | Exp '>' Exp {Arith TokenMGT [$1,$3]}
+    | '-' Exp {Arith TokenMMINUS [$2]}
     | ident {Iden $1}
     | num {Num $1}
     | if Exp then Exp else Exp {If $2 $4 $6}
     | when Exp Exp {If $2 $3 (Iden "noAction")}
+    | let ident CondLet in Exp {Let $2 $3 $5}
+
+CondLet : '=' Exp nl {[(Iden "otherwise", $2)]} --TODO stratify here to be proper
+        | '|' Exp '=' Exp nl CondLet {($2,$4):$6}
+        | {[]}
 
 {
 
@@ -88,13 +106,14 @@ type Assignments = [Assignment]
 
 data Assignment =
     Bind String Exp
-    | Return Exp
+    | Direct Exp
   deriving(Show,Generic)
 
 instance ToJSON Assignment where toJSON = gtoJson
 
 data Exp
     = App Exp Exp
+      | Let String [(Exp,Exp)] Exp
       | Iden String
       | Num Integer
       | If Exp Exp Exp --When is syntaxic sugar
@@ -125,6 +144,12 @@ data Token =
    | TokenMAND
    | TokenMOR
    | TokenMTYPEOF
+   | TokenMLET
+   | TokenMIN
+   | TokenMBAND
+   | TokenMBOR
+   | TokenMPIPE
+   | TokenMTIMES
 --   | TokenLEQ
 --   | TokenGEQ
   deriving (Show,Generic)
@@ -151,6 +176,10 @@ lexer ('>':cs) = TokenMGT : lexer cs
 lexer ('.':'&':'.':cs) = TokenMAND : lexer cs
 lexer ('.':'|':'.':cs) = TokenMOR : lexer cs
 lexer (':':':':cs) = TokenMTYPEOF : lexer cs
+lexer ('&':'&':cs) = TokenMBAND : lexer cs
+lexer ('|':'|':cs) = TokenMBOR : lexer cs
+lexer ('|':cs) = TokenMPIPE : lexer cs
+lexer ('*':cs) = TokenMTIMES : lexer cs
 
 lexerNumber cs =
     TokenMNum (read num) : lexer rest
@@ -164,12 +193,15 @@ lexerAlphaNumerical cs=
       ("else", rest) -> TokenMELSE : lexer rest
       ("do", rest) -> TokenMDO: lexer rest
       ("when",rest) -> TokenMWHEN: lexer rest
+      ("in", rest) -> TokenMIN : lexer rest
+      ("let", rest) -> TokenMLET: lexer rest
       (varname, rest) -> TokenMVar varname : lexer rest
+
 dropUntil :: ([a] -> Bool) -> [a] -> [a]
 dropUntil p l = if p l then l else dropUntil p $ tail l
 stopWhen :: ([a] -> Bool) -> [a] -> [a]
 stopWhen p [] = []
 stopWhen p (h:t) = if (p(h:t)) then [] else h:(stopWhen p t)
-main = getContents >>= print . riscv . lexer . drop 13 .  stopWhen (isPrefixOf "-- end ast") . dropUntil (isPrefixOf "-- begin ast")
-}
 
+main = getContents >>= print . riscv. lexer. drop 13 .  stopWhen (isPrefixOf "-- end ast") . dropUntil (isPrefixOf "-- begin ast")
+}
