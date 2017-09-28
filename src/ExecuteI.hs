@@ -8,6 +8,7 @@ import Data.Word
 import Control.Monad
 
 execute :: forall p t u. (RiscvProgram p t u) => Instruction -> p ()
+-- begin ast
 execute (Lui rd imm20) = setRegister rd imm20
 execute (Auipc rd imm20) = do
   pc <- getPC
@@ -150,5 +151,6 @@ execute (And rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
   setRegister rd (x .&. y)
+-- end ast
 execute _ = mzero
 -- TODO: Fence/Fence.i?

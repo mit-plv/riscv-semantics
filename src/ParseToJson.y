@@ -6,6 +6,8 @@ import Data.Char
 import GHC.Generics
 import Generics.Generic.Aeson
 import Data.Aeson
+import Data.List
+import Data.Maybe
 }
 
 %name riscv
@@ -162,6 +164,11 @@ lexerAlphaNumerical cs=
       ("do", rest) -> TokenMDO: lexer rest
       ("when",rest) -> TokenMWHEN: lexer rest
       (varname, rest) -> TokenMVar varname : lexer rest
-main = getContents >>= print. encode . riscv . lexer
+dropUntil :: ([a] -> Bool) -> [a] -> [a]
+dropUntil p l = if p l then l else dropUntil p $ tail l
+stopWhen :: ([a] -> Bool) -> [a] -> [a]
+stopWhen p [] = []
+stopWhen p (h:t) = if (p(h:t)) then [] else h:(stopWhen p t)
+main = getContents >>= print . riscv . lexer . drop 13 .  stopWhen (isPrefixOf "-- end ast") . dropUntil (isPrefixOf "-- begin ast")
 }
 
