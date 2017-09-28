@@ -25,32 +25,32 @@ execute (Beq rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
-  when (x == y) $ setPC (pc + fromIntegral sbimm12)
+  when (x == y) (setPC (pc + fromIntegral sbimm12))
 execute (Bne rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
-  when (x /= y) $ setPC (pc + fromIntegral sbimm12)
+  when (x /= y) (setPC (pc + fromIntegral sbimm12))
 execute (Blt rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
-  when (x < y) $ setPC (pc + fromIntegral sbimm12)
+  when (x < y) (setPC (pc + fromIntegral sbimm12))
 execute (Bge rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
-  when (x > y) $ setPC (pc + fromIntegral sbimm12)
+  when (x > y) (setPC (pc + fromIntegral sbimm12))
 execute (Bltu rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
-  when ((unsigned x) < (unsigned y)) $ setPC (pc + fromIntegral sbimm12)
+  when ((unsigned x) < (unsigned y)) (setPC (pc + fromIntegral sbimm12))
 execute (Bgeu rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
-  when ((unsigned x) > (unsigned y)) $ setPC (pc + fromIntegral sbimm12)
+  when ((unsigned x) > (unsigned y)) (setPC (pc + fromIntegral sbimm12))
 execute (Lb rd rs1 oimm12) = do
   a <- getRegister rs1
   x <- loadByte (a + fromIntegral oimm12)

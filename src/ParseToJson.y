@@ -6,20 +6,17 @@ import Data.Char
 import GHC.Generics
 import Generics.Generic.Aeson
 import Data.Aeson
-
 }
 %name riscv
 %tokentype {Token}
-%error { parseError}
+%error {parseError}
 %token
 --field
- field {TokenFIELD $$}
 --Instr token
- instrToken {TokenINSTR $$}
  --RVPrimitive:
  nl {TokenNl}
- primToken {TokenPRIM $$}
  if {TokenMIF}
+ when {TokenMWHEN}
  then {TokenMTHEN}
  else {TokenMELSE}
  execute {TokenMEXECUTE}
@@ -34,6 +31,9 @@ import Data.Aeson
  '<' {TokenMLT}
  '>' {TokenMGT}
  '=' {TokenMDEFINE}
+ '::' {TokenMTYPEOF}
+ '.|.' {TokenMOR}
+ '.&.' {TokenMAND}
  do {TokenMDO}
  ident {TokenMVar $$}
  num {TokenMNum $$}
@@ -42,7 +42,7 @@ import Data.Aeson
 %nonassoc APP
 %%
 TotExecute  : Execute nl TotExecute {$1:$3}
-|Execute TotExecute {$1:$2}
+| Execute TotExecute {$1:$2}
 | {[]}
 
 Execute : execute Exp '=' do nl Assignments {ExecuteCase $2 $6}
@@ -55,19 +55,20 @@ Assignments : Assignment nl Assignments {$1 : $3}
            | {[]}
 
 Exp : Exp Exp %prec APP {App $1 $2}
-    | '(' Exp ')' {Paren $2}
+    | '(' Exp ')' {$2}
     | Exp '+' Exp {Arith TokenMPLUS [$1,$3]}
+    | Exp '.|.' Exp {Arith TokenMOR [$1,$3]}
+    | Exp '.&.' Exp {Arith TokenMAND [$1,$3]}
+    | Exp '::' Exp {Arith TokenMTYPEOF [$1,$3]}
     | Exp '-' Exp {Arith TokenMMINUS [$1,$3]}
     | Exp '==' Exp {Arith TokenMEQUAL [$1,$3]}
     | Exp '/=' Exp {Arith TokenMDIFF [$1,$3]}
     | Exp '<' Exp {Arith TokenMLT [$1,$3]}
     | Exp '>' Exp {Arith TokenMGT [$1,$3]}
-    | instrToken {Atom $1}
-    | field {Atom $1}
-    | primToken {Atom $1}
     | ident {Iden $1}
     | num {Num $1}
     | if Exp then Exp else Exp {If $2 $4 $6}
+    | when Exp Exp {If $2 $3 (Iden "noAction")}
 
 {
 
@@ -90,9 +91,8 @@ data Assignment =
 instance ToJSON Assignment where toJSON = gtoJson
 
 data Exp
-    = Paren Exp
-      | App Exp Exp
-      | Atom String
+    = 
+       App Exp Exp
       | Iden String
       | Num Integer
       | If Exp Exp Exp --When is syntaxic sugar
@@ -103,13 +103,11 @@ instance ToJSON Exp where toJSON = gtoJson
 data Token =
   TokenNl
     --field
-   | TokenFIELD String
-     --INSTR 
-   | TokenINSTR String
-     -- RVPrimitive
-   | TokenPRIM String
-     -- Control language
+    --INSTR 
+    -- RVPrimitive
+    -- Control language
 --alphanum
+   | TokenMWHEN
    | TokenMIF
    | TokenMTHEN
    | TokenMELSE
@@ -166,12 +164,12 @@ lexerNumber cs =
 
 lexerAlphaNumerical cs=
     case span isAlphaNum cs of
-                       -- control
       ("execute", rest) -> TokenMEXECUTE : lexer rest
       ("if", rest) -> TokenMIF : lexer rest
       ("then", rest) -> TokenMTHEN : lexer rest
       ("else", rest) -> TokenMELSE : lexer rest
       ("do", rest) -> TokenMDO: lexer rest
+      ("when",rest) -> TokenMWHEN: lexer rest
       (varname, rest) -> TokenMVar varname : lexer rest
 main = getContents >>= print. encode . riscv . lexer
 }

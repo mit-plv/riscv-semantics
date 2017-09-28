@@ -17,11 +17,11 @@ execute (Mulh rd rs1 rs2) = do
 execute (Mulhsu rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (highBits ((fromIntegral x) * (fromIntegral $ unsigned y))::t)
+  setRegister rd (highBits ((fromIntegral x) * (fromIntegral (unsigned y)))::t)
 execute (Mulhu rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (highBits ((fromIntegral $ unsigned x) * (fromIntegral $ unsigned y))::t)
+  setRegister rd (highBits ((fromIntegral ( unsigned x)) * (fromIntegral  (unsigned y)))::t)
 execute (Div rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -46,6 +46,6 @@ execute (Remu rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
   let r | y == 0 = x
-        | otherwise = fromIntegral $ (unsigned x) `rem` (unsigned y)
+        | otherwise = fromIntegral ((unsigned x) `rem` (unsigned y))
     in setRegister rd r
 execute _ = mzero
