@@ -25,7 +25,6 @@ import Data.Maybe
  '+' {TokenMPLUS}
  '-' {TokenMMINUS}
  '==' {TokenMEQUAL}
- '$' {TokenMAPPLY}
  '<-' {TokenMBIND}
  '/=' {TokenMDIFF}
  '<' {TokenMLT}
@@ -38,6 +37,10 @@ import Data.Maybe
  ident {TokenMVar $$}
  num {TokenMNum $$}
 
+%left '\=' '::' '==' '<' '>'
+%left '.|.'
+%left '.&.'
+%left '+' '-'
 %nonassoc ident num if when '('
 %nonassoc APP
 %%
@@ -119,7 +122,6 @@ data Token =
    | TokenMBIND
    | TokenMLT
    | TokenMGT
-   | TokenMAPPLY
    | TokenMAND
    | TokenMOR
    | TokenMTYPEOF
@@ -146,7 +148,6 @@ lexer ('<':'-': cs) = TokenMBIND : lexer cs
 --GEQ LEQ SHOULD BE HERE IF REQUIRED
 lexer ('<':cs) = TokenMLT : lexer cs
 lexer ('>':cs) = TokenMGT : lexer cs
-lexer ('$':cs) = TokenMAPPLY : lexer cs
 lexer ('.':'&':'.':cs) = TokenMAND : lexer cs
 lexer ('.':'|':'.':cs) = TokenMOR : lexer cs
 lexer (':':':':cs) = TokenMTYPEOF : lexer cs
