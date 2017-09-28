@@ -7,13 +7,11 @@ import GHC.Generics
 import Generics.Generic.Aeson
 import Data.Aeson
 }
+
 %name riscv
 %tokentype {Token}
 %error {parseError}
 %token
---field
---Instr token
- --RVPrimitive:
  nl {TokenNl}
  if {TokenMIF}
  when {TokenMWHEN}
@@ -38,7 +36,7 @@ import Data.Aeson
  ident {TokenMVar $$}
  num {TokenMNum $$}
 
-%nonassoc field instrToken primToken ident num if '('
+%nonassoc ident num if when '('
 %nonassoc APP
 %%
 TotExecute  : Execute nl TotExecute {$1:$3}
@@ -91,8 +89,7 @@ data Assignment =
 instance ToJSON Assignment where toJSON = gtoJson
 
 data Exp
-    = 
-       App Exp Exp
+    = App Exp Exp
       | Iden String
       | Num Integer
       | If Exp Exp Exp --When is syntaxic sugar
@@ -102,11 +99,6 @@ data Exp
 instance ToJSON Exp where toJSON = gtoJson
 data Token =
   TokenNl
-    --field
-    --INSTR 
-    -- RVPrimitive
-    -- Control language
---alphanum
    | TokenMWHEN
    | TokenMIF
    | TokenMTHEN
@@ -114,9 +106,7 @@ data Token =
    | TokenMEXECUTE
    | TokenMDO
    | TokenMVar String
--- lexerNumber
    | TokenMNum Integer
-   --lexercustom
    | TokenMEQUAL
    | TokenMDIFF
    | TokenMDEFINE
@@ -135,6 +125,7 @@ data Token =
 --   | TokenGEQ
   deriving (Show,Generic)
 instance ToJSON Token where toJSON = gtoJson
+
 lexer :: String -> [Token]
 lexer [] = []
 lexer ('\n':cs) = TokenNl : lexer cs
