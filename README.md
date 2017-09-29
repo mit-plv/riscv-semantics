@@ -41,5 +41,7 @@ This should produce the output
 
    $ stack install aeson; stack install generic-aeson; stack install happy; cd src/; happy ParseToJson.y 
 
+   $ cat ExecuteI.hs | stack runhaskell ParseToJson.hs
+
 It's failing on some of the entries but I think it means that we will just simplify the corresponding entries.
 
