@@ -54,17 +54,11 @@ TotExecute  : Execute nl TotExecute {$1:$3}
 | Execute TotExecute {$1:$2}
 | {[]}
 
-Execute : Mnl execute Exp '=' do nl Assignments{ExecuteCase $3 $7}
-        | Mnl execute Exp '=' Assignments {ExecuteCase $3 $5}
-
-Assignment : ident '<-' Exp {Bind $1 $3}
-           | Exp {Direct $1}
+Execute : Mnl execute Exp '=' Exp{ExecuteCase $3 $5}
 
 Mnl: nl Mnl {}
      | {}
 
-Assignments : Assignment Mnl Assignments {$1 : $3}
-           | {[]}
 
 Exp : Exp Exp %prec APP {App $1 $2}
     | '(' Exp ')' {$2}
@@ -81,11 +75,17 @@ Exp : Exp Exp %prec APP {App $1 $2}
     | Exp '<' Exp {Arith TokenMLT [$1,$3]}
     | Exp '>' Exp {Arith TokenMGT [$1,$3]}
     | '-' Exp {Arith TokenMMINUS [$2]}
+    | do Mnl Exps {Do $3}
+    | ident '<-' Exp {Bind $1 $3}
     | ident {Iden $1}
     | num {Num $1}
     | if Exp then Exp else Exp {If $2 $4 $6}
     | when Exp Exp {If $2 $3 (Iden "noAction")}
     | let ident CondLet in Exp {Let $2 $3 $5}
+
+Exps: Exp Mnl Exps {$1:$3}
+      |  {[]}
+
 
 CondLet : '=' Exp nl {[(Iden "otherwise", $2)]} --TODO stratify here to be proper
         | '|' Exp '=' Exp nl CondLet {($2,$4):$6}
@@ -97,22 +97,15 @@ parseError _ = error "Parse error"
 type TotExecute = [Execute]
 
 data Execute =
-   ExecuteCase Exp Assignments
+   ExecuteCase Exp Exp
   deriving(Show,Generic)
 
 instance ToJSON Execute where toJSON = gtoJson
 
-type Assignments = [Assignment]
-
-data Assignment =
-    Bind String Exp
-    | Direct Exp
-  deriving(Show,Generic)
-
-instance ToJSON Assignment where toJSON = gtoJson
-
 data Exp
-    = App Exp Exp
+    = Bind String Exp
+      | Do [Exp]
+      | App Exp Exp
       | Let String [(Exp,Exp)] Exp
       | Iden String
       | Num Integer
