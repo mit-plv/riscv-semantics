@@ -43,16 +43,25 @@ lower n x = fromIntegral $ bitSlice x 0 n
 combineBytes :: (Bits a, Integral a) => [Word8] -> a
 combineBytes bytes = foldr (\(x,n) res -> res .|. shiftL (fromIntegral n) (8*x)) 0 $ zip [0..] bytes
 {-# INLINE combineBytes #-}
+{-# SPECIALIZE combineBytes :: [Word8] -> Word64 #-}
 {-# SPECIALIZE combineBytes :: [Word8] -> Word32 #-}
 {-# SPECIALIZE combineBytes :: [Word8] -> Word16 #-}
 
+splitBytes :: (Bits a, Integral a) => Int -> a -> [Word8]
+splitBytes n w = map fromIntegral [bitSlice w p (p + 8) | p <- [0,8..n-1]]
+
 splitHalf :: (Bits a, Integral a) => a -> [Word8]
-splitHalf w = map fromIntegral [bitSlice w 0 8, bitSlice w 8 16]
+splitHalf = splitBytes 16
 {-# INLINE splitHalf #-}
 
 splitWord :: (Bits a, Integral a) => a -> [Word8]
-splitWord w = map fromIntegral [bitSlice w 0 8, bitSlice w 8 16, bitSlice w 16 24, bitSlice w 24 32]
+splitWord = splitBytes 32
 {-# INLINE splitWord #-}
+
+splitDouble :: (Bits a, Integral a) => a -> [Word8]
+splitDouble = splitBytes 64
+{-# INLINE splitDouble #-}
+
 class (Integral s, Integral u) => Convertible s u | s -> u, u -> s where
   unsigned :: s -> u
   unsigned = fromIntegral

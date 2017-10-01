@@ -5,7 +5,7 @@ TESTS=$(basename $(SOURCES))
 HEX=$(addsuffix .hex,$(TESTS))
 ELF2HEX=../elf2hex
 
-RISCVCC=riscv32-unknown-elf-gcc -march=rv32im -DRISCV -nostdlib -nostartfiles
+RISCVCC=riscv64-unknown-linux-gnu-gcc -march=rv64imfd -DRISCV -nostdlib -nostartfiles
 
 all: $(HEX)
 

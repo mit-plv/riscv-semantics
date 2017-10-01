@@ -38,7 +38,7 @@ genType line = let (opcode, args) = parseOp line
 genFunction :: String -> String
 genFunction line = let (opcode, args) = parseOp line
                        cargs = map (("(get" ++) . (++ " inst)") . capitalize) args
-                   in "decode" ++ opcode ++ " inst = " ++ opcode ++ " " ++ unwords cargs ++ "\n{-# INLINE decode" ++opcode ++ " #-}"  
+                   in "decode" ++ opcode ++ " inst = " ++ opcode ++ " " ++ unwords cargs ++ "\n{-# INLINE decode" ++opcode ++ " #-}"
 
 parseRange :: String -> (Int, Int, String)
 parseRange range = let pieces = splitOn "=" range
@@ -52,7 +52,7 @@ genEntry line = let pieces = splitClean line
                 in "(decode" ++ opcode ++ ", " ++ (filter (/= '"') (show ranges)) ++ ")"
 
 filterLines :: String -> [String]
-filterLines = map snd . filter (\(i, _) -> i `elem` ([0..38] ++ [69..76] ++ [120..134])) . zip [0..] . removeComments . lines
+filterLines = filter (\l -> any (\s -> s `isInfixOf` l) ["rv64i", "rv64m", "rv64s"]) . removeComments . lines
 
 defineInstruction :: [String] -> String
 defineInstruction xs = "data Instruction =\n" ++
@@ -65,7 +65,7 @@ defineFunctions = intercalate "\n" . map genFunction
 -- (decodeLui, [(2, 7, 0x0D), (0, 2, 3)]) corresponds to (lui 6..2=0x0D 1..0=3) in opcodes file.
 defineTable :: [String] -> String
 defineTable xs = "opcodeTable :: [(Integer -> Instruction, [(Int, Int, Integer)])]\n" ++
-                 "opcodeTable = [" ++ (intercalate ", \n               " $ map genEntry xs) ++ "]"
+                 "opcodeTable = [" ++ (intercalate ",\n               " $ map genEntry xs) ++ "]"
 
 generateCode :: [String] -> String
 generateCode xs = defineInstruction xs ++ "\n\n" ++
@@ -78,4 +78,3 @@ main = do
   template <- readFile "Decode_base.hs"
   xs <- fmap filterLines $ readFile "opcodes"
   writeFile "Decode.hs" $ template ++ generateCode xs
-  

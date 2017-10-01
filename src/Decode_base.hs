@@ -27,6 +27,7 @@ getSimm12 inst = signExtend 12 $ shift (bitSlice inst 25 32) 5 .|. bitSlice inst
 getSbimm12 inst = signExtend 13 $ shift (bitSlice inst 31 32) 12 .|. shift (bitSlice inst 25 31) 5 .|.
                   shift (bitSlice inst 8 12) 1 .|. shift (bitSlice inst 7 8) 11
 getShamt5 inst = bitSlice inst 20 25
+getShamt6 inst = bitSlice inst 20 26
 getZimm inst = bitSlice inst 15 20
 
 decode :: Integer -> Instruction

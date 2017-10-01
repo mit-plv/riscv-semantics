@@ -1,10 +1,10 @@
 import Data.Int
-import Computer32
+import Minimal64
 import Decode
 import Execute
 import Run hiding (main)
 
-c = Computer32 { registers = [0,0,0,0], pc = 5, nextPC = 0, mem = [0,0,0,0] }
+c = Minimal64 { registers = [0,0,0,0], pc = 5, nextPC = 0, mem = [0,0,0,0] }
 action = do
   execute (Lui 1 19)
   execute (Lui 2 23)
@@ -13,12 +13,12 @@ action = do
   execute (Sw 4 3 0)
 cp = runState action c
 
-runTest :: String -> Int32 -> IO Bool
+runTest :: String -> Int64 -> IO Bool
 runTest f expected = do
   result <- runFile f
   return $ result == expected
 
-tests :: [(String, Int32)]
+tests :: [(String, Int64)]
 tests = [("add",  11),
          ("sub",   7),
          ("mul",  42),
