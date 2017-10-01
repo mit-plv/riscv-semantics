@@ -52,3 +52,12 @@ Monday, May 15th:
 * Memory typeclass, faster implementation
 * Agreed to resume next Fall, low-priority thread to keep info fresh
 * (Finish Spike harness.)
+
+Thursday, September 14th
+* Boot Linux in Spike
+* Haskell FFI / Spike step function
+* 64-bit implementation (alongside 32-bit)
+* Continue work on CSRs, supervisor mode
+
+Friday, September 22nd
+* Basic interrupts via polling (interrupt CSRs).
