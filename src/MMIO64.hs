@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf #-}
 module MMIO64 where
-import Prelude
+import Memory as M
+import MapMemory
 import Program
 import Utility
 import CSR
@@ -52,15 +53,6 @@ instance (Show LoadFunc) where
 instance (Show StoreFunc) where
   show x = "<storefunc>"
 
-readM mem addr =
-    fromMaybe 0 (S.lookup addr mem)
-
-writeM addr val mem =
-    S.insert addr val mem
-
-helpStore mem addr bytes =
-    foldr (\(b,a) m-> writeM a b m) mem $ zip bytes [addr + i | i<-[0..]]
-
 ord32 :: Char -> Int32
 ord32 = fromIntegral . ord
 
@@ -80,24 +72,29 @@ baseMMIO = [(rvGetChar, rvPutChar)]
 mmioStart :: (Num a) => MMIO64 -> a
 mmioStart = (+1) . fromIntegral . length . mem
 
+wrapLoad loadFunc addr = MState $ \comp -> return (fromIntegral $ loadFunc (mem comp) addr, comp)
+wrapStore storeFunc addr val = MState $ \comp -> return ((), comp { mem = storeFunc (mem comp) addr (fromIntegral val) })
+
 instance RiscvProgram (MState MMIO64) Int64 Word64 where
   getRegister reg = MState $ \comp -> return (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = MState $ \comp -> return ((), if reg == 0 then comp else comp { registers = setIndex (fromIntegral reg-1) (fromIntegral val) (registers comp) })
-  loadByte addr = MState $ \comp -> return (fromIntegral $ readM (mem comp) (fromIntegral addr), comp)
-  loadHalf addr = MState $ \comp -> return (combineBytes $ fmap (\addr -> readM (mem comp) addr) [(fromIntegral addr)..(fromIntegral addr+1)], comp)
-  loadWord addr = MState $ \comp -> if
-    | addr > (mmioStart comp) -> runState (fst $ (mmio comp) !! ((fromIntegral $ addr - mmioStart comp) `div` 4)) comp
-    | otherwise -> return (combineBytes $ fmap (\addr -> readM (mem comp) addr) [(fromIntegral addr)..(fromIntegral addr+3)], comp)
-  loadDouble addr = MState $ \comp -> return (combineBytes $ fmap (\addr -> readM (mem comp) addr) [(fromIntegral addr)..(fromIntegral addr+8)], comp)
-  storeByte addr val = MState $ \comp -> return ((), comp { mem = writeM (fromIntegral addr) (fromIntegral val) (mem comp) })
-  storeHalf addr val = MState $ \comp -> return ((), comp { mem = helpStore (mem comp) (fromIntegral addr) (splitHalf val) })
-  storeWord addr val = MState $ \comp -> if
-    | addr > (mmioStart comp) -> runState (snd ((mmio comp) !! ((fromIntegral $ addr - mmioStart comp) `div` 4)) (fromIntegral val)) comp
-    | otherwise -> return ((), comp { mem = helpStore (mem comp) (fromIntegral addr) (splitWord val) })
-  storeDouble addr val = MState $ \comp -> return ((), comp { mem = helpStore (mem comp) (fromIntegral addr) (splitHalf val) })
-  loadCSR addr = MState $ \comp -> return (encode $ fromJust $ lookup addr (csrs comp), comp)
-  storeCSR addr val = MState $ \comp -> return ((), comp { csrs = setIndex (fromJust $ elemIndex addr (map fst $ csrs comp))
-                                                                           (addr, decode addr $ fromIntegral val) (csrs comp) })
   getPC = MState $ \comp -> return (pc comp, comp)
   setPC val = MState $ \comp -> return ((), comp { nextPC = fromIntegral val })
   step = MState $ \comp -> return ((), comp { pc = nextPC comp })
+  -- Memory functions:
+  loadByte = wrapLoad M.loadByte
+  loadHalf = wrapLoad M.loadHalf
+  loadWord addr = MState $ \comp -> if
+    | addr > (mmioStart comp) -> runState (fst $ (mmio comp) !! ((fromIntegral $ addr - mmioStart comp) `div` 4)) comp
+    | otherwise -> return (fromIntegral $ M.loadWord (mem comp) addr, comp)
+  loadDouble = wrapLoad M.loadDouble
+  storeByte = wrapStore M.storeByte
+  storeHalf = wrapStore M.storeHalf
+  storeWord addr val = MState $ \comp -> if
+    | addr > (mmioStart comp) -> runState (snd ((mmio comp) !! ((fromIntegral $ addr - mmioStart comp) `div` 4)) (fromIntegral val)) comp
+    | otherwise -> return ((), comp { mem = M.storeWord (mem comp) addr (fromIntegral val) })
+  storeDouble = wrapStore M.storeDouble
+  -- CSRs:
+  loadCSR addr = MState $ \comp -> return (encode $ fromJust $ lookup addr (csrs comp), comp)
+  storeCSR addr val = MState $ \comp -> return ((), comp { csrs = setIndex (fromJust $ elemIndex addr (map fst $ csrs comp))
+                                                                           (addr, decode addr $ fromIntegral val) (csrs comp) })

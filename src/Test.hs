@@ -2,7 +2,7 @@ import Data.Int
 import Minimal64
 import Decode
 import Execute
-import Run hiding (main)
+import RunMinimal
 
 c = Minimal64 { registers = [0,0,0,0], pc = 5, nextPC = 0, mem = [0,0,0,0] }
 action = do

@@ -1,4 +1,4 @@
-module Run where
+module RunMinimal (readELF, runProgram, runFile) where
 import System.IO
 import System.Environment
 import System.Exit
@@ -7,17 +7,17 @@ import Data.Word
 import Data.Maybe
 import Utility
 import Program
-import MMIO64
+import Minimal64
 import CSR (defaultCSRs)
 import Decode
 import Execute
 import Numeric
-import Control.Monad.Trans.Maybe
+import Debug.Trace
 import qualified Data.Map as S
 
 processLine :: String -> [Word8] -> [Word8]
 processLine ('@':xs) l = l ++ take (4*(read ("0x" ++ xs) :: Int) - (length l)) (repeat 0)
-processLine s l = l ++ splitWord (read ("0x" ++ s) :: Word32)
+processLine s l = l ++ splitWord (read ("0x" ++ s) :: Int32)
 
 readELF :: Handle -> [Word8] -> IO [Word8]
 readELF h l = do
@@ -41,16 +41,16 @@ helper = do
     step
     helper
 
-runProgram :: MMIO64 -> IO (Int64, MMIO64)
-runProgram = (fmap fromJust) . runMaybeT . (runState helper)
+runProgram :: Minimal64 -> (Int64, Minimal64)
+runProgram = fromJust . runState helper
 
 runFile :: String -> IO Int64
 runFile f = do
   h <- openFile f ReadMode
   m <- readELF h []
-  let c = MMIO64 { registers = (take 31 $ repeat 0), csrs = defaultCSRs, pc = 0x200, nextPC = 0,
-                   mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))), mmio = baseMMIO } in
-    fmap fst $ runProgram c
+  let c = Minimal64 { registers = (take 31 $ repeat 0), pc = 0x200, nextPC = 0,
+                      mem = (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
+    return $ fst $ runProgram c
 
 main :: IO ()
 main = do

@@ -2,6 +2,8 @@
 module Minimal64 where
 import Program
 import Utility
+import Memory as M
+import ListMemory
 import Data.Int
 import Data.Word
 import Data.Bits
@@ -32,20 +34,24 @@ instance MonadPlus (MState s)
 data Minimal64 = Minimal64 { registers :: [Int64], pc :: Int64, nextPC :: Int64, mem :: [Word8] }
                deriving (Show)
 
-helpStore mem addr bytes = f ++ bytes ++ drop (length bytes) s
-  where (f,s) = splitAt addr mem
+wrapLoad loadFunc addr = MState $ \comp -> Just (fromIntegral $ loadFunc (mem comp) addr, comp)
+wrapStore storeFunc addr val = MState $ \comp -> Just ((), comp { mem = storeFunc (mem comp) addr (fromIntegral val) })
 
 instance RiscvProgram (MState Minimal64) Int64 Word64 where
   getRegister reg = MState $ \comp -> Just (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = MState $ \comp -> Just ((), if reg == 0 then comp else comp { registers = setIndex (fromIntegral reg-1) (fromIntegral val) (registers comp) })
-  loadByte addr = MState $ \comp -> Just (fromIntegral $ (mem comp) !! (fromIntegral addr), comp)
-  loadHalf addr = MState $ \comp -> Just (combineBytes $ take 2 $ drop (fromIntegral addr) (mem comp), comp)
-  loadWord addr = MState $ \comp -> Just (combineBytes $ take 4 $ drop (fromIntegral addr) (mem comp), comp)
-  loadDouble addr = MState $ \comp -> Just (combineBytes $ take 8 $ drop (fromIntegral addr) (mem comp), comp)
-  storeByte addr val = MState $ \comp -> Just ((), comp { mem = setIndex (fromIntegral addr) (fromIntegral val) (mem comp) })
-  storeHalf addr val = MState $ \comp -> Just ((), comp { mem = helpStore (mem comp) (fromIntegral addr) (splitHalf val) })
-  storeWord addr val = MState $ \comp -> Just ((), comp { mem = helpStore (mem comp) (fromIntegral addr) (splitWord val) })
-  storeDouble addr val = MState $ \comp -> Just ((), comp { mem = helpStore (mem comp) (fromIntegral addr) (splitDouble val) })
   getPC = MState $ \comp -> Just (pc comp, comp)
   setPC val = MState $ \comp -> Just ((), comp { nextPC = fromIntegral val })
   step = MState $ \comp -> Just ((), comp { pc = nextPC comp })
+  -- Wrap Memory instance:
+  loadByte = wrapLoad M.loadByte
+  loadHalf = wrapLoad M.loadHalf
+  loadWord = wrapLoad M.loadWord
+  loadDouble = wrapLoad M.loadDouble
+  storeByte = wrapStore M.storeByte
+  storeHalf = wrapStore M.storeHalf
+  storeWord = wrapStore M.storeWord
+  storeDouble = wrapStore M.storeDouble
+  -- Unimplemented:
+  loadCSR csr = return 0
+  storeCSR csr val = return ()
