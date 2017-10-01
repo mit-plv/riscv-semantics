@@ -48,6 +48,7 @@ createGraphics width height title = do
 
 updateGraphics :: Graphics -> BS.ByteString -> IO ()
 updateGraphics Graphics {width, height = _, texture, renderer} pixels = do
+  _ <- SDL.pollEvents
   _ <- SDL.updateTexture texture Nothing pixels (fromIntegral $ bytesPerPixel * width)
   SDL.clear renderer
   SDL.copy renderer texture Nothing Nothing
@@ -81,7 +82,7 @@ runFile :: String -> IO Int32
 runFile f = do
   h <- openFile f ReadMode
   m <- readELF h []
-  let c = MMGFX32 { registers = (take 31 $ repeat 0), csrs = defaultCSRs, pc = 0x200,nextPC = 0,
+  let c = MMGFX32 { registers = (take 31 $ repeat 0), csrs = defaultCSRs, pc = 0x200, nextPC = 0,
                    mem = (m ++ (take (65520 - length m) $ repeat (0::Word8))), mmio = baseMMIO } in
     fmap fst $ runProgram c
 
