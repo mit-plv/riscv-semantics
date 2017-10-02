@@ -2,7 +2,7 @@ import Data.Int
 import Computer32
 import Decode
 import Execute
-import Run
+import Run hiding (main)
 
 c = Computer32 { registers = [0,0,0,0], pc = 5, nextPC = 0, mem = [0,0,0,0] }
 action = do
@@ -28,7 +28,7 @@ tests = [("add",  11),
 
 main :: IO ()
 main = do
-  results <- mapM (\(f, x) -> runTest ("test/" ++ f ++ ".hex") x) tests
+  results <- mapM (\(f, x) -> runTest ("../test/tests/" ++ f ++ ".hex") x) tests
   mapM_ (putStrLn . show) (zip (map fst tests) results)
   if all id results then
     putStrLn "All tests passed!"

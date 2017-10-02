@@ -2,6 +2,7 @@ import qualified Data.Text as T
 import Data.List
 import Data.Char
 import Data.List.Split
+import GHC.IO.Encoding
 
 removeComments :: [String] -> [String]
 removeComments = filter (\s -> length s > 2 && s !! 0 /= '#')
@@ -73,6 +74,7 @@ generateCode xs = defineInstruction xs ++ "\n\n" ++
 
 main :: IO ()
 main = do
+  setLocaleEncoding utf8
   template <- readFile "Decode_base.hs"
   xs <- fmap filterLines $ readFile "opcodes"
   writeFile "Decode.hs" $ template ++ generateCode xs
