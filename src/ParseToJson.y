@@ -1,6 +1,6 @@
 {
 {-# LANGUAGE DeriveGeneric #-}
-module Main where
+module ParseToJson where
 
 import Data.Char
 import GHC.Generics
