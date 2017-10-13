@@ -61,3 +61,13 @@ Thursday, September 14th
 
 Friday, September 22nd
 * Basic interrupts via polling (interrupt CSRs).
+
+Monday, October 2nd
+* Virtual memory (check spec).
+* Attempt to test it?
+* Spike/Linux-saga continues
+* Haskell FFI / Spike step function
+
+Friday, October 6th
+* Implement CSR that holds virtual memory mode, base address.
+* SATP, MIP
