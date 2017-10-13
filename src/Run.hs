@@ -8,10 +8,11 @@ import Data.Maybe
 import Utility
 import Program
 import MMIO64
-import CSR (defaultCSRs)
+import CSR hiding (decode)
 import Decode
 import Execute
 import Numeric
+import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import qualified Data.Map as S
 
@@ -29,7 +30,19 @@ readELF h l = do
          then return $ processLine s l
          else readELF h (processLine s l)
 
-helper :: (RiscvProgram p t u) => p t
+checkInterrupt :: IO Bool
+checkInterrupt = do
+  ready <- hReady stdin
+  if ready then do
+    c <- hLookAhead stdin
+    if c == '!' then do
+      getChar
+      getChar
+      return True
+    else return False
+  else return False
+
+helper :: MState MMIO64 Int64
 helper = do
   pc <- getPC
   inst <- loadWord pc
@@ -38,6 +51,12 @@ helper = do
     else do
     setPC (pc + 4)
     execute (decode $ fromIntegral inst)
+    interrupt <- (MState $ \comp -> liftIO checkInterrupt >>= (\b -> return (b, comp)))
+    if interrupt then do
+      -- Signal interrupt by setting MEIP high.
+      mip <- loadCSR mip_addr
+      storeCSR mip_addr (encode ((decodeMIP mip) { meip = True }))
+    else return ()
     step
     helper
 

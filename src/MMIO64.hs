@@ -17,7 +17,6 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import System.IO.Error
 import qualified Data.Map as S
-import Debug.Trace
 
 newtype MState s a = MState { runState :: s -> (MaybeT IO) (a, s) }
 
@@ -82,7 +81,22 @@ instance RiscvProgram (MState MMIO64) Int64 Word64 where
   setRegister reg val = MState $ \comp -> return ((), if reg == 0 then comp else comp { registers = setIndex (fromIntegral reg-1) (fromIntegral val) (registers comp) })
   getPC = MState $ \comp -> return (pc comp, comp)
   setPC val = MState $ \comp -> return ((), comp { nextPC = fromIntegral val })
-  step = MState $ \comp -> return ((), comp { pc = nextPC comp })
+  step = do
+    -- Check for interrupts before updating PC.
+    mie <- loadCSR mie_addr
+    mip <- loadCSR mip_addr
+    nPC <- MState $ \comp -> (return (nextPC comp, comp))
+    fPC <- (if (meie (decodeMIE mie)) && (meip (decodeMIP mip)) then do
+              storeCSR mip_addr (encode ((decodeMIP mip) { meip = False }))
+              -- Save the PC of the next (unexecuted) instruction.
+              storeCSR mepc_addr nPC
+              storeCSR mcause_addr 11 -- Machine external interrupt.
+              -- TODO: Fix loadCSR so it returns correct integer size.
+              trapPC <- loadCSR mtvec_addr
+              return (fromIntegral trapPC)
+            else return nPC)
+    MState $ \comp -> (return ((), comp { pc = fPC }))
+
   -- Memory functions:
   loadByte = wrapLoad M.loadByte
   loadHalf = wrapLoad M.loadHalf
