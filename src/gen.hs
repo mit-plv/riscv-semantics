@@ -56,6 +56,7 @@ filterLines = filter (\l -> any (\s -> s `isInfixOf` l) ["rv64i", "rv64m", "rv64
 
 defineInstruction :: [String] -> String
 defineInstruction xs = "data Instruction =\n" ++
+                       "  InvalidInstruction |\n" ++
                        intercalate " |\n" (map (("  " ++) . genType) xs) ++
                        "\n  deriving (Eq, Read, Show)"
 

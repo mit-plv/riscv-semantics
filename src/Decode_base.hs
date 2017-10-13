@@ -31,9 +31,7 @@ getShamt6 inst = bitSlice inst 20 26
 getZimm inst = bitSlice inst 15 20
 
 decode :: Integer -> Instruction
-decode = decode_notmemo
-decode_notmemo :: Integer -> Instruction
-decode_notmemo inst = (fst $ fromJust $ find (\e -> all match (snd e)) opcodeTable) inst
-              where match (start, end, val) = bitSlice inst start end == val
+decode inst = (fst $ fromMaybe InvalidInstruction $ find (\e -> all match (snd e)) opcodeTable) inst
+  where match (start, end, val) = bitSlice inst start end == val
 
 -- Auto-generated code begins here. --

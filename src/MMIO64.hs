@@ -40,7 +40,9 @@ instance Alternative (MState s) where
 
 instance MonadPlus (MState s)
 
-data MMIO64 = MMIO64 { registers :: [Int64], csrs :: [(Int, CSR)], pc :: Int64, nextPC :: Int64, mem :: S.Map Int Word8, mmio :: [(LoadFunc, StoreFunc)] }
+data MMIO64 = MMIO64 { registers :: [Int64], csrs :: [(Int, CSR)], pc :: Int64,
+                       nextPC :: Int64, mem :: S.Map Int Word8,
+                       mmio :: [(LoadFunc, StoreFunc)] }
               deriving (Show)
 
 -- open, close, read, write

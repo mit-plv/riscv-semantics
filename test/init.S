@@ -26,7 +26,7 @@ _start:
   li  x16,0
   li  x17,0
   li  x18,0
-  li  x19,0 
+  li  x19,0
   li  x20,0
   li  x21,0
   li  x22,0
