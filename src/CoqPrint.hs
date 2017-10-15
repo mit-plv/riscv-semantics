@@ -13,9 +13,9 @@ coqPrint (Arith TokenMMINUS [a]) = "(-" ++ coqPrint a ++")"
 coqPrint (Arith TokenMMINUS l) =
    (\l-> "(" ++ l ++ ")") . join . intersperse " - " $ fmap coqPrint l
 coqPrint (Arith TokenMOR l) =
-   (\l-> "(" ++ l ++ ")") . join . intersperse " .|. " $ fmap coqPrint l
+   (\l-> "(" ++ l ++ ")") . join . intersperse " || " $ fmap coqPrint l
 coqPrint (Arith TokenMAND l) =
-   (\l-> "(" ++ l ++ ")") . join . intersperse " .&. " $ fmap coqPrint l
+   (\l-> "(" ++ l ++ ")") . join . intersperse " && " $ fmap coqPrint l
 coqPrint (Arith TokenMBAND l) =
    (\l-> "(" ++ l ++ ")") . join . intersperse " and " $ fmap coqPrint l
 coqPrint (Arith TokenMBOR l) =
@@ -53,6 +53,6 @@ nestedIf [(Iden "otherwise",t)] = coqPrint t
 nestedIf ((c,t):q) = join .intersperse " " $ ["(","if", coqPrint c, "then\n", coqPrint t, "else\n", nestedIf q, ")"]
 
 
-transliterateCoq l ="Definition execute (instr: Instruction) : Riscv :=\nmatch instr with" ++ executeCoq l ++ "\nend."
+transliterateCoq l ="Definition execute (instr: Instruction) : Riscv :=\nmatch instr with\n" ++ executeCoq l ++ "\nend."
 
 main = undefined
