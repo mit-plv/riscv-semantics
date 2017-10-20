@@ -4,18 +4,19 @@ import Data.Int
 import Data.Bits
 import Data.Maybe
 
-data CSR = MISA { base :: Int, extensions :: Int }
-         | MStatus { sd :: Bool, vm :: Int, mxr :: Bool, pum :: Bool, mprv :: Bool, xs :: Int,
-                     fs :: Int, mpp :: Int, hpp :: Int, spp :: Bool, mpie :: Bool, hpie :: Bool,
+data CSR = MISA { base :: MachineInt, extensions :: MachineInt }
+         | MStatus { sd :: Bool, vm :: MachineInt, mxr :: Bool, pum :: Bool, mprv :: Bool, xs :: MachineInt,
+                     fs :: MachineInt, mpp :: MachineInt, hpp :: MachineInt, spp :: Bool, mpie :: Bool, hpie :: Bool,
                      spie :: Bool, upie :: Bool, mie :: Bool, hie :: Bool, sie :: Bool, uie :: Bool }
          | MIP { meip :: Bool, seip :: Bool, ueip :: Bool, mtip :: Bool, stip :: Bool, utip :: Bool,
                  msip :: Bool, ssip :: Bool, usip :: Bool }
          | MIE { meie :: Bool, seie :: Bool, ueie :: Bool, mtie :: Bool, stie :: Bool, utie :: Bool,
                  msie :: Bool, ssie :: Bool, usie :: Bool }
-         | MTVec { base :: Int, mode :: Int }
-         | MCause { interrupt :: Bool, exception :: Int }
-         | MSimple { val :: Int }
-         | MNotImplemented { val :: Int }
+         | MTVec { base :: MachineInt, mode :: MachineInt }
+         | MCause { interrupt :: Bool, exception :: MachineInt }
+         | MSimple { val :: MachineInt }
+         | MNotImplemented { val :: MachineInt }
+         | SATP { mode :: MachineInt, asid :: MachineInt, ppn :: MachineInt }
          deriving Show
 
 mie_addr = 0x304
@@ -24,7 +25,7 @@ mepc_addr = 0x341
 mcause_addr = 0x342
 mip_addr = 0x344
 
-csrMap :: [(Int, Int -> CSR)]
+csrMap :: [(MachineInt, MachineInt -> CSR)]
 csrMap = [(0xF11, decodeMSimple), -- mvendorid
           (0xF12, decodeMSimple), -- marchid
           (0xF13, decodeMSimple), -- mimpid
@@ -42,7 +43,7 @@ csrMap = [(0xF11, decodeMSimple), -- mvendorid
           (0x343, decodeMSimple), -- mtval
           (mip_addr, decodeMIP)]
 
-defaultCSRs :: [(Int, CSR)]
+defaultCSRs :: [(MachineInt, CSR)]
 defaultCSRs = [(addr, f 0) | (addr, f) <- csrMap]
 
 decodeMISA v = MISA { base = bitSlice v 30 32, extensions = bitSlice v 0 26 }
@@ -66,13 +67,13 @@ decodeMCause v = MCause { interrupt = testBit v 31, exception = bitSlice v 0 31 
 decodeMSimple = MSimple
 decodeMNotImplemented val = error "Not implemented yet."
 
-decode :: Int -> Int32 -> CSR
+decode :: MachineInt -> MachineInt -> CSR
 decode idx = fromJust (lookup idx csrMap) . fromIntegral
 
-boolBit :: Bool -> Int -> Int
+boolBit :: Bool -> Int -> MachineInt
 boolBit b i = if b then bit i else zeroBits
 
-encode :: CSR -> Int32
+encode :: CSR -> MachineInt
 encode (MISA base extensions) = fromIntegral $ shift base 30 .|. extensions
 encode (MStatus sd vm mxr pum mprv xs fs mpp hpp spp mpie hpie spie upie mie hie sie uie) = fromIntegral $
   boolBit sd 31 .|. shift vm 24 .|. boolBit mxr 19 .|. boolBit pum 18 .|. boolBit mprv 17 .|. shift xs 15 .|.

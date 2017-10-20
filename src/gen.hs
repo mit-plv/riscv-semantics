@@ -26,8 +26,7 @@ genType :: String -> String
 genType line = let (opcode, args) = parseOp line
                    addType arg = arg ++ " :: " ++ (case (arg !! 0) of
                                                       'r' -> "Register"
-                                                      'c' -> "Int"
-                                                      _  -> "Integer")
+                                                      _  -> "MachineInt")
                    fields = map addType args
                in
                 if length fields > 0 then
@@ -65,7 +64,7 @@ defineFunctions = intercalate "\n" . map genFunction
 
 -- (decodeLui, [(2, 7, 0x0D), (0, 2, 3)]) corresponds to (lui 6..2=0x0D 1..0=3) in opcodes file.
 defineTable :: [String] -> String
-defineTable xs = "opcodeTable :: [(Integer -> Instruction, [(Int, Int, Integer)])]\n" ++
+defineTable xs = "opcodeTable :: [(MachineInt -> Instruction, [(Int, Int, MachineInt)])]\n" ++
                  "opcodeTable = [" ++ (intercalate ",\n               " $ map genEntry xs) ++ "]"
 
 generateCode :: [String] -> String
