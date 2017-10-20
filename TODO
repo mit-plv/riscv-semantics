@@ -71,3 +71,11 @@ Monday, October 2nd
 Friday, October 6th
 * Implement CSR that holds virtual memory mode, base address.
 * SATP, MIP
+
+Friday, October 13th
+* 64-bit SATP, implement Sv39
+* Check out riscv-tests
+* loadField/storeField
+* Timer interrupts
+* Initial floating-point support using Haskell semantics?
+* Replace Int/Integer with MachineInt (= Int64 for now). Set Register = Int8.
