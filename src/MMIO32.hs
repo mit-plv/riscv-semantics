@@ -38,7 +38,7 @@ instance Alternative (MState s) where
 
 instance MonadPlus (MState s)
 
-data MMIO32 = MMIO32 { registers :: [Int32], csrs :: [(Int, CSR)], pc :: Int32, nextPC :: Int32, mem :: S.Map Int Word8, mmio :: [(LoadFunc, StoreFunc)] }
+data MMIO32 = MMIO32 { registers :: [Int32], csrs :: [(MachineInt, CSR)], pc :: Int32, nextPC :: Int32, mem :: S.Map Int Word8, mmio :: [(LoadFunc, StoreFunc)] }
               deriving (Show)
 
 -- open, close, read, write
@@ -98,3 +98,5 @@ instance RiscvProgram (MState MMIO32) Int32 Word32 where
   getPC = MState $ \comp -> return (pc comp, comp)
   setPC val = MState $ \comp -> return ((), comp { nextPC = fromIntegral val })
   step = MState $ \comp -> return ((), comp { pc = nextPC comp })
+  loadDouble = undefined
+  storeDouble = undefined
