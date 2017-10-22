@@ -1,4 +1,4 @@
-module Execute where
+module Execute32 where
 import Decode
 import Program
 import CSR hiding (decode)
