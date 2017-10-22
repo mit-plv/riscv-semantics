@@ -2,27 +2,44 @@
 
 SOURCES=$(wildcard tests/*.c)
 TESTS=$(basename $(SOURCES))
-HEX=$(addsuffix .hex,$(TESTS))
+HEX32=$(addsuffix 32.hex,$(TESTS))
+HEX64=$(addsuffix 64.hex,$(TESTS))
 ELF2HEX=../elf2hex
 
-RISCVCC=riscv64-unknown-linux-gnu-gcc -march=rv64imfd -DRISCV -nostdlib -nostartfiles
+RISCVCC64=riscv64-unknown-linux-gnu-gcc -march=RV64IMFD -DRISCV -nostdlib -nostartfiles
+RISCVCC32=riscv32-unknown-elf-gcc -march=rv32im -DRISCV -nostdlib -nostartfiles
 
-all: $(HEX)
+
+all: $(HEX32) $(HEX64)
 
 $(ELF2HEX)/elf2hex:
 	$(MAKE) -C $(ELF2HEX)
 
-init.o: init.S
-	$(RISCVCC) -c init.S
+init32.o: init.S
+	$(RISCVCC32) -c init.S -o init32.o
 
-mmio.o: mmio.c
-	$(RISCVCC) -c mmio.c
+init64.o: init.S
+	$(RISCVCC64) -c init.S -o init64.o
 
-%.hex: $(ELF2HEX)/elf2hex %.c init.o mmio.o link.ld
-	$(RISCVCC) -c $*.c -o intermediate.o
-	$(RISCVCC) -o $* -Tmmio.ld intermediate.o init.o mmio.o
-	$(ELF2HEX)/elf2hex $*
-	rm intermediate.o $*
+mmio32.o: mmio.c
+	$(RISCVCC32) -c mmio.c -o mmio32.o
+
+mmio64.o: mmio.c
+	$(RISCVCC64) -c mmio.c -o mmio64.o
+
+%32.hex: $(ELF2HEX)/elf2hex %.c init32.o mmio32.o link.ld
+	$(RISCVCC32) -c $*.c -o intermediate32.o
+	$(RISCVCC32) -o $*32 -Tmmio32.ld intermediate32.o init32.o mmio32.o
+	$(ELF2HEX)/elf2hex $*32
+	rm intermediate32.o $*32
+
+%64.hex: $(ELF2HEX)/elf2hex %.c init64.o mmio64.o link.ld
+	$(RISCVCC64) -c $*.c -o intermediate64.o
+	$(RISCVCC64) -o $*64 -Tmmio64.ld intermediate64.o init64.o mmio64.o
+	$(ELF2HEX)/elf2hex $*64
+	rm intermediate64.o $*64
+
 
 clean:
-	rm -f intermediate.o init.o mmio.o $(TESTS) $(HEX)
+	rm -f intermediate32.o init32.o mmio32.o $(TESTS) $(HEX32)
+	rm -f intermediate64.o init64.o mmio64.o $(TESTS) $(HEX64)
