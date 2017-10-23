@@ -8,7 +8,8 @@ import Data.Maybe
 import Utility
 import Program
 import MMIO64
-import CSR hiding (decode)
+import CSR
+import CSRFile
 import Decode
 import Execute
 import Numeric
@@ -67,7 +68,7 @@ runFile :: String -> IO Int64
 runFile f = do
   h <- openFile f ReadMode
   m <- readELF h []
-  let c = MMIO64 { registers = (take 31 $ repeat 0), csrs = defaultCSRs, pc = 0x200, nextPC = 0,
+  let c = MMIO64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x200, nextPC = 0,
                    mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))), mmio = baseMMIO } in
     fmap fst $ runProgram c
 
