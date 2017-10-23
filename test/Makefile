@@ -6,8 +6,8 @@ HEX32=$(addsuffix 32.hex,$(TESTS))
 HEX64=$(addsuffix 64.hex,$(TESTS))
 ELF2HEX=../elf2hex
 
-RISCVCC64=riscv64-unknown-linux-gnu-gcc -march=RV64IMFD -DRISCV -nostdlib -nostartfiles
-RISCVCC32=riscv32-unknown-elf-gcc -march=rv32im -DRISCV -nostdlib -nostartfiles
+RISCVCC64=riscv64-unknown-linux-gnu-gcc -march=rv64imfd -DRISCV -nostdlib -nostartfiles
+RISCVCC32=riscv32-unknown-linux-gnu-gcc -march=rv32im -DRISCV -nostdlib -nostartfiles
 
 
 all: $(HEX32) $(HEX64)

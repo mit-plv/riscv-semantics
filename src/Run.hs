@@ -9,6 +9,7 @@ import Utility
 import Program
 import MMIO64
 import CSR
+import qualified CSRField as Field
 import CSRFile
 import Decode
 import Execute
@@ -55,8 +56,7 @@ helper = do
     interrupt <- (MState $ \comp -> liftIO checkInterrupt >>= (\b -> return (b, comp)))
     if interrupt then do
       -- Signal interrupt by setting MEIP high.
-      mip <- loadCSR mip_addr
-      storeCSR mip_addr (encode ((decodeMIP mip) { meip = True }))
+      setCSRField Field.MEIP 1
     else return ()
     step
     helper

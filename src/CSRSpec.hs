@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 module CSRSpec where
 import CSR
 import Program
@@ -6,7 +5,7 @@ import Utility
 import qualified CSRField as Field
 import Data.Bits
 
-getCSR :: forall p t u. (RiscvProgram p t u) => CSR -> p MachineInt
+getCSR :: (RiscvProgram p t u) => CSR -> p MachineInt
 
 getCSR MStatus = do
   mpie <- getCSRField Field.MPIE
@@ -47,7 +46,7 @@ getCSR MCause = do
 -- Catch-all for other (possibly unimplemented) CSRs; hardwire to 0.
 getCSR _ = return 0
 
-setCSR :: forall p t u. (RiscvProgram p t u) => CSR -> MachineInt -> p ()
+setCSR :: (RiscvProgram p t u, Integral x, Bits x) => CSR -> x -> p ()
 
 setCSR MStatus val = do
   setCSRField Field.MIE (bitSlice val 3 4)

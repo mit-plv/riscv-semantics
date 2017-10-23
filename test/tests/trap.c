@@ -16,7 +16,10 @@ void trap_handler() {
 int main() {
   // Setup the trap handler.
   asm volatile("csrrw zero,mtvec,%0" :: "r" (trap_handler));
-  // Enable machine external interrupts.
+  // Enable machine interrupts.
+  int mstatus = 1 << 3;
+  asm volatile ("csrrw zero,mstatus,%0" :: "r" (mstatus));
+  // Enable machine external interrupts, in particular.
   int meie = 1 << 11;
   asm volatile("csrrw zero,mie,%0" :: "r" (meie));
   int c = 97;

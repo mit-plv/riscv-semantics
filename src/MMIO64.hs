@@ -114,4 +114,4 @@ instance RiscvProgram (MState MMIO64) Int64 Word64 where
   storeDouble = wrapStore M.storeDouble
   -- CSRs:
   getCSRField field = MState $ \comp -> return (getField field (csrs comp), comp)
-  setCSRField field val = MState $ \comp -> return ((), comp { csrs = setField field val (csrs comp) })
+  setCSRField field val = MState $ \comp -> return ((), comp { csrs = setField field (fromIntegral val) (csrs comp) })
