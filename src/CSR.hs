@@ -3,6 +3,7 @@ import Utility
 import Data.Int
 import Data.Bits
 import Data.Maybe
+import Prelude
 
 data CSR = MISA { base :: MachineInt, extensions :: MachineInt }
          | MStatus { sd :: Bool, vm :: MachineInt, mxr :: Bool, pum :: Bool, mprv :: Bool, xs :: MachineInt,
@@ -44,7 +45,7 @@ csrMap = [(0xF11, decodeMSimple), -- mvendorid
           (mip_addr, decodeMIP)]
 
 defaultCSRs :: [(MachineInt, CSR)]
-defaultCSRs = [(addr, f 0) | (addr, f) <- csrMap]
+defaultCSRs = map (\(addr,f) -> (addr, f 0)) csrMap-- [(addr, f 0) | (addr, f) <- csrMap]
 
 decodeMISA v = MISA { base = bitSlice v 30 32, extensions = bitSlice v 0 26 }
 decodeMIP v = MIP { meip = testBit v 11, seip = testBit v 9, ueip = testBit v 8, mtip = testBit v 7,

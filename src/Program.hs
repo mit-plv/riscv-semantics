@@ -5,6 +5,7 @@ import Utility
 import Data.Int
 import Data.Bits
 import Control.Monad
+import Prelude
 
 class (MonadPlus p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => RiscvProgram p t u | p -> t, t -> u where
    getRegister :: Register -> p t

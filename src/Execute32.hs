@@ -6,6 +6,7 @@ import ExecuteI as I
 import ExecuteM as M
 import ExecuteCSR as CSR
 import Control.Monad
+import Prelude
 
 execute :: (RiscvProgram p t u) => Instruction -> p ()
 execute InvalidInstruction = do
