@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf #-}
-module MMIOClash where
+module Clash where
 import qualified Prelude as P
 import Program
 import Utility
@@ -41,18 +41,18 @@ instance Alternative (MState s) where
 
 instance MonadPlus (MState s)
 
-data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32, mem :: Vec 10000 Word8}
+data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32, }
               deriving (Show)
 
 -- open, close, read, write
 
-readM mem addr = mem !! addr
-
-writeM addr val mem =
-    replace addr val mem
-
-helpStore mem addr bytes =
-    P.foldr (\(b,a) m-> writeM a b m) mem $ P.zip bytes [addr + i | i<-[0..]] 
+-- readM mem addr = mem !! addr
+-- 
+-- writeM addr val mem =
+--     replace addr val mem
+-- 
+-- helpStore mem addr bytes =
+--     P.foldr (\(b,a) m-> writeM a b m) mem $ P.zip bytes [addr + i | i<-[0..]] 
 
 
 instance RiscvProgram (MState MMIOClash) Int32 Word32 where
@@ -60,27 +60,17 @@ instance RiscvProgram (MState MMIOClash) Int32 Word32 where
   setRegister reg val = MState $ \comp -> return ((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
   loadByte = undefined
   loadHalf= undefined
+  loadWord = undefined
   loadDouble= undefined
   storeByte = undefined
   storeHalf= undefined
+  storeWord = undefined
   storeDouble = undefined
   loadCSR= undefined
   storeCSR=undefined
---  loadByte addr = MState $ \comp -> return (fromIntegral $ readM (mem comp) (fromIntegral addr), comp)
---  loadHalf addr = MState $ \comp -> return (combineBytes $ fmap (\addr -> readM (mem comp) addr) [(fromIntegral addr)..(fromIntegral addr+1)], comp)
-  loadWord addr = MState $ \comp -> if
-    | otherwise -> return (combineBytes $ fmap (\addr -> readM (mem comp) addr) [(fromIntegral addr),fromIntegral addr +1,fromIntegral addr +2,(fromIntegral addr+3)], comp)
---  storeByte addr val = MState $ \comp -> return ((), comp { mem = writeM (fromIntegral addr) (fromIntegral val) (mem comp) })
---  storeHalf addr val = MState $ \comp -> return ((), comp { mem = helpStore (mem comp) (fromIntegral addr) (splitHalf val) })
-  storeWord addr val = MState $ \comp -> if
-    | otherwise -> return ((), comp { mem = helpStore (mem comp) (fromIntegral addr) (splitWord val) })
---  loadCSR addr = MState $ \comp -> return (0::MachineInt, comp)
---  storeCSR addr val = MState $ \comp -> return ((), comp)
   getPC = MState $ \comp -> return (pc comp, comp)
   setPC val = MState $ \comp -> return ((), comp { nextPC = fromIntegral val })
   step = MState $ \comp -> return ((), comp { pc = nextPC comp })
---  loadDouble addr =  MState $ \comp -> return (0::Int64 , comp)
---  storeDouble addr val=  MState $ \comp ->return ((), comp )
 
 oneStep :: MState MMIOClash ()
 oneStep = do
@@ -98,7 +88,7 @@ wrap (Just s) = case runState oneStep s of
 wrap Nothing = Nothing
 
 initState = MMIOClash { registers = replicate (SNat :: SNat 31) 0, pc = 0x200, nextPC = 0,
-                   mem =replicate (SNat :: SNat 10000) 0  }
+                   }
 
 topEntity :: Signal (Maybe MMIOClash) -> Signal (Maybe MMIOClash)
 topEntity = moore (\s i ->wrap s) (\s -> s) $ Just initState
