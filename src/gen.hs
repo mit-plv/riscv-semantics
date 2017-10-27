@@ -51,8 +51,8 @@ genEntry line = let pieces = splitClean line
                 in "(decode" ++ opcode ++ ", " ++ (filter (/= '"') (show ranges)) ++ ")"
 
 filterLines :: String -> [String]
---filterLines = filter (\l -> any (\s -> s `isInfixOf` l) ["rv64i", "rv64m", "rv64s"]) . removeComments . lines
-filterLines = filter (\l -> any (\s -> s `isInfixOf` l) ["rv32i", "rv32m","rv32s"]) . removeComments . lines
+filterLines = filter (\l -> any (\s -> s `isInfixOf` l) ["rv64i", "rv64m", "rv64s"]) . removeComments . lines
+--filterLines = filter (\l -> any (\s -> s `isInfixOf` l) ["rv32i", "rv32m","rv32s"]) . removeComments . lines
 
 defineInstruction :: [String] -> String
 defineInstruction xs = "data Instruction =\n" ++

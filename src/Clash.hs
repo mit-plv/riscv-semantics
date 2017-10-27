@@ -18,7 +18,7 @@ import System.IO.Error
 import qualified Data.Map as S
 import Execute32
 import qualified Decode as D
-import CLaSH.Prelude
+import Clash.Prelude
 
 newtype MState s a = MState { runState :: s -> Maybe (a, s) }
 
@@ -41,7 +41,7 @@ instance Alternative (MState s) where
 
 instance MonadPlus (MState s)
 
-data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32, }
+data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 }
               deriving (Show)
 
 -- open, close, read, write
@@ -72,23 +72,19 @@ instance RiscvProgram (MState MMIOClash) Int32 Word32 where
   setPC val = MState $ \comp -> return ((), comp { nextPC = fromIntegral val })
   step = MState $ \comp -> return ((), comp { pc = nextPC comp })
 
-oneStep :: MState MMIOClash ()
-oneStep = do
+oneStep :: Word32 -> MState MMIOClash ()
+oneStep inst = do
   pc <- getPC
-  inst <- loadWord pc
   setPC (pc + 4)
   execute (D.decode $ fromIntegral inst)
   step
 
-wrap :: Maybe (MMIOClash)-> Maybe MMIOClash
-wrap (Just s) = case runState oneStep s of
+wrap :: Word32 -> Maybe (MMIOClash)-> Maybe MMIOClash
+wrap i (Just s) = case runState (oneStep i) s of
            Nothing -> Nothing
            Just (_,s) -> Just s
+wrap i Nothing = Nothing
 
-wrap Nothing = Nothing
-
-initState = MMIOClash { registers = replicate (SNat :: SNat 31) 0, pc = 0x200, nextPC = 0,
-                   }
-
-topEntity :: Signal (Maybe MMIOClash) -> Signal (Maybe MMIOClash)
-topEntity = moore (\s i ->wrap s) (\s -> s) $ Just initState
+initState = MMIOClash { registers = replicate (SNat :: SNat 31) 0, pc = 0x200, nextPC = 0 }
+--topEntity :: Signal (Maybe MMIOClash) -> Signal (Maybe MMIOClash)
+topEntity = moore (\s i -> wrap i s) (\s -> s) $ Just initState
