@@ -3,9 +3,11 @@ int putchar(int c);
 void exception_handler() {
   putchar('!');
   putchar('\n');
-  int ret_addr;
+  void *tmp;
   asm volatile("csrrw %0,mepc,zero\n"
-               "jalr %0,4" :: "r" (ret_addr));
+               "addi %0,%0,4\n"
+               "csrrw zero,mepc,%0\n"
+               "mret" :: "r" (tmp));
 }
 
 int main() {

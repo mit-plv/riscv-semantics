@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module ExecuteCSR where
 import CSR
+import qualified CSRField as Field
 import CSRSpec
 import Decode
 import Program
@@ -39,5 +40,25 @@ execute (Csrrci rd zimm csr12) = do
   val <- getCSR (lookupCSR csr12)
   setRegister rd val
   when (zimm /= 0) (setCSR (lookupCSR csr12) (val .&. (complement zimm)))
+execute Ecall = do
+  pc <- getPC
+  addr <- getCSRField Field.MTVecBase
+  setCSRField Field.MEPC pc
+  setCSRField Field.MCauseInterrupt 0 -- Not an interrupt
+  -- Later, we'll have to check the current privilege mode to determine the correct cause code.
+  setCSRField Field.MCauseCode 11 -- Environment call from M-mode
+  setPC (addr * 4)
+execute Ebreak = do
+  pc <- getPC
+  addr <- getCSRField Field.MTVecBase
+  setCSRField Field.MEPC pc
+  setCSRField Field.MCauseInterrupt 0 -- Not an interrupt
+  setCSRField Field.MCauseCode 3 -- Breakpoint exception
+  setPC (addr * 4)
+execute Mret = do
+  -- Currently, only machine mode is supported.
+  -- In the future we will need to deal with the privilege stack.
+  mepc <- getCSR MEPC
+  setPC mepc
 -- end ast
 execute _ = mzero

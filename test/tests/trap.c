@@ -8,9 +8,11 @@ void trap_handler() {
   putchar('?');
   putchar('\n');
   running = 0;
-  void *ret_addr;
+  void *tmp;
   asm volatile("csrrw %0,mepc,zero\n"
-               "jalr %0" :: "r" (ret_addr));
+               "addi %0,%0,4\n"
+               "csrrw zero,mepc,%0\n"
+               "mret" :: "r" (tmp));
 }
 
 int main() {
