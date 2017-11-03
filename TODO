@@ -88,3 +88,11 @@ Friday, October 19th
 * MPIE, MIE, most things hardwired to 0
 * Timer and time compare register are memory-mapped
 * Taking an interrupt should disable interrupts (trap handler is responsible for re-enabling)
+
+Friday, November 3rd
+* mtime, mtimecmp (memory-mapped registers, use Spike addresses)
+* debug logging typeclass to wrap existing instances
+* misaligned fetch (exception caused by instruction before misaligned instruction); can raise an exception in jump/branch insts
+* ditto for misaligned accesses
+* add extra param to decode for machine width, generate huge if structure instead of huge table
+* refactor Maybe out of RiscvProgram and into Execute
