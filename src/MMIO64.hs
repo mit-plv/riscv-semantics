@@ -41,8 +41,7 @@ instance Alternative (MState s) where
 instance MonadPlus (MState s)
 
 data MMIO64 = MMIO64 { registers :: [Int64], csrs :: CSRFile, pc :: Int64,
-                       nextPC :: Int64, mem :: S.Map Int Word8,
-                       mmio :: [(LoadFunc, StoreFunc)] }
+                       nextPC :: Int64, mem :: S.Map Int Word8 }
               deriving (Show)
 
 -- open, close, read, write
@@ -69,10 +68,8 @@ rvGetChar = MState $ \comp -> liftIO cGetChar >>= (\c -> return (c, comp))
 rvPutChar :: StoreFunc
 rvPutChar val = MState $ \comp -> liftIO (putChar $ chr32 val) >> return ((), comp)
 
-baseMMIO = [(rvGetChar, rvPutChar)]
-
-mmioStart :: (Num a) => MMIO64 -> a
-mmioStart = (+1) . fromIntegral . length . mem
+mmioTable :: S.Map MachineInt (LoadFunc, StoreFunc)
+mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar))]
 
 wrapLoad loadFunc addr = MState $ \comp -> return (fromIntegral $ loadFunc (mem comp) addr, comp)
 wrapStore storeFunc addr val = MState $ \comp -> return ((), comp { mem = storeFunc (mem comp) addr (fromIntegral val) })
@@ -102,15 +99,17 @@ instance RiscvProgram (MState MMIO64) Int64 Word64 where
   -- Memory functions:
   loadByte = wrapLoad M.loadByte
   loadHalf = wrapLoad M.loadHalf
-  loadWord addr = MState $ \comp -> if
-    | addr > (mmioStart comp) -> runState (fst $ (mmio comp) !! ((fromIntegral $ addr - mmioStart comp) `div` 4)) comp
-    | otherwise -> return (fromIntegral $ M.loadWord (mem comp) addr, comp)
+  loadWord addr =
+    case S.lookup (fromIntegral addr) mmioTable of
+      Just (getFunc, _) -> getFunc
+      Nothing -> (MState (\comp -> return (fromIntegral $ M.loadWord (mem comp) addr, comp)))
   loadDouble = wrapLoad M.loadDouble
   storeByte = wrapStore M.storeByte
   storeHalf = wrapStore M.storeHalf
-  storeWord addr val = MState $ \comp -> if
-    | addr > (mmioStart comp) -> runState (snd ((mmio comp) !! ((fromIntegral $ addr - mmioStart comp) `div` 4)) (fromIntegral val)) comp
-    | otherwise -> return ((), comp { mem = M.storeWord (mem comp) addr (fromIntegral val) })
+  storeWord addr val =
+    case S.lookup (fromIntegral addr) mmioTable of
+      Just (_, setFunc) -> setFunc (fromIntegral val)
+      Nothing -> (MState (\comp -> return ((), comp { mem = M.storeWord (mem comp) addr (fromIntegral val) })))
   storeDouble = wrapStore M.storeDouble
   -- CSRs:
   getCSRField field = MState $ \comp -> return (getField field (csrs comp), comp)

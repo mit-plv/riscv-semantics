@@ -75,7 +75,7 @@ runFile f = do
   h <- openFile f ReadMode
   m <- readELF h []
   let c = MMIO64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x200, nextPC = 0,
-                   mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))), mmio = baseMMIO } in
+                   mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
     fmap fst $ runProgram c
 
 main :: IO ()
