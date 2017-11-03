@@ -17,6 +17,7 @@ import Numeric
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import qualified Data.Map as S
+import Debug.Trace
 
 processLine :: String -> [Word8] -> [Word8]
 processLine ('@':xs) l = l ++ take (4*(read ("0x" ++ xs) :: Int) - (length l)) (repeat 0)
@@ -49,7 +50,12 @@ helper = do
   pc <- getPC
   inst <- loadWord pc
   if inst == 0x6f -- Stop on infinite loop instruction.
-    then getRegister 10
+    then do
+        cycles <- getCSRField Field.MCycle
+        trace ("Cycles: " ++ show cycles) (return ())
+        instret <- getCSRField Field.MInstRet
+        trace ("Insts: " ++ show instret) (return ())
+        getRegister 10
     else do
     setPC (pc + 4)
     execute (decode $ fromIntegral inst)

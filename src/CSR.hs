@@ -20,7 +20,9 @@ csrTable = [(0x300, MStatus),
             (0x341, MEPC),
             (0x342, MCause),
             (0x343, MTVal),
-            (0x344, MIP)]
+            (0x344, MIP),
+            (0xB00, MCycle),
+            (0xB02, MInstRet)]
 
 instance Enum CSR where
     fromEnum = fromJust . flip lookup (map swap csrTable)

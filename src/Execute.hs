@@ -18,4 +18,11 @@ execute InvalidInstruction = do
   setCSRField Field.MCauseInterrupt 0 -- Not an interrupt
   setCSRField Field.MCauseCode 2 -- Illegal instruction
   setPC (addr * 4)
-execute inst = msum (map (\f -> f inst) [I.execute, I64.execute, M.execute, M64.execute, CSR.execute])
+  cycles <- getCSRField Field.MCycle
+  setCSRField Field.MCycle (cycles + 1)
+execute inst = do
+  msum (map (\f -> f inst) [I.execute, I64.execute, M.execute, M64.execute, CSR.execute])
+  cycles <- getCSRField Field.MCycle
+  setCSRField Field.MCycle (cycles + 1)
+  instret <- getCSRField Field.MInstRet
+  setCSRField Field.MInstRet (instret + 1)
