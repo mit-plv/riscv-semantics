@@ -92,7 +92,7 @@ instance RiscvProgram (MState MMIO64) Int64 Word64 where
               setCSRField Field.MEPC nPC
               setCSRField Field.MCauseCode 11 -- Machine external interrupt.
               trapPC <- getCSRField Field.MTVecBase
-              return trapPC
+              return (trapPC * 4)
             else return nPC)
     MState $ \comp -> (return ((), comp { pc = fPC }))
 

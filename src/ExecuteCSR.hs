@@ -58,7 +58,7 @@ execute Ebreak = do
 execute Mret = do
   -- Currently, only machine mode is supported.
   -- In the future we will need to deal with the privilege stack.
-  mepc <- getCSR MEPC
+  mepc <- getCSRField Field.MEPC
   setPC mepc
 -- end ast
 execute _ = mzero

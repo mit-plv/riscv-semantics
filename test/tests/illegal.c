@@ -1,19 +1,26 @@
 int putchar(int c);
 
-void exception_handler() {
+void trap_handler() {
   putchar('!');
   putchar('\n');
-  void *tmp;
-  asm volatile("csrrw %0,mepc,zero\n"
-               "addi %0,%0,4\n"
-               "csrrw zero,mepc,%0\n"
-               "mret" :: "r" (tmp));
 }
 
+// Wrapper for C function.
+// Saves and restores a0, uses mret.
+void _trap_handler();
+asm("_trap_handler:\n"
+    "  csrw mscratch,a0\n"
+    "  call trap_handler\n"
+    "  csrrw a0,mepc,zero\n"
+    "  addi a0,a0,4\n"
+    "  csrrw zero,mepc,a0\n"
+    "  csrr a0,mscratch\n"
+    "  mret");
+
 int main() {
-  asm volatile("csrrw zero,mtvec,%0" :: "r" (exception_handler));
+  asm volatile("csrrw zero,mtvec,%0" :: "r" (_trap_handler));
   asm volatile(".ascii \"\\0\\0\\0\\0\"");
   putchar('?');
   putchar('\n');
-  for(;;);
+  return 0;
 }
