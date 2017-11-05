@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf #-}
 module MMIO64 where
-import Memory as M
+import qualified Memory as M
 import MapMemory
 import Program
 import Utility
@@ -68,8 +68,18 @@ rvGetChar = MState $ \comp -> liftIO cGetChar >>= (\c -> return (c, comp))
 rvPutChar :: StoreFunc
 rvPutChar val = MState $ \comp -> liftIO (putChar $ chr32 val) >> return ((), comp)
 
+getMTime :: LoadFunc
+getMTime = fmap fromIntegral (getCSRField Field.MCycle)
+
+-- Ignore writes to mtime.
+setMTime :: StoreFunc
+setMTime val = return ()
+
+-- Addresses for mtime/mtimecmp chosen for Spike compatibility.
 mmioTable :: S.Map MachineInt (LoadFunc, StoreFunc)
-mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar))]
+mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar)),
+                        (0x200bff8, (getMTime, setMTime))]
+mtimecmp_addr = 0x2004000
 
 wrapLoad loadFunc addr = MState $ \comp -> return (fromIntegral $ loadFunc (mem comp) addr, comp)
 wrapStore storeFunc addr val = MState $ \comp -> return ((), comp { mem = storeFunc (mem comp) addr (fromIntegral val) })
@@ -81,16 +91,29 @@ instance RiscvProgram (MState MMIO64) Int64 Word64 where
   getPC = MState $ \comp -> return (pc comp, comp)
   setPC val = MState $ \comp -> return ((), comp { nextPC = fromIntegral val })
   step = do
+    -- Post interrupt if mtime >= mtimecmp
+    mtime <- getMTime
+    mtimecmp <- loadWord mtimecmp_addr
+    setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
     -- Check for interrupts before updating PC.
     mie <- getCSRField Field.MIE
     meie <- getCSRField Field.MEIE
     meip <- getCSRField Field.MEIP
+    mtie <- getCSRField Field.MTIE
+    mtip <- getCSRField Field.MTIP
     nPC <- MState $ \comp -> (return (nextPC comp, comp))
-    fPC <- (if (mie > 0 && meie > 0 && meip > 0) then do
-              setCSRField Field.MEIP 0
+    fPC <- (if (mie > 0 && ((meie > 0 && meip > 0) || (mtie > 0 && mtip > 0))) then do
+              -- Disable interrupts
+              setCSRField Field.MIE 0
+              if (meie > 0 && meip > 0) then do
+                -- Remove pending external interrupt
+                setCSRField Field.MEIP 0
+                setCSRField Field.MCauseCode 11 -- Machine external interrupt.
+              else if (mtie > 0 && mtip > 0) then
+                setCSRField Field.MCauseCode 7 -- Machine timer interrupt.
+              else return ()
               -- Save the PC of the next (unexecuted) instruction.
               setCSRField Field.MEPC nPC
-              setCSRField Field.MCauseCode 11 -- Machine external interrupt.
               trapPC <- getCSRField Field.MTVecBase
               return (trapPC * 4)
             else return nPC)
