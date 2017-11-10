@@ -269,20 +269,20 @@ funct3_SRAW  :: MachineInt;    funct3_SRAW  = 0x5     --- 3'b_101
 funct7_SRAW  :: MachineInt;    funct7_SRAW  = 0x20    --- 7'b_010_0000
 
 -- OP_32 sub-opcodes, M standard extension (RV64 only)
-funct3_MULW  :: MachineInt;    funct3_MULW  = 0x8     --- 3'b_000
-funct7_MULW  :: MachineInt;    funct7_MULW  = 0x00    --- 7'b_000_0001
+funct3_MULW  :: MachineInt;    funct3_MULW  = 0x0     --- 3'b_000
+funct7_MULW  :: MachineInt;    funct7_MULW  = 0x01    --- 7'b_000_0001
 
-funct3_DIVW  :: MachineInt;    funct3_DIVW  = 0xC     --- 3'b_100
-funct7_DIVW  :: MachineInt;    funct7_DIVW  = 0x00    --- 7'b_000_0001
+funct3_DIVW  :: MachineInt;    funct3_DIVW  = 0x4     --- 3'b_100
+funct7_DIVW  :: MachineInt;    funct7_DIVW  = 0x01    --- 7'b_000_0001
 
-funct3_DIVUW :: MachineInt;    funct3_DIVUW = 0xD     --- 3'b_101
-funct7_DIVUW :: MachineInt;    funct7_DIVUW = 0x00    --- 7'b_000_0001
+funct3_DIVUW :: MachineInt;    funct3_DIVUW = 0x5     --- 3'b_101
+funct7_DIVUW :: MachineInt;    funct7_DIVUW = 0x01    --- 7'b_000_0001
 
-funct3_REMW  :: MachineInt;    funct3_REMW  = 0xE     --- 3'b_110
-funct7_REMW  :: MachineInt;    funct7_REMW  = 0x00    --- 7'b_000_0001
+funct3_REMW  :: MachineInt;    funct3_REMW  = 0x6     --- 3'b_110
+funct7_REMW  :: MachineInt;    funct7_REMW  = 0x01    --- 7'b_000_0001
 
-funct3_REMUW :: MachineInt;    funct3_REMUW = 0xF     --- 3'b_111
-funct7_REMUW :: MachineInt;    funct7_REMUW = 0x00    --- 7'b_000_0001
+funct3_REMUW :: MachineInt;    funct3_REMUW = 0x7     --- 3'b_111
+funct7_REMUW :: MachineInt;    funct7_REMUW = 0x01    --- 7'b_000_0001
 
 -- BRANCH sub-opcodes
 funct3_BEQ  :: MachineInt;    funct3_BEQ  = 0x0     -- 3'b_000
