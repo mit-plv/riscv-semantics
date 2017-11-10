@@ -59,6 +59,8 @@ helper = do
     else do
     setPC (pc + 4)
     execute (decode $ fromIntegral inst)
+    -- execute (decode 32 $ fromIntegral inst)    -- If using new decoder, 2017-11-10
+    -- execute (decode 64 $ fromIntegral inst)    -- If using new decoder, 2017-11-10
     interrupt <- (MState $ \comp -> liftIO checkInterrupt >>= (\b -> return (b, comp)))
     if interrupt then do
       -- Signal interrupt by setting MEIP high.
