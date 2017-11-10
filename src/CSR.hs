@@ -4,6 +4,7 @@ import Data.Int
 import Data.Bits
 import Data.Maybe
 import Data.Tuple
+import Prelude
 
 data CSR = MISA | MStatus | MTVec | MEDeleg | MIDeleg | MIP | MIE | MCycle | MInstRet |
            MCounterEn | MScratch | MEPC | MCause | MTVal

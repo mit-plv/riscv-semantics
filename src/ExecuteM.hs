@@ -4,6 +4,7 @@ import Decode
 import Program
 import Utility
 import Control.Monad
+import Prelude
 
 execute :: forall p t u. (RiscvProgram p t u) => Instruction -> p ()
 -- begin ast

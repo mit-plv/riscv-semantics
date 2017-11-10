@@ -4,6 +4,7 @@ import Data.Bits
 import Data.Int
 import Data.Maybe
 import Data.List
+import Prelude
 
 type Register = MachineInt
 

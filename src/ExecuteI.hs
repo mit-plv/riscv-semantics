@@ -6,6 +6,7 @@ import Utility
 import Data.Bits
 import Data.Word
 import Control.Monad
+import Prelude
 
 execute :: forall p t u. (RiscvProgram p t u) => Instruction -> p ()
 -- begin ast

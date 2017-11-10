@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-9.5
+resolver: nightly-2017-10-26
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -37,10 +37,18 @@ resolver: lts-9.5
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
+- clash/clash-ghc
+- clash/clash-lib
+- clash/clash-prelude
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps: []
-
+extra-deps:
+- ghc-tcplugins-extra-0.2.1
+- ghc-typelits-extra-0.2.3
+- ghc-typelits-knownnat-0.3
+- ghc-typelits-natnormalise-0.5.3
+- uu-interleaved-0.2.0.0
+- uu-parsinglib-2.9.1.1
 # Override default flag values for local packages and extra-deps
 flags: {}
 
