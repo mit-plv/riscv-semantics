@@ -18,6 +18,7 @@ There is a makefile with recipes to compile the project, the elf2hex utility, an
 Building the tests requires a recent version of `riscv32-unknown-elf-gcc` in your path.
 To build everything, run:
 
+    $ ./install.sh
     $ make
 
 If you do not have the compiler in your path, this command will fail saying
