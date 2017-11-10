@@ -10,7 +10,10 @@ RISCVCC64=riscv64-unknown-linux-gnu-gcc -march=rv64imfd -DRISCV -nostdlib -nosta
 RISCVCC32=riscv32-unknown-linux-gnu-gcc -march=rv32im -DRISCV -nostdlib -nostartfiles
 
 
+
+
 all: $(HEX32) $(HEX64)
+all64: $(HEX64)
 
 $(ELF2HEX)/elf2hex:
 	$(MAKE) -C $(ELF2HEX)
