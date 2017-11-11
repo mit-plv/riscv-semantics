@@ -4,7 +4,7 @@ module Decode where
 
 import Data.Bits    -- For bit-wise 'and' (.&.) etc.
 import Data.Word    -- For Word32 type (unsigned 32-bit ints)
-
+import Prelude
 -- Local imports
 
 import Utility

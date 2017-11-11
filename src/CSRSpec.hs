@@ -4,6 +4,7 @@ import Program
 import Utility
 import qualified CSRField as Field
 import Data.Bits
+import Prelude 
 
 getCSR :: (RiscvProgram p t u) => CSR -> p MachineInt
 

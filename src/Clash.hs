@@ -56,6 +56,7 @@ data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: I
 
 
 instance RiscvProgram (MState MMIOClash) Int32 Word32 where
+  getXLEN = MState $ \comp -> return (32, comp)
   getRegister reg = MState $ \comp -> return (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = MState $ \comp -> return ((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
   loadByte = undefined
@@ -66,25 +67,29 @@ instance RiscvProgram (MState MMIOClash) Int32 Word32 where
   storeHalf= undefined
   storeWord = undefined
   storeDouble = undefined
-  loadCSR= undefined
-  storeCSR=undefined
+  getCSRField = undefined
+  setCSRField = undefined
   getPC = MState $ \comp -> return (pc comp, comp)
   setPC val = MState $ \comp -> return ((), comp { nextPC = fromIntegral val })
   step = MState $ \comp -> return ((), comp { pc = nextPC comp })
 
-oneStep :: Word32 -> MState MMIOClash ()
-oneStep inst = do
+oneStep :: Int32 -> MState MMIOClash ()
+oneStep i = do
   pc <- getPC
   setPC (pc + 4)
-  execute (D.decode $ fromIntegral inst)
+  size <- getXLEN
+  execute (D.decode size $ fromIntegral i)
   step
 
-wrap :: Word32 -> Maybe (MMIOClash)-> Maybe MMIOClash
+wrap :: Int32 -> Maybe (MMIOClash)-> Maybe MMIOClash
 wrap i (Just s) = case runState (oneStep i) s of
            Nothing -> Nothing
            Just (_,s) -> Just s
 wrap i Nothing = Nothing
 
 initState = MMIOClash { registers = replicate (SNat :: SNat 31) 0, pc = 0x200, nextPC = 0 }
---topEntity :: Signal (Maybe MMIOClash) -> Signal (Maybe MMIOClash)
-topEntity = moore (\s i -> wrap i s) (\s -> s) $ Just initState
+--topEntity :: Sigonal (Maybe MMIOClash) -> Signal (())
+topEntity :: SystemClockReset
+  => Signal System Int32
+  -> Signal System (Maybe MMIOClash)
+topEntity = mealy (\s i -> (wrap i s,s)) $ Just initState

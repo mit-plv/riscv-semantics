@@ -1,6 +1,7 @@
 -- This module exists to provide a separate namespace for CSR fields (as opposed
 -- to CSRs), to prevent conflicts via qualified imports.
 module CSRField where
+import Prelude
 
 data CSRField = MXL | Extensions | -- misa
                 SXL | UXL | TSR | TW | TVM | MXR | SUM | MPRV | XS | FS | MPP |
