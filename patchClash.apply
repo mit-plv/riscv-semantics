@@ -1,0 +1,13 @@
+diff --git a/clash-lib/prims/verilog/GHC_Prim.json b/clash-lib/prims/verilog/GHC_Prim.json
+index 43a27be..ac0f867 100644
+--- a/clash-lib/prims/verilog/GHC_Prim.json
++++ b/clash-lib/prims/verilog/GHC_Prim.json
+@@ -255,7 +255,7 @@ assign ~RESULT = {~SYM[0],~SYM[1]};
+     }
+   }
+ , { "BlackBox" :
+-    { "name"      : "GHC.Prim.uncheckedIShiftL#"
++    { "name"      : "GHC.Prim.uncheckedShiftRL#"
+     , "type"      : "uncheckedShiftRL# :: Word# -> Int# -> Word#"
+     , "templateE" : "~ARG[0] >> ~ARG[1]"
+     }
