@@ -46,11 +46,8 @@ This should produce the output
 
 It's failing on some of the entries but I think it means that we will just simplify the corresponding entries.
 
-### Generation of VHDL (work in progress)
+### Generation of verilog (work in progress)
 
-	$ stack install clash-ghc
 
-	$ stack runhaskell gen.hs #(To make sure we have a proper decode)
-
-	$ cd src; stack exec -- clash --vhdl Clash.hs  -clash-inline-limit=200
+	$ cd src; stack exec -- clash --verilog Clash.hs  -clash-inline-limit=200
 

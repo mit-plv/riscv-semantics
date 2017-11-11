@@ -92,4 +92,4 @@ initState = MMIOClash { registers = replicate (SNat :: SNat 31) 0, pc = 0x200, n
 topEntity :: SystemClockReset
   => Signal System Int32
   -> Signal System (Maybe MMIOClash)
-topEntity = mealy (\s i -> (wrap i s,s)) $ Just initState
+topEntity = mealy (\s i -> (wrap i s,wrap i s)) $ Just initState
