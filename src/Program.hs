@@ -25,3 +25,12 @@ class (MonadPlus p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, Machi
   getPC :: p t
   setPC :: (Integral s) => s -> p ()
   step :: p ()
+
+raiseException :: (RiscvProgram p t u) => MachineInt -> MachineInt -> p ()
+raiseException isInterrupt exceptionCode = do
+  pc <- getPC
+  addr <- getCSRField MTVecBase
+  setCSRField MEPC pc
+  setCSRField MCauseInterrupt isInterrupt
+  setCSRField MCauseCode exceptionCode
+  setPC (addr * 4)
