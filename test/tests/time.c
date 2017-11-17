@@ -1,8 +1,10 @@
+#include "../trap_handler.h"
+#include "../mmio.h"
+
+#define DELAY_TIME 20000
+
 int *MTIMECMP_ADDR = (int *)0x2004000;
 int *MTIME_ADDR = (int *)0x200bff8;
-
-int getchar();
-int putchar(int c);
 
 int running = 1;
 
@@ -11,20 +13,6 @@ void trap_handler() {
   putchar('\n');
   running = 0;
 }
-
-// Wrapper for C function.
-// Saves and restores a0, uses mret.
-void _trap_handler();
-asm("_trap_handler:\n"
-    "  csrw mscratch,a0\n"
-    "  call trap_handler\n"
-    "  csrrw a0,mepc,zero\n"
-    "  addi a0,a0,4\n"
-    "  csrrw zero,mepc,a0\n"
-    "  csrr a0,mscratch\n"
-    "  mret");
-
-#define DELAY_TIME 20000
 
 int main() {
   // Setup the trap handler.
