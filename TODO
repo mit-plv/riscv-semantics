@@ -96,3 +96,14 @@ Friday, November 3rd
 * ditto for misaligned accesses
 * add extra param to decode for machine width, generate huge if structure instead of huge table
 * refactor Maybe out of RiscvProgram and into Execute
+
+Friday, November 17th
+Infrastructure:
+* riscv-tests
+* continuous integration via Travis
+* 32-bit/64-bit builds in build system
+Code:
+* Virtual memory once again (Sv39)
+* Refactor Maybe out of MMIO64. Sub-executes will require MonadPlus instead of RiscvProgram.
+* s/fromIntegral/some other name/g, remove all '$' from execute files
+* Hierarchy of implementation (build MMIO64 using Minimal64).
