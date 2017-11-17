@@ -95,11 +95,9 @@ data Instruction =
   Ebreak |
   Uret |
   Sret |
-  -- Hret |    -- TODO: Obsolete?
   Mret |
-  -- Dret |    -- TODO: What is DRET?
   Wfi |
-  Sfence_vm { rs1 :: Register, rs2 :: Register } |    -- TODO: this is wrong in riscv-semantics/src/Decode.hs
+  Sfence_vm { rs1 :: Register, rs2 :: Register } |
 
   Csrrw { rd :: Register, rs1 :: Register, csr12 :: MachineInt } |
   Csrrs { rd :: Register, rs1 :: Register, csr12 :: MachineInt } |
@@ -299,7 +297,6 @@ funct12_ECALL    :: MachineInt;    funct12_ECALL  = 0x000    -- 12'b_0000_0000_0
 funct12_EBREAK   :: MachineInt;    funct12_EBREAK = 0x001    -- 12'b_0000_0000_0001
 funct12_URET     :: MachineInt;    funct12_URET   = 0x002    -- 12'b_0000_0000_0010
 funct12_SRET     :: MachineInt;    funct12_SRET   = 0x102    -- 12'b_0001_0000_0010
--- funct7_HRET   :: MachineInt;    funct12_HRET   = ???
 funct12_MRET     :: MachineInt;    funct12_MRET   = 0x302    -- 12'b_0011_0000_0010
 funct12_WFI      :: MachineInt;    funct12_WFI    = 0x105    -- 12'b_0001_0000_0101
 

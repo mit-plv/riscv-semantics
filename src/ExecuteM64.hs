@@ -9,7 +9,7 @@ execute :: forall p t u. (RiscvProgram p t u) => Instruction -> p ()
 execute (Mulw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (s32 $ x * y)
+  setRegister rd (s32 (x * y))
 execute (Divw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -34,6 +34,6 @@ execute (Remuw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
   let r | y == 0 = x
-        | otherwise = fromIntegral $ (unsigned x) `rem` (unsigned y)
+        | otherwise = fromIntegral ((unsigned x) `rem` (unsigned y))
     in setRegister rd (s32 r)
 execute _ = mzero

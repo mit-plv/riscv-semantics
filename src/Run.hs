@@ -49,9 +49,6 @@ helper :: MState MMIO64 Int64
 helper = do
   pc <- getPC
   inst <- loadWord pc
-
-  --trace ("PC:"++ show pc) (return ())
-  --trace ("Inst:"++ show inst) (return ())
   if inst == 0x6f -- Stop on infinite loop instruction.
     then do
         cycles <- getCSRField Field.MCycle
@@ -62,10 +59,7 @@ helper = do
     else do
     setPC (pc + 4)
     size <- getXLEN
-  --  trace ("Decoded: " ++ show (decode size $ fromIntegral inst)) (return ()) 
     execute (decode size $ fromIntegral inst)
-    -- execute (decode 32 $ fromIntegral inst)    -- If using new decoder, 2017-11-10
-    -- execute (decode 64 $ fromIntegral inst)    -- If using new decoder, 2017-11-10
     interrupt <- (MState $ \comp -> liftIO checkInterrupt >>= (\b -> return (b, comp)))
     if interrupt then do
       -- Signal interrupt by setting MEIP high.
