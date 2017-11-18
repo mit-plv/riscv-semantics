@@ -6,7 +6,7 @@ import Utility
 import Control.Monad
 import Prelude
 
-execute :: forall p t u. (RiscvProgram p t u) => Instruction -> p ()
+execute :: forall p t u. (RiscvProgram p t u, MonadPlus p) => Instruction -> p ()
 -- begin ast
 execute (Mul rd rs1 rs2) = do
   x <- getRegister rs1

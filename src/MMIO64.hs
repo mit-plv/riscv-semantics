@@ -19,7 +19,7 @@ import Control.Monad.Trans.Maybe
 import System.IO.Error
 import qualified Data.Map as S
 
-newtype MState s a = MState { runState :: s -> (MaybeT IO) (a, s) }
+newtype MState s a = MState { runState :: s -> IO (a, s) }
 
 instance Functor (MState s) where
   fmap f a = MState $ \state -> fmap (\(b,s) -> (f b, s)) (runState a state)
@@ -33,12 +33,6 @@ instance Applicative (MState s) where
 
 instance Monad (MState s) where
   (>>=) a f = MState $ \state -> runState a state >>= (\(b, s) -> runState (f b) s)
-
-instance Alternative (MState s) where
-  empty = MState $ \state -> empty
-  (<|>) a b = MState $ \state -> runState a state <|> runState b state
-
-instance MonadPlus (MState s)
 
 data MMIO64 = MMIO64 { registers :: [Int64], csrs :: CSRFile, pc :: Int64,
                        nextPC :: Int64, mem :: S.Map Int Word8 }

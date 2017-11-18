@@ -9,6 +9,7 @@ import ExecuteM as M
 import ExecuteM64 as M64
 import ExecuteCSR as CSR
 import Control.Monad
+import Control.Monad.Trans.Maybe
 
 execute :: (RiscvProgram p t u) => Instruction -> p ()
 execute InvalidInstruction = do
@@ -16,7 +17,7 @@ execute InvalidInstruction = do
   cycles <- getCSRField Field.MCycle
   setCSRField Field.MCycle (cycles + 1)
 execute inst = do
-  msum (map (\f -> f inst) [I.execute, I64.execute, M.execute, M64.execute, CSR.execute])
+  runMaybeT (msum (map (\f -> f inst) [I.execute, I64.execute, M.execute, M64.execute, CSR.execute]))
   cycles <- getCSRField Field.MCycle
   setCSRField Field.MCycle (cycles + 1)
   instret <- getCSRField Field.MInstRet

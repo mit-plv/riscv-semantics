@@ -12,12 +12,10 @@ import Data.Maybe
 import Data.List
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Trans
-import Control.Monad.Trans.Maybe
 import System.IO.Error
 import qualified Data.Map as S
 
-newtype MState s a = MState { runState :: s -> (MaybeT IO) (a, s) }
+newtype MState s a = MState { runState :: s -> IO (a, s) }
 
 instance Functor (MState s) where
   fmap f a = MState $ \state -> fmap (\(b,s) -> (f b, s)) (runState a state)
@@ -32,12 +30,6 @@ instance Applicative (MState s) where
 instance Monad (MState s) where
   (>>=) a f = MState $ \state -> runState a state >>= (\(b, s) -> runState (f b) s)
 
-instance Alternative (MState s) where
-  empty = MState $ \state -> empty
-  (<|>) a b = MState $ \state -> runState a state <|> runState b state
-
-instance MonadPlus (MState s)
-
 data MMIO32 = MMIO32 { registers :: [Int32], csrs :: [(MachineInt, CSR)], pc :: Int32, nextPC :: Int32, mem :: S.Map Int Word8, mmio :: [(LoadFunc, StoreFunc)] }
               deriving (Show)
 
@@ -51,14 +43,14 @@ instance (Show LoadFunc) where
 instance (Show StoreFunc) where
   show x = "<storefunc>"
 
-readM mem addr = 
+readM mem addr =
     fromJust $S.lookup addr mem
 
 writeM addr val mem =
     S.insert addr val mem
 
 helpStore mem addr bytes =
-    foldr (\(b,a) m-> writeM a b m) mem $ zip bytes [addr + i | i<-[0..]] 
+    foldr (\(b,a) m-> writeM a b m) mem $ zip bytes [addr + i | i<-[0..]]
 
 ord32 :: Char -> Int32
 ord32 = fromIntegral . ord

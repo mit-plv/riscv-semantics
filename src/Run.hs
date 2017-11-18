@@ -69,7 +69,7 @@ helper = do
     helper
 
 runProgram :: MMIO64 -> IO (Int64, MMIO64)
-runProgram = (fmap fromJust) . runMaybeT . (runState helper)
+runProgram = runState helper
 
 runFile :: String -> IO Int64
 runFile f = do
