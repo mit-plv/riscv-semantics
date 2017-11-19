@@ -7,6 +7,7 @@ import Data.Word
 import Data.Maybe
 import Utility
 import Program
+import Minimal64
 import MMIO64
 import CSR
 import Elf
@@ -16,7 +17,7 @@ import Decode
 import Execute
 import Numeric
 import Control.Monad.Trans
-import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.State
 import qualified Data.Map as S
 import Debug.Trace
 
@@ -46,7 +47,7 @@ checkInterrupt = do
     else return False
   else return False
 
-helper :: MState MMIO64 Int64
+helper :: IOMState Int64
 helper = do
   pc <- getPC
   inst <- loadWord pc
@@ -61,7 +62,7 @@ helper = do
     setPC (pc + 4)
     size <- getXLEN
     execute (decode size $ fromIntegral inst)
-    interrupt <- (MState $ \comp -> liftIO checkInterrupt >>= (\b -> return (b, comp)))
+    interrupt <- liftIO checkInterrupt
     if interrupt then do
       -- Signal interrupt by setting MEIP high.
       setCSRField Field.MEIP 1
@@ -69,15 +70,15 @@ helper = do
     step
     helper
 
-runProgram :: MMIO64 -> IO (Int64, MMIO64)
-runProgram = runState helper
+runProgram :: Minimal64 -> IO (Int64, Minimal64)
+runProgram = runStateT helper
 
 runFile :: String -> IO Int64
 runFile f = do
   h <- openFile f ReadMode
-  m <- readHexFile h []
-  let c = MMIO64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x80000000, nextPC = 0,
-                   mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
+  m <- readELF h []
+  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x200, nextPC = 0,
+                      mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
     fmap fst $ runProgram c
 
 runElf :: String -> IO Int64
