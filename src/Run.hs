@@ -16,7 +16,7 @@ import Decode
 import Execute
 import Numeric
 import Control.Monad.Trans
-import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.State
 import qualified Data.Map as S
 import Debug.Trace
 
@@ -46,7 +46,7 @@ checkInterrupt = do
     else return False
   else return False
 
-helper :: IOMState Minimal64 Int64
+helper :: IOMState Int64
 helper = do
   pc <- getPC
   inst <- loadWord pc
@@ -61,7 +61,7 @@ helper = do
     setPC (pc + 4)
     size <- getXLEN
     execute (decode size $ fromIntegral inst)
-    interrupt <- (IOMState $ \comp -> liftIO checkInterrupt >>= (\b -> return (b, comp)))
+    interrupt <- liftIO checkInterrupt
     if interrupt then do
       -- Signal interrupt by setting MEIP high.
       setCSRField Field.MEIP 1
@@ -70,7 +70,7 @@ helper = do
     helper
 
 runProgram :: Minimal64 -> IO (Int64, Minimal64)
-runProgram = MMIO64.runState helper
+runProgram = runStateT helper
 
 runFile :: String -> IO Int64
 runFile f = do
