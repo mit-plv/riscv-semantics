@@ -1,4 +1,4 @@
-module RunMinimal (readELF, runProgram, runFile) where
+module RunMinimal (readHex, runProgram, runFile) where
 import System.IO
 import System.Environment
 import System.Exit
@@ -19,15 +19,15 @@ processLine :: String -> [Word8] -> [Word8]
 processLine ('@':xs) l = l ++ take (4*(read ("0x" ++ xs) :: Int) - (length l)) (repeat 0)
 processLine s l = l ++ splitWord (read ("0x" ++ s) :: Int32)
 
-readELF :: Handle -> [Word8] -> IO [Word8]
-readELF h l = do
+readHexFile :: Handle -> [Word8] -> IO [Word8]
+readHexFile h l = do
   s <- hGetLine h
   done <- hIsEOF h
   if (null s)
     then return l
     else if done
          then return $ processLine s l
-         else readELF h (processLine s l)
+         else readHexFile h (processLine s l)
 
 helper :: (RiscvProgram p t u) => p t
 helper = do
@@ -47,7 +47,7 @@ runProgram = fromJust . runState helper
 runFile :: String -> IO Int64
 runFile f = do
   h <- openFile f ReadMode
-  m <- readELF h []
+  m <- readHexFile h []
   let c = Minimal64 { registers = (take 31 $ repeat 0), pc = 0x200, nextPC = 0,
                       mem = (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
     return $ fst $ runProgram c

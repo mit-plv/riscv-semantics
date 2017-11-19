@@ -46,6 +46,12 @@ rvGetChar = liftIO cGetChar
 rvPutChar :: StoreFunc
 rvPutChar val = liftIO (putChar $ chr32 val)
 
+-- I have no idea what I'm doing
+getSuccessReg :: LoadFunc
+getSuccessReg = MState $ \comp -> return (0, comp)
+setSuccessReg :: StoreFunc
+setSuccessReg val = MState $ \comp -> liftIO (putStr "Return Code: " >> print val) >> return ((), comp)
+
 getMTime :: LoadFunc
 getMTime = fmap fromIntegral (getCSRField Field.MCycle)
 
@@ -56,6 +62,7 @@ setMTime val = return ()
 -- Addresses for mtime/mtimecmp chosen for Spike compatibility.
 mmioTable :: S.Map MachineInt (LoadFunc, StoreFunc)
 mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar)),
+                        (0x1000000, (getSuccessReg, setSuccessReg)),
                         (0x200bff8, (getMTime, setMTime))]
 mtimecmp_addr = 0x2004000
 

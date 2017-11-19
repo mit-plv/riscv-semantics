@@ -49,6 +49,7 @@ extra-deps:
 - ghc-typelits-natnormalise-0.5.3
 - uu-interleaved-0.2.0.0
 - uu-parsinglib-2.9.1.1
+- elf-0.28
 # Override default flag values for local packages and extra-deps
 flags: {}
 

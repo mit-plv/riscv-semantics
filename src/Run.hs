@@ -10,6 +10,7 @@ import Program
 import Minimal64
 import MMIO64
 import CSR
+import Elf
 import qualified CSRField as Field
 import CSRFile
 import Decode
@@ -24,15 +25,15 @@ processLine :: String -> [Word8] -> [Word8]
 processLine ('@':xs) l = l ++ take (4*(read ("0x" ++ xs) :: Int) - (length l)) (repeat 0)
 processLine s l = l ++ splitWord (read ("0x" ++ s) :: Word32)
 
-readELF :: Handle -> [Word8] -> IO [Word8]
-readELF h l = do
+readHexFile :: Handle -> [Word8] -> IO [Word8]
+readHexFile h l = do
   s <- hGetLine h
   done <- hIsEOF h
   if (null s)
     then return l
     else if done
          then return $ processLine s l
-         else readELF h (processLine s l)
+         else readHexFile h (processLine s l)
 
 checkInterrupt :: IO Bool
 checkInterrupt = do
@@ -78,6 +79,13 @@ runFile f = do
   m <- readELF h []
   let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x200, nextPC = 0,
                       mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
+    fmap fst $ runProgram c
+
+runElf :: String -> IO Int64
+runElf f = do
+  m <- readElf f
+  let c = MMIO64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x80000000, nextPC = 0,
+                   mem = S.fromList m } in
     fmap fst $ runProgram c
 
 main :: IO ()

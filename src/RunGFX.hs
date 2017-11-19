@@ -26,15 +26,15 @@ processLine :: String -> [Word8] -> [Word8]
 processLine ('@':xs) l = l ++ take (4*(read ("0x" ++ xs) :: Int) - (length l)) (repeat 0)
 processLine s l = l ++ splitWord (read ("0x" ++ s) :: Word32)
 
-readELF :: Handle -> [Word8] -> IO [Word8]
-readELF h l = do
+readHexFile :: Handle -> [Word8] -> IO [Word8]
+readHexFile h l = do
   s <- hGetLine h
   done <- hIsEOF h
   if (null s)
     then return l
     else if done
          then return $ processLine s l
-         else readELF h (processLine s l)
+         else readHexFile h (processLine s l)
 
 data Graphics = Graphics { width :: Int, height :: Int, texture :: SDL.Texture, renderer :: SDL.Renderer }
 
@@ -81,7 +81,7 @@ runProgram comp = do
 runFile :: String -> IO Int32
 runFile f = do
   h <- openFile f ReadMode
-  m <- readELF h []
+  m <- readHexFile h []
   let c = MMGFX32 { registers = (take 31 $ repeat 0), csrs = defaultCSRs, pc = 0x200, nextPC = 0,
                    mem = (m ++ (take (65520 - length m) $ repeat (0::Word8))), mmio = baseMMIO } in
     fmap fst $ runProgram c
