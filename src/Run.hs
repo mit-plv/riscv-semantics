@@ -76,7 +76,7 @@ runProgram = runStateT helper
 runFile :: String -> IO Int64
 runFile f = do
   h <- openFile f ReadMode
-  m <- readELF h []
+  m <- readHexFile h []
   let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x200, nextPC = 0,
                       mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
     fmap fst $ runProgram c
@@ -84,7 +84,7 @@ runFile f = do
 runElf :: String -> IO Int64
 runElf f = do
   m <- readElf f
-  let c = MMIO64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x80000000, nextPC = 0,
+  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x80000000, nextPC = 0,
                    mem = S.fromList m } in
     fmap fst $ runProgram c
 

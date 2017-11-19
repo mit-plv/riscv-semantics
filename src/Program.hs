@@ -8,6 +8,7 @@ import Data.Bits
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
+import Prelude
 
 class (Monad p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => RiscvProgram p t u | p -> t, t -> u where
   getXLEN :: (Integral s) => p s
