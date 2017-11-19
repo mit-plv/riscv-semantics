@@ -7,6 +7,7 @@ import Data.Word
 import Data.Maybe
 import Utility
 import Program
+import Minimal64
 import MMIO64
 import CSR
 import qualified CSRField as Field
@@ -45,7 +46,7 @@ checkInterrupt = do
     else return False
   else return False
 
-helper :: MState MMIO64 Int64
+helper :: IOMState Minimal64 Int64
 helper = do
   pc <- getPC
   inst <- loadWord pc
@@ -60,7 +61,7 @@ helper = do
     setPC (pc + 4)
     size <- getXLEN
     execute (decode size $ fromIntegral inst)
-    interrupt <- (MState $ \comp -> liftIO checkInterrupt >>= (\b -> return (b, comp)))
+    interrupt <- (IOMState $ \comp -> liftIO checkInterrupt >>= (\b -> return (b, comp)))
     if interrupt then do
       -- Signal interrupt by setting MEIP high.
       setCSRField Field.MEIP 1
@@ -68,15 +69,15 @@ helper = do
     step
     helper
 
-runProgram :: MMIO64 -> IO (Int64, MMIO64)
-runProgram = runState helper
+runProgram :: Minimal64 -> IO (Int64, Minimal64)
+runProgram = MMIO64.runState helper
 
 runFile :: String -> IO Int64
 runFile f = do
   h <- openFile f ReadMode
   m <- readELF h []
-  let c = MMIO64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x200, nextPC = 0,
-                   mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
+  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x200, nextPC = 0,
+                      mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
     fmap fst $ runProgram c
 
 main :: IO ()
