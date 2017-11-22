@@ -1,7 +1,7 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf #-}
-module MMIO64 where
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, FlexibleContexts, MultiWayIf, UndecidableInstances #-}
+module MMIO where
+import Data.Bits
 import Data.Int
-import Data.Word
 import Data.Char
 import Control.Monad.Identity
 import Control.Monad.State
@@ -10,34 +10,33 @@ import qualified Data.Map as S
 
 import Program
 import Utility
-import qualified Minimal64 as Min
 
-type IOMState = StateT Min.Minimal64 IO
+type IOState s = StateT s IO
 
-type LoadFunc = IOMState Int32
-type StoreFunc = Int32 -> IOMState ()
+type LoadFunc s = IOState s Int32
+type StoreFunc s = Int32 -> IOState s ()
 
-instance (Show LoadFunc) where
+instance (Show (LoadFunc s)) where
   show _ = "<io/loadfunc>"
-instance (Show StoreFunc) where
+instance (Show (StoreFunc s)) where
   show _ = "<io/storefunc>"
 
 cGetChar :: IO Int32
 cGetChar = catchIOError (fmap (fromIntegral . ord) getChar) (\e -> if isEOFError e then return (-1) else ioError e)
 
-rvGetChar :: LoadFunc
+rvGetChar :: LoadFunc s
 rvGetChar = liftIO cGetChar
-rvPutChar :: StoreFunc
+rvPutChar :: StoreFunc s
 rvPutChar val = liftIO (putChar $ chr $ fromIntegral val)
 
 -- Addresses for mtime/mtimecmp chosen for Spike compatibility.
-mmioTable :: S.Map MachineInt (LoadFunc, StoreFunc)
+mmioTable :: S.Map MachineInt (LoadFunc s, StoreFunc s)
 mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar))]
 
 liftState :: (Monad m) => State a b -> StateT a m b
 liftState = mapStateT (return . runIdentity)
 
-instance RiscvProgram IOMState Int64 Word64 where
+instance (RiscvProgram (State s) t u, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => RiscvProgram (IOState s) t u where
   getXLEN = liftState getXLEN
   getRegister r = liftState (getRegister r)
   setRegister r v = liftState (setRegister r v)

@@ -7,7 +7,7 @@ import Data.Word
 import Utility
 import Program
 import Minimal64
-import MMIO64
+import MMIO
 import Elf
 import qualified CSRField as Field
 import CSRFile
@@ -44,7 +44,7 @@ checkInterrupt = do
     else return False
   else return False
 
-helper :: IOMState Int64
+helper :: IOState Minimal64 Int64
 helper = do
   pc <- getPC
   inst <- loadWord pc
@@ -82,7 +82,7 @@ runElf :: String -> IO Int64
 runElf f = do
   m <- readElf f
   let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x80000000, nextPC = 0,
-                   mem = S.fromList m } in
+                      mem = S.fromList m } in
     fmap fst $ runProgram c
 
 main :: IO ()

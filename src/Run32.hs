@@ -7,7 +7,7 @@ import Data.Word
 import Utility
 import Program
 import Minimal32
-import MMIO32
+import MMIO
 import qualified CSRField as Field
 import CSRFile
 import Decode
@@ -43,7 +43,7 @@ checkInterrupt = do
     else return False
   else return False
 
-helper :: IOMState Int32
+helper :: IOState Minimal32 Int32
 helper = do
   pc <- getPC
   inst <- loadWord pc
