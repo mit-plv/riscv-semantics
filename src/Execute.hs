@@ -1,7 +1,6 @@
 module Execute where
 import Decode
 import Program
-import CSR
 import qualified CSRField as Field
 import ExecuteI as I
 import ExecuteI64 as I64
@@ -17,7 +16,7 @@ execute InvalidInstruction = do
   cycles <- getCSRField Field.MCycle
   setCSRField Field.MCycle (cycles + 1)
 execute inst = do
-  runMaybeT (msum (map (\f -> f inst) [I.execute, I64.execute, M.execute, M64.execute, CSR.execute]))
+  _ <- runMaybeT (msum (map (\f -> f inst) [I.execute, I64.execute, M.execute, M64.execute, CSR.execute]))
   cycles <- getCSRField Field.MCycle
   setCSRField Field.MCycle (cycles + 1)
   instret <- getCSRField Field.MInstRet

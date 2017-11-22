@@ -5,13 +5,10 @@ import Utility
 import CSRFile
 import qualified CSRField as Field
 import qualified Memory as M
-import MapMemory
+import MapMemory()
 import Data.Int
 import Data.Word
-import Data.Bits
 import qualified Data.Map as S
-import Control.Applicative
-import Control.Monad
 import Control.Monad.State
 
 data Minimal64 = Minimal64 { registers :: [Int64], csrs :: CSRFile, pc :: Int64,
@@ -24,16 +21,16 @@ type LoadFunc = MState Int32
 type StoreFunc = Int32 -> MState ()
 
 instance (Show LoadFunc) where
-  show x = "<loadfunc>"
+  show _ = "<loadfunc>"
 instance (Show StoreFunc) where
-  show x = "<storefunc>"
+  show _ = "<storefunc>"
 
 getMTime :: LoadFunc
 getMTime = fmap fromIntegral (getCSRField Field.MCycle)
 
 -- Ignore writes to mtime.
 setMTime :: StoreFunc
-setMTime val = return ()
+setMTime _ = return ()
 
 -- Addresses for mtime/mtimecmp chosen for Spike compatibility.
 mmioTable :: S.Map MachineInt (LoadFunc, StoreFunc)

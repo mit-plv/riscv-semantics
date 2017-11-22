@@ -1,70 +1,38 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf #-}
 module MMIO64 where
-import qualified Memory as M
-import MapMemory
-import Program
-import Utility
-import CSRFile
-import qualified CSRField as Field
 import Data.Int
 import Data.Word
-import Data.Bits
 import Data.Char
-import Data.Maybe
-import Data.List
-import Control.Applicative
-import Control.Monad
 import Control.Monad.Identity
-import Control.Monad.Trans
-import Control.Monad.Trans.State
+import Control.Monad.State
 import System.IO.Error
 import qualified Data.Map as S
 
+import Program
+import Utility
 import qualified Minimal64 as Min
 
 type IOMState = StateT Min.Minimal64 IO
-
-ord32 :: Char -> Int32
-ord32 = fromIntegral . ord
-
-chr32 :: Int32 -> Char
-chr32 = chr . fromIntegral
 
 type LoadFunc = IOMState Int32
 type StoreFunc = Int32 -> IOMState ()
 
 instance (Show LoadFunc) where
-  show x = "<io/loadfunc>"
+  show _ = "<io/loadfunc>"
 instance (Show StoreFunc) where
-  show x = "<io/storefunc>"
+  show _ = "<io/storefunc>"
 
 cGetChar :: IO Int32
-cGetChar = catchIOError (fmap ord32 getChar) (\e -> if isEOFError e then return (-1) else ioError e)
+cGetChar = catchIOError (fmap (fromIntegral . ord) getChar) (\e -> if isEOFError e then return (-1) else ioError e)
 
 rvGetChar :: LoadFunc
 rvGetChar = liftIO cGetChar
 rvPutChar :: StoreFunc
-rvPutChar val = liftIO (putChar $ chr32 val)
-
--- I have no idea what I'm doing
---getSuccessReg :: LoadFunc
---getSuccessReg = MState $ \comp -> return (0, comp)
---setSuccessReg :: StoreFunc
---setSuccessReg val = MState $ \comp -> liftIO (putStr "Return Code: " >> print val) >> return ((), comp)
---
-getMTime :: LoadFunc
-getMTime = fmap fromIntegral (getCSRField Field.MCycle)
-
--- Ignore writes to mtime.
-setMTime :: StoreFunc
-setMTime val = return ()
+rvPutChar val = liftIO (putChar $ chr $ fromIntegral val)
 
 -- Addresses for mtime/mtimecmp chosen for Spike compatibility.
 mmioTable :: S.Map MachineInt (LoadFunc, StoreFunc)
-mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar)),
---                        (0x1000000, (getSuccessReg, setSuccessReg)),
-                        (0x200bff8, (getMTime, setMTime))]
-mtimecmp_addr = 0x2004000
+mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar))]
 
 liftState :: (Monad m) => State a b -> StateT a m b
 liftState = mapStateT (return . runIdentity)

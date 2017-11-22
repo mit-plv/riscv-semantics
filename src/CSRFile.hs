@@ -1,5 +1,4 @@
 module CSRFile where
-import CSR
 import CSRField
 import Utility
 import qualified Data.Map as M

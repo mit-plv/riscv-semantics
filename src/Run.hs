@@ -4,18 +4,15 @@ import System.Environment
 import System.Exit
 import Data.Int
 import Data.Word
-import Data.Maybe
 import Utility
 import Program
 import Minimal64
 import MMIO64
-import CSR
 import Elf
 import qualified CSRField as Field
 import CSRFile
 import Decode
 import Execute
-import Numeric
 import Control.Monad.Trans
 import Control.Monad.Trans.State
 import qualified Data.Map as S
@@ -41,8 +38,8 @@ checkInterrupt = do
   if ready then do
     c <- hLookAhead stdin
     if c == '!' then do
-      getChar
-      getChar
+      _ <- getChar
+      _ <- getChar
       return True
     else return False
   else return False
