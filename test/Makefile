@@ -6,8 +6,8 @@ HEX32=$(addsuffix 32.hex,$(TESTS))
 HEX64=$(addsuffix 64.hex,$(TESTS))
 ELF2HEX=../elf2hex
 
-RISCVCC64=riscv64-unknown-linux-gnu-gcc -march=rv64imfd -DRISCV -nostdlib -nostartfiles
-RISCVCC32=riscv32-unknown-linux-gnu-gcc -march=rv32im -DRISCV -nostdlib -nostartfiles
+RISCVCC64=riscv64-unknown-linux-gnu-gcc -march=rv64imfd -mabi=lp64 -static -mcmodel=medany -nostdlib -nostartfiles
+#RISCVCC32=riscv64-unknown-linux-gnu-gcc -march=rv32im -DRISCV -nostdlib -nostartfiles
 
 
 
@@ -33,14 +33,14 @@ mmio64.o: mmio.c
 %32.hex: $(ELF2HEX)/elf2hex %.c init32.o mmio32.o link.ld
 	$(RISCVCC32) -c $*.c -o intermediate32.o
 	$(RISCVCC32) -o $*32 -Tmmio32.ld intermediate32.o init32.o mmio32.o
-	$(ELF2HEX)/elf2hex $*32
-	rm intermediate32.o $*32
+	#$(ELF2HEX)/elf2hex $*32
+	#rm intermediate32.o $*32
 
 %64.hex: $(ELF2HEX)/elf2hex %.c init64.o mmio64.o link.ld
 	$(RISCVCC64) -c $*.c -o intermediate64.o
 	$(RISCVCC64) -o $*64 -Tmmio64.ld intermediate64.o init64.o mmio64.o
-	$(ELF2HEX)/elf2hex $*64
-	rm intermediate64.o $*64
+	#$(ELF2HEX)/elf2hex $*64
+	#rm intermediate64.o $*64
 
 
 clean:

@@ -3,9 +3,10 @@
 # define LREG lw
 # define SREG sw
 # define REGBYTES 4
-
-  .text
-  .align 6
+  
+.section ".text.init"
+#  .text
+#  .align 6
   .globl _start
 _start:
   li  x1, 0
@@ -45,14 +46,15 @@ _start:
   call main
 1:
   j 1b
-.section ".tdata.begin"
-.globl _tdata_begin
-_tdata_begin:
 
-.section ".tdata.end"
-.globl _tdata_end
-_tdata_end:
-
-.section ".tbss.end"
-.globl _tbss_end
-_tbss_end:
+#.section ".tdata.begin"
+#.globl _tdata_begin
+#_tdata_begin:
+#
+#.section ".tdata.end"
+#.globl _tdata_end
+#_tdata_end:
+#
+#.section ".tbss.end"
+#.globl _tbss_end
+#_tbss_end:

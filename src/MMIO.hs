@@ -29,9 +29,15 @@ rvGetChar = liftIO cGetChar
 rvPutChar :: StoreFunc s
 rvPutChar val = liftIO (putChar $ chr $ fromIntegral val)
 
+rvGetSuccess :: LoadFunc s
+rvGetSuccess = return 0
+rvSetSuccess :: StoreFunc s
+rvSetSuccess val = liftIO (putStr ("Return Code: " ++ show val)) >> return ()  
+
 -- Addresses for mtime/mtimecmp chosen for Spike compatibility.
 mmioTable :: S.Map MachineInt (LoadFunc s, StoreFunc s)
-mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar))]
+mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar)),
+                        (0x1000000, (rvGetSuccess, rvSetSuccess))]
 
 liftState :: (Monad m) => State a b -> StateT a m b
 liftState = mapStateT (return . runIdentity)

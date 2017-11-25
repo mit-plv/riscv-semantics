@@ -47,6 +47,7 @@ checkInterrupt = do
 helper :: IOState Minimal64 Int64
 helper = do
   pc <- getPC
+  -- trace (show pc) $return ()
   inst <- loadWord pc
   if inst == 0x6f -- Stop on infinite loop instruction.
     then do
@@ -88,5 +89,5 @@ runElf f = do
 main :: IO ()
 main = do
   file:_ <- getArgs
-  retval <- runFile file
+  retval <- runElf file
   exitWith (if retval == 0 then ExitSuccess else ExitFailure $ fromIntegral retval)
