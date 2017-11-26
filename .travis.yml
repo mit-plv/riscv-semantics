@@ -13,4 +13,4 @@ install:
   - ./install.sh
 
 script:
-  - make && stack --no-terminal --skip-ghc-check exec riscv-semantics test/tests/hello64.hex
+  - stack --no-terminal --skip-ghc-check exec riscv-semantics test/tests/thuemorse64.hex
