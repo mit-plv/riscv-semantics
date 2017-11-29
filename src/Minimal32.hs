@@ -33,8 +33,8 @@ setMTime :: StoreFunc
 setMTime _ = return ()
 
 -- Addresses for mtime/mtimecmp chosen for Spike compatibility.
-mmioTable :: S.Map MachineInt (LoadFunc, StoreFunc)
-mmioTable = S.fromList [(0x200bff8, (getMTime, setMTime))]
+memMapTable :: S.Map MachineInt (LoadFunc, StoreFunc)
+memMapTable = S.fromList [(0x200bff8, (getMTime, setMTime))]
 mtimecmp_addr = 0x2004000
 
 wrapLoad :: (Integral a, Integral r, Integral r') => (S.Map Int Word8 -> a -> r) -> (a -> MState r')
@@ -79,10 +79,16 @@ instance RiscvProgram MState Int32 Word32 where
   -- Wrap Memory instance:
   loadByte = wrapLoad M.loadByte
   loadHalf = wrapLoad M.loadHalf
-  loadWord = wrapLoad M.loadWord
+  loadWord addr =
+    case S.lookup (fromIntegral addr) memMapTable of
+      Just (getFunc, _) -> getFunc
+      Nothing -> wrapLoad M.loadWord addr
   storeByte = wrapStore M.storeByte
   storeHalf = wrapStore M.storeHalf
-  storeWord = wrapStore M.storeWord
+  storeWord addr val =
+    case S.lookup (fromIntegral addr) memMapTable of
+      Just (_, setFunc) -> setFunc (fromIntegral val)
+      Nothing -> wrapStore M.storeWord addr val
   -- CSRs:
   getCSRField field = state $ \comp -> (getField field (csrs comp), comp)
   setCSRField field val = state $ \comp -> ((), comp { csrs = setField field (fromIntegral val) (csrs comp) })
