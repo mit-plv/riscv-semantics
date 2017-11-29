@@ -344,8 +344,8 @@ decode xlen inst = decode_sub opcode
     pred    = bitSlice inst 24 28    -- for FENCE
     msb4    = bitSlice inst 28 32    -- for FENCE
 
-    imm20   = shift (bitSlice inst 12 32) 12    -- for LUI
-    oimm20  = shift (bitSlice inst 12 32) 12    -- for AUIPC
+    imm20   = signExtend 32 $ shift (bitSlice inst 12 32) 12    -- for LUI
+    oimm20  = signExtend 32 $ shift (bitSlice inst 12 32) 12    -- for AUIPC
 
     jimm20  = signExtend 21 $ (shift (bitSlice inst 31 32) 20  .|.        -- for JAL
                                 shift (bitSlice inst 21 31) 1  .|.

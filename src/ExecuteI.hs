@@ -10,10 +10,10 @@ import Prelude
 
 execute :: forall p t u. (RiscvProgram p t u, MonadPlus p) => Instruction -> p ()
 -- begin ast
-execute (Lui rd imm20) = setRegister rd (signExtend 32 imm20)
+execute (Lui rd imm20) = setRegister rd imm20
 execute (Auipc rd imm20) = do
   pc <- getPC
-  setRegister rd (fromIntegral (signExtend 32 imm20) + pc)
+  setRegister rd (fromIntegral imm20 + pc)
 execute (Jal rd jimm20) = do
   pc <- getPC
   setRegister rd (fromIntegral pc + 4)
