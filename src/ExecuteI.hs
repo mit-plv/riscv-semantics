@@ -10,10 +10,10 @@ import Prelude
 
 execute :: forall p t u. (RiscvProgram p t u, MonadPlus p) => Instruction -> p ()
 -- begin ast
-execute (Lui rd imm20) = setRegister rd imm20
+execute (Lui rd imm20) = setRegister rd (signExtend 32 imm20)
 execute (Auipc rd imm20) = do
   pc <- getPC
-  setRegister rd (fromIntegral imm20 + pc)
+  setRegister rd (fromIntegral (signExtend 32 imm20) + pc)
 execute (Jal rd jimm20) = do
   pc <- getPC
   setRegister rd (fromIntegral pc + 4)
@@ -55,7 +55,7 @@ execute (Bge rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
-  when (x > y) (do
+  when (x >= y) (do
     let addr = (pc + fromIntegral sbimm12)
     setPC addr
     when (mod addr 4 /= 0) (raiseException 0 0))
@@ -71,7 +71,7 @@ execute (Bgeu rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
-  when ((unsigned x) > (unsigned y)) (do
+  when ((unsigned x) >= (unsigned y)) (do
     let addr = (pc + fromIntegral sbimm12)
     setPC addr
     when (mod addr 4 /= 0) (raiseException 0 0))
