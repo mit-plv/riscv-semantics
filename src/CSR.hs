@@ -7,7 +7,7 @@ import Data.Tuple
 import Prelude
 
 data CSR = MISA | MStatus | MTVec | MEDeleg | MIDeleg | MIP | MIE | MCycle | MInstRet |
-           MCounterEn | MScratch | MEPC | MCause | MTVal
+           MCounterEn | MScratch | MEPC | MCause | MTVal | InvalidCSR
   deriving Eq
 
 csrTable = [(0x300, MStatus),
@@ -26,8 +26,8 @@ csrTable = [(0x300, MStatus),
             (0xB02, MInstRet)]
 
 instance Enum CSR where
-    fromEnum = fromJust . flip lookup (map swap csrTable)
-    toEnum = fromJust . flip lookup csrTable
+    fromEnum = fromMaybe 0x1000 . flip lookup (map swap csrTable)
+    toEnum = fromMaybe InvalidCSR . flip lookup csrTable
 
 lookupCSR :: (Integral x) => x -> CSR
 lookupCSR = toEnum . fromIntegral
