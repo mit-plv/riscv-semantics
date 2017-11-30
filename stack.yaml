@@ -37,9 +37,9 @@ resolver: nightly-2017-10-26
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-- clash/clash-ghc
-- clash/clash-lib
-- clash/clash-prelude
+#- clash/clash-ghc
+#- clash/clash-lib
+#- clash/clash-prelude
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
