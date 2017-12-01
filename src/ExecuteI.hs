@@ -16,65 +16,75 @@ execute (Auipc rd imm20) = do
   setRegister rd (fromIntegral imm20 + pc)
 execute (Jal rd jimm20) = do
   pc <- getPC
-  setRegister rd (fromIntegral pc + 4)
-  setPC (pc + (fromIntegral jimm20))
-  pc <- getPC
-  when (mod pc 4 /= 0) (raiseException 0 0)
+  let newPC = pc + (fromIntegral jimm20)
+  if (mod newPC 4 /= 0)
+    then raiseException 0 0
+    else (do
+      setRegister rd (fromIntegral pc + 4)
+      setPC newPC)
 execute (Jalr rd rs1 oimm12) = do
   x <- getRegister rs1
   pc <- getPC
-  setPC (x + fromIntegral oimm12)
-  setRegister rd (fromIntegral pc + 4)
-  pc <- getPC
-  when (mod pc 4 /= 0) (raiseException 0 0)
+  let newPC = x + fromIntegral oimm12
+  if (mod newPC 4 /= 0)
+    then raiseException 0 0
+    else (do
+      setRegister rd (fromIntegral pc + 4)
+      setPC newPC)
 execute (Beq rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
   when (x == y) (do
-    setPC (pc + fromIntegral sbimm12)
-    pc <- getPC
-    when (mod pc 4 /= 0) (raiseException 0 0))
+    let newPC = (pc + fromIntegral sbimm12)
+    if (mod newPC 4 /= 0)
+      then raiseException 0 0
+      else setPC newPC)
 execute (Bne rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
   when (x /= y) (do
     let addr = (pc + fromIntegral sbimm12)
-    setPC addr
-    when (mod addr 4 /= 0) (raiseException 0 0))
+    if (mod addr 4 /= 0)
+      then raiseException 0 0
+      else setPC addr)
 execute (Blt rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
   when (x < y) (do
     let addr = (pc + fromIntegral sbimm12)
-    setPC addr
-    when (mod addr 4 /= 0) (raiseException 0 0))
+    if (mod addr 4 /= 0)
+      then raiseException 0 0
+      else setPC addr)
 execute (Bge rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
   when (x >= y) (do
     let addr = (pc + fromIntegral sbimm12)
-    setPC addr
-    when (mod addr 4 /= 0) (raiseException 0 0))
+    if (mod addr 4 /= 0)
+      then raiseException 0 0
+      else setPC addr)
 execute (Bltu rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
   when ((unsigned x) < (unsigned y)) (do
     let addr = (pc + fromIntegral sbimm12)
-    setPC addr
-    when (mod addr 4 /= 0) (raiseException 0 0))
+    if (mod addr 4 /= 0)
+      then raiseException 0 0
+      else setPC addr)
 execute (Bgeu rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
   when ((unsigned x) >= (unsigned y)) (do
     let addr = (pc + fromIntegral sbimm12)
-    setPC addr
-    when (mod addr 4 /= 0) (raiseException 0 0))
+    if (mod addr 4 /= 0)
+      then raiseException 0 0
+      else setPC addr)
 execute (Lb rd rs1 oimm12) = do
   a <- getRegister rs1
   x <- loadByte (a + fromIntegral oimm12)
