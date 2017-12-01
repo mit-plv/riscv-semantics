@@ -17,6 +17,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.State
 import qualified Data.Map as S
 import Debug.Trace
+import Numeric (showHex)
 
 processLine :: String -> [Word8] -> [Word8]
 processLine ('@':xs) l = l ++ take (4*(read ("0x" ++ xs) :: Int) - (length l)) (repeat 0)
@@ -57,7 +58,7 @@ helper maybeToHostAddress = do
         else trace ("FAILED " ++ (show $ quot toHostValue 2)) (return 1)
     else do
       pc <- getPC
-      -- trace (show pc) $return ()
+      -- trace ("pc: 0x" ++ (showHex pc "")) $ return ()
       inst <- loadWord pc
       if inst == 0x6f -- Stop on infinite loop instruction.
         then do
