@@ -29,7 +29,7 @@ execute (Div rd rs1 rs2) = do
   y <- getRegister rs2
   let q | x == minBound && y == -1 = x
         | y == 0 = -1
-        | otherwise = div x y
+        | otherwise = quot x y
     in setRegister rd q
 execute (Divu rd rs1 rs2) = do
   x <- getRegister rs1

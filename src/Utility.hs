@@ -79,7 +79,7 @@ instance Convertible Int64 Word64
 
 class MachineWidth t where
   shiftBits :: t -> Int
-  highBits :: Int -> t
+  highBits :: Integer -> t
 
 instance MachineWidth Int32 where
   shiftBits = lower 5
