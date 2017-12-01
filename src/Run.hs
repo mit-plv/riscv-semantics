@@ -98,8 +98,23 @@ runElf f = do
                       mem = S.fromList m } in
     fmap fst $ runProgram maybeToHostAddress c
 
+runElfs :: [String] -> IO Int64
+runElfs (file:files) = do
+    myreturn <- runElf file
+    putStr (file ++ ": " ++ (show myreturn) ++ "\n")
+    othersreturn <- runElfs files
+    if myreturn /= 0
+        then return myreturn
+        else return othersreturn
+runElfs [] = return 0
+
 main :: IO ()
 main = do
-  file:_ <- getArgs
-  retval <- runElf file
+  args <- getArgs
+  retval <- case args of
+    [] -> do
+      putStr "ERROR: this program expects one or more elf files as command-line arguments"
+      return 1
+    [file] -> runElf file
+    files -> runElfs files
   exitWith (if retval == 0 then ExitSuccess else ExitFailure $ fromIntegral retval)
