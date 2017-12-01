@@ -43,7 +43,6 @@ wrapStore :: (Integral a, Integral v, Integral v') => (S.Map Int Word8 -> a -> v
 wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) addr (fromIntegral val) })
 
 instance RiscvProgram MState Int32 Word32 where
-  getXLEN = return 32
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = state $ \comp -> ((), if reg == 0 then comp else comp { registers = setIndex (fromIntegral reg-1) (fromIntegral val) (registers comp) })
   getPC = state $ \comp -> (pc comp, comp)

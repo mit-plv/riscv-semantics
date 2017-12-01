@@ -73,7 +73,7 @@ runFile :: String -> IO Int32
 runFile f = do
   h <- openFile f ReadMode
   m <- readHexFile h []
-  let c = Minimal32 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x200, nextPC = 0,
+  let c = Minimal32 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 32), pc = 0x200, nextPC = 0,
                       mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
     fmap fst $ runProgram c
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, UndecidableInstances, ScopedTypeVariables #-}
 module Program where
 import CSRField
 import Decode
@@ -11,7 +11,6 @@ import Control.Monad.Trans.Maybe
 import Prelude
 
 class (Monad p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => RiscvProgram p t u | p -> t, t -> u where
-  getXLEN :: (Integral s) => p s
   getRegister :: Register -> p t
   setRegister :: (Integral s) => Register -> s -> p ()
   loadByte :: (Integral s) => s -> p Int8
@@ -28,8 +27,14 @@ class (Monad p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWi
   setPC :: (Integral s) => s -> p ()
   step :: p ()
 
+getXLEN :: forall p t u s. (RiscvProgram p t u, Integral s) => p s
+getXLEN = do
+            mxl <- getCSRField MXL
+            case mxl of
+                1 -> return 32
+                2 -> return 64
+
 instance (RiscvProgram p t u) => RiscvProgram (MaybeT p) t u where
-  getXLEN = lift getXLEN
   getRegister r = lift (getRegister r)
   setRegister r v = lift (setRegister r v)
   loadByte a = lift (loadByte a)

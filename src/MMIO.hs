@@ -37,7 +37,6 @@ liftState :: (Monad m) => State a b -> StateT a m b
 liftState = mapStateT (return . runIdentity)
 
 instance (RiscvProgram (State s) t u, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => RiscvProgram (IOState s) t u where
-  getXLEN = liftState getXLEN
   getRegister r = liftState (getRegister r)
   setRegister r v = liftState (setRegister r v)
   loadByte a = liftState (loadByte a)

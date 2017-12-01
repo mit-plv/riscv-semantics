@@ -85,7 +85,7 @@ runFile :: String -> IO Int64
 runFile f = do
   h <- openFile f ReadMode
   m <- readHexFile h []
-  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x200, nextPC = 0,
+  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 64), pc = 0x200, nextPC = 0,
                       mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
     fmap fst $ runProgram Nothing c
 
@@ -94,7 +94,7 @@ runElf f = do
   m <- readElf f
   -- converts Word32 to Int32
   maybeToHostAddress <- fmap (fmap (fromInteger . toInteger)) $ readElfSymbol "tohost" f
-  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = emptyFile, pc = 0x80000000, nextPC = 0,
+  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 64), pc = 0x80000000, nextPC = 0,
                       mem = S.fromList m } in
     fmap fst $ runProgram maybeToHostAddress c
 
@@ -113,7 +113,7 @@ main = do
   args <- getArgs
   retval <- case args of
     [] -> do
-      putStr "ERROR: this program expects one or more elf files as command-line arguments"
+      putStr "ERROR: this program expects one or more elf files as command-line arguments\n"
       return 1
     [file] -> runElf file
     files -> runElfs files

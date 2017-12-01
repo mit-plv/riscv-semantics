@@ -56,7 +56,6 @@ data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: I
 
 
 instance RiscvProgram (MState MMIOClash) Int32 Word32 where
-  getXLEN = MState $ \comp -> return (32, comp)
   getRegister reg = MState $ \comp -> return (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = MState $ \comp -> return ((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
   loadByte = undefined
