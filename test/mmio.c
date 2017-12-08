@@ -1,4 +1,4 @@
-int* CHAR_ADDR = 0x000fff4;
+int* CHAR_ADDR = (int *)0x000fff4;
 
 int getchar() {
   return *CHAR_ADDR;

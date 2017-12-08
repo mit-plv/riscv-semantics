@@ -3,6 +3,7 @@ import System.IO
 import System.Environment
 import System.Exit
 import Data.Int
+import Data.List
 import Data.Word
 import Utility
 import Program
@@ -17,21 +18,24 @@ import Control.Monad.Trans
 import Control.Monad.Trans.State
 import qualified Data.Map as S
 import Debug.Trace
-import Numeric (showHex)
+import Numeric (showHex, readHex)
 
-processLine :: String -> [Word8] -> [Word8]
-processLine ('@':xs) l = l ++ take (4*(read ("0x" ++ xs) :: Int) - (length l)) (repeat 0)
-processLine s l = l ++ splitWord (read ("0x" ++ s) :: Word32)
+processLine :: String -> (Int, [(Int, Word8)]) -> (Int, [(Int, Word8)])
+processLine ('@':xs) (p, l) = (fst $ head $ readHex xs, l)
+processLine s (p, l) = (p + 4, l ++ (zip [p..] $ splitWord (fst $ head $ readHex s :: Word32)))
 
-readHexFile :: Handle -> [Word8] -> IO [Word8]
-readHexFile h l = do
-  s <- hGetLine h
-  done <- hIsEOF h
-  if (null s)
-    then return l
-    else if done
-         then return $ processLine s l
-         else readHexFile h (processLine s l)
+readHexFile :: FilePath -> IO [(Int, Word8)]
+readHexFile f = do
+  h <- openFile f ReadMode
+  helper h (0, [])
+  where helper h l = do
+          s <- hGetLine h
+          done <- hIsEOF h
+          if (null s)
+            then return $ snd l
+            else if done
+                 then return $ snd $ processLine s l
+                 else helper h (processLine s l)
 
 checkInterrupt :: IO Bool
 checkInterrupt = do
@@ -82,32 +86,33 @@ helper maybeToHostAddress = do
 runProgram :: Maybe Int64 -> Minimal64 -> IO (Int64, Minimal64)
 runProgram maybeToHostAddress = runStateT (helper maybeToHostAddress)
 
+readProgram :: String -> IO (Maybe Int64, [(Int, Word8)])
+readProgram f = do
+  if ".hex" `isSuffixOf` f
+    then do
+    mem <- readHexFile f
+    return (Nothing, mem)
+    else do
+    mem <- readElf f
+    maybeToHostAddress <- readElfSymbol "tohost" f
+    return (fmap fromIntegral maybeToHostAddress, mem)
+
 runFile :: String -> IO Int64
 runFile f = do
-  h <- openFile f ReadMode
-  m <- readHexFile h []
-  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 64), pc = 0x200, nextPC = 0,
-                      mem = S.fromList $ zip [0..] (m ++ (take (65520 - length m) $ repeat (0::Word8))) } in
-    fmap fst $ runProgram Nothing c
-
-runElf :: String -> IO Int64
-runElf f = do
-  m <- readElf f
-  -- converts Word32 to Int32
-  maybeToHostAddress <- fmap (fmap (fromInteger . toInteger)) $ readElfSymbol "tohost" f
+  (maybeToHostAddress, mem) <- readProgram f
   let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 64), pc = 0x80000000, nextPC = 0,
-                      mem = S.fromList m } in
+                      mem = S.fromList mem } in
     fmap fst $ runProgram maybeToHostAddress c
 
-runElfs :: [String] -> IO Int64
-runElfs (file:files) = do
-    myreturn <- runElf file
+runFiles :: [String] -> IO Int64
+runFiles (file:files) = do
+    myreturn <- runFile file
     putStr (file ++ ": " ++ (show myreturn) ++ "\n")
-    othersreturn <- runElfs files
+    othersreturn <- runFiles files
     if myreturn /= 0
         then return myreturn
         else return othersreturn
-runElfs [] = return 0
+runFiles [] = return 0
 
 main :: IO ()
 main = do
@@ -116,6 +121,6 @@ main = do
     [] -> do
       putStr "ERROR: this program expects one or more elf files as command-line arguments\n"
       return 1
-    [file] -> runElf file
-    files -> runElfs files
+    [file] -> runFile file
+    files -> runFiles files
   exitWith (if retval == 0 then ExitSuccess else ExitFailure $ fromIntegral retval)

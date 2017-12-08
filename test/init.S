@@ -3,7 +3,7 @@
 # define LREG lw
 # define SREG sw
 # define REGBYTES 4
-  
+
 .section ".text.init"
 #  .text
 #  .align 6
