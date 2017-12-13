@@ -107,3 +107,12 @@ Code:
 * Refactor Maybe out of MMIO64. Sub-executes will require MonadPlus instead of RiscvProgram.
 * s/fromIntegral/some other name/g, remove all '$' from execute files
 * Hierarchy of implementation (build MMIO64 using Minimal64).
+
+Friday, December 8th
+Infrastructure:
+* CI for riscv-tests (so we don't have to deal with installing riscv-gcc in Travis).
+* Update mmio32.ld to use 0x80000000 for consistency.
+* Update elf2hex to deal with large addresses nicely.
+Code:
+* Virtual memory. calculateAddress helper (virtual -> physical), not in typeclass.
+* Haskell implementation of elf2hex to avoid extra dependency.
