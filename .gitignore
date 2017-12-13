@@ -3,3 +3,4 @@ elf2hex/elf2hex
 *.o
 *.hi
 *.hex
+test/build/

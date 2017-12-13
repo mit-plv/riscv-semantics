@@ -1,16 +1,19 @@
 .PHONY: all clean
 
-SOURCES=$(wildcard tests/*.c)
+SRCDIR=src
+BUILDDIR=build
+
+SOURCES=$(notdir $(wildcard $(SRCDIR)/*.c))
 TESTS=$(basename $(SOURCES))
-HEX32=$(addsuffix 32.hex,$(TESTS))
-HEX64=$(addsuffix 64.hex,$(TESTS))
+ELF=$(addprefix build/,$(TESTS))
+ELF32=$(addsuffix 32,$(ELF))
+ELF64=$(addsuffix 64,$(ELF))
+HEX32=$(addsuffix .hex,$(ELF32))
+HEX64=$(addsuffix .hex,$(ELF64))
 ELF2HEX=../elf2hex
 
 RISCVCC64=riscv64-unknown-linux-gnu-gcc -march=rv64imfd -mabi=lp64 -static -mcmodel=medany -nostdlib -nostartfiles
 RISCVCC32=riscv32-unknown-linux-gnu-gcc -march=rv32im -DRISCV -nostdlib -nostartfiles
-
-
-
 
 all: $(HEX32) $(HEX64)
 all64: $(HEX64)
@@ -30,19 +33,22 @@ mmio32.o: mmio.c
 mmio64.o: mmio.c
 	$(RISCVCC64) -c mmio.c -o mmio64.o
 
-%32.hex: $(ELF2HEX)/elf2hex %.c init32.o mmio32.o link.ld
-	$(RISCVCC32) -c $*.c -o intermediate32.o
-	$(RISCVCC32) -o $*32 -Tmmio32.ld intermediate32.o init32.o mmio32.o
-	$(ELF2HEX)/elf2hex $*32
+$(BUILDDIR)/%32.hex: $(ELF2HEX)/elf2hex $(SRCDIR)/%.c init32.o mmio32.o mmio.ld
+	mkdir -p $(BUILDDIR)
+	$(RISCVCC32) -c $(SRCDIR)/$*.c -o intermediate32.o
+	$(RISCVCC32) -o $(BUILDDIR)/$*32 -Tmmio.ld intermediate32.o init32.o mmio32.o
+	$(ELF2HEX)/elf2hex $(BUILDDIR)/$*32 0 16G $(BUILDDIR)/$*32.hex
 	rm intermediate32.o
 
-%64.hex: $(ELF2HEX)/elf2hex %.c init64.o mmio64.o link.ld
-	$(RISCVCC64) -c $*.c -o intermediate64.o
-	$(RISCVCC64) -o $*64 -Tmmio64.ld intermediate64.o init64.o mmio64.o
-	$(ELF2HEX)/elf2hex $*64
+$(BUILDDIR)/%64.hex: $(ELF2HEX)/elf2hex $(SRCDIR)/%.c init64.o mmio64.o mmio.ld
+	mkdir -p $(BUILDDIR)
+	$(RISCVCC64) -c $(SRCDIR)/$*.c -o intermediate64.o
+	$(RISCVCC64) -o $(BUILDDIR)/$*64 -Tmmio.ld intermediate64.o init64.o mmio64.o
+	$(ELF2HEX)/elf2hex $(BUILDDIR)/$*64 0 16G $(BUILDDIR)/$*64.hex
 	rm intermediate64.o
 
 
 clean:
-	rm -f intermediate32.o init32.o mmio32.o $(TESTS) $(HEX32)
-	rm -f intermediate64.o init64.o mmio64.o $(TESTS) $(HEX64)
+	rm -f intermediate32.o init32.o mmio32.o
+	rm -f intermediate64.o init64.o mmio64.o
+	rm -rf build

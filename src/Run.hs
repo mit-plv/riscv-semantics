@@ -21,7 +21,7 @@ import Debug.Trace
 import Numeric (showHex, readHex)
 
 processLine :: String -> (Int, [(Int, Word8)]) -> (Int, [(Int, Word8)])
-processLine ('@':xs) (p, l) = (fst $ head $ readHex xs, l)
+processLine ('@':xs) (p, l) = ((fst $ head $ readHex xs) * 4, l)
 processLine s (p, l) = (p + 4, l ++ (zip [p..] $ splitWord (fst $ head $ readHex s :: Word32)))
 
 readHexFile :: FilePath -> IO [(Int, Word8)]

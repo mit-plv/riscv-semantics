@@ -1,21 +1,14 @@
 OUTPUT_ARCH( "riscv" )
- ENTRY( main )
- SECTIONS
- {
- /* text: test code section */
- . = 0x200;
- .text.init : { init.o(.text) }
- .text :
- {
- intermediate.o(.text)
- mmio.o(.text)
- }
- /* data: Initialized data segment */
- .data :
- {
- intermediate.o(.data)
- mmio.o(.data)
- }
- /* End of uninitialized data segment */
+ENTRY( _start)
+
+SECTIONS
+{
+  . = 0x80000000;
+  .text.init : { *(.text.init) }
+  . = ALIGN(0x1000);
+  .text : { *(.text) }
+  . = ALIGN(0x1000);
+  .data : { *(.data) }
+  .bss : { *(.bss) }
  _end = .;
- }
+}
