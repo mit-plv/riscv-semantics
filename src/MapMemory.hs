@@ -10,7 +10,7 @@ readM mem addr = fromMaybe 0 (S.lookup (fromIntegral addr) mem)
 writeM mem addr val = S.insert (fromIntegral addr) val mem
 
 helpLoad mem addr numBytes =
-  combineBytes $ fmap (\addr -> readM mem addr) [(fromIntegral addr)..(fromIntegral addr + numBytes - 1)]
+  combineBytes $ fmap (\a -> readM mem a) [(fromIntegral addr)..(fromIntegral addr + numBytes - 1)]
 helpStore mem addr bytes =
   foldr (\(b,a) m -> writeM m a b) mem $ zip bytes [addr + i | i <- [0..]]
 

@@ -37,10 +37,10 @@ memMapTable :: S.Map MachineInt (LoadFunc, StoreFunc)
 memMapTable = S.fromList [(0x200bff8, (getMTime, setMTime))]
 mtimecmp_addr = 0x2004000
 
-wrapLoad :: (Integral a, Integral r, Integral r') => (S.Map Int Word8 -> a -> r) -> (a -> MState r')
-wrapLoad loadFunc addr = state $ \comp -> (fromIntegral $ loadFunc (mem comp) addr, comp)
-wrapStore :: (Integral a, Integral v, Integral v') => (S.Map Int Word8 -> a -> v -> S.Map Int Word8) -> (a -> v' -> MState ())
-wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) addr (fromIntegral val) })
+wrapLoad :: (Integral a, Integral a', Integral r, Integral r') => (S.Map Int Word8 -> a -> r) -> (a' -> MState r')
+wrapLoad loadFunc addr = state $ \comp -> (fromIntegral $ loadFunc (mem comp) (fromIntegral (fromIntegral addr :: Word32)), comp)
+wrapStore :: (Integral a, Integral a', Integral v, Integral v') => (S.Map Int Word8 -> a -> v -> S.Map Int Word8) -> (a' -> v' -> MState ())
+wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) (fromIntegral (fromIntegral addr :: Word32)) (fromIntegral val) })
 
 instance RiscvProgram MState Int32 Word32 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
