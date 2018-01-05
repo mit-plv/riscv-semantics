@@ -17,7 +17,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import System.IO.Error
 import qualified Data.Map as S
-import Execute32
+import ExecuteClash
 import qualified Decode as D
 import Clash.Prelude
 
@@ -27,20 +27,12 @@ data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: I
 
 type MState = State MMIOClash
 
--- readM mem addr = mem !! addr
--- 
--- writeM addr val mem =
---     replace addr val mem
--- 
--- helpStore mem addr bytes =
---     P.foldr (\(b,a) m-> writeM a b m) mem $ P.zip bytes [addr + i | i<-[0..]] 
-
 
 instance RiscvProgram MState Int32 Word32 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = state $ \comp ->((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
+-- Fake load and stores
   loadByte a = state $ \comp -> (0, comp)
-
   loadHalf a =state $ \comp -> (0, comp)
   loadWord a = state $ \comp -> (0, comp)
   loadDouble a = state $ \comp -> (0, comp)
@@ -48,6 +40,7 @@ instance RiscvProgram MState Int32 Word32 where
   storeHalf a v = state $ \comp -> ((), comp)
   storeWord  a v = state $ \comp -> ((), comp)
   storeDouble  a v = state $ \comp -> ((), comp)
+-- fake CSR
   getCSRField field = state $ \comp -> (0, comp)
   setCSRField field val = state $ \comp -> ((), comp)
   getPC = state $ \comp -> (pc comp, comp)
