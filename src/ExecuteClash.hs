@@ -1,4 +1,4 @@
-module Execute32 where
+module ExecuteClash where
 import Decode
 import Program
 import qualified CSRField as Field
@@ -7,7 +7,7 @@ import ExecuteM as M
 import ExecuteCSR as CSR
 import Control.Monad
 import Control.Monad.Trans.Maybe
-
+import Prelude 
 execute :: (RiscvProgram p t u) => Instruction -> p ()
 execute InvalidInstruction = do
   raiseException 0 2
