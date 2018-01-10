@@ -14,7 +14,7 @@ execute InvalidInstruction = do
   cycles <- getCSRField Field.MCycle
   setCSRField Field.MCycle (cycles + 1)
 execute inst = do
-  _ <- runMaybeT (msum (map (\f -> f inst) [I.execute]))
+  _ <- runMaybeT (msum (map (\f -> f inst) [I.execute, CSR.execute]))
   cycles <- getCSRField Field.MCycle
   setCSRField Field.MCycle (cycles + 1)
   instret <- getCSRField Field.MInstRet

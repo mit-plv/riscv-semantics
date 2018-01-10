@@ -5,7 +5,7 @@ import Data.Bits
 import Data.Maybe
 import Data.Tuple
 import Prelude
-
+import qualified Prelude as P
 data CSR = MISA | MStatus | MTVec | MEDeleg | MIDeleg | MIP | MIE | MCycle | MInstRet |
            MCounterEn | MScratch | MEPC | MCause | MTVal | InvalidCSR
   deriving Eq
@@ -30,4 +30,18 @@ instance Enum CSR where
     toEnum = fromMaybe InvalidCSR . flip lookup csrTable
 
 lookupCSR :: (Integral x) => x -> CSR
-lookupCSR = toEnum . fromIntegral
+lookupCSR x
+      | x == 0x300 = MStatus
+      | x == 0x301 = MISA
+      | x == 0x302 = MEDeleg
+      | x == 0x303 = MIDeleg
+      | x == 0x304 = MIE
+      | x == 0x305 = MTVec
+      | x == 0x306 = MCounterEn
+      | x == 0x340 = MScratch
+      | x == 0x341 = MEPC
+      | x == 0x342 = MCause
+      | x == 0x343 = MTVal
+      | x == 0x344 = MIP
+      | x == 0xB00 = MCycle
+      | x == 0xB02 = MInstRet
