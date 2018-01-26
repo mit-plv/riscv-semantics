@@ -30,6 +30,8 @@ import Data.Maybe
  '/=' {TokenMDIFF}
  '<' {TokenMLT}
  '>' {TokenMGT}
+ '<=' {TokenMLEQ}
+ '>=' {TokenMGEQ}
  '=' {TokenMDEFINE}
  '::' {TokenMTYPEOF}
  '.|.' {TokenMOR}
@@ -43,7 +45,7 @@ import Data.Maybe
  ident {TokenMVar $$}
  num {TokenMNum $$}
 
-%left '\=' '::' '==' '<' '>'
+%left '\=' '::' '==' '<' '>' '<=' '>='
 %left '+' '-' '.|.'
 %left '.&.' '*'
 %nonassoc ident num if when '('
@@ -74,14 +76,17 @@ Exp : Exp Exp %prec APP {App $1 $2}
     | Exp '/=' Exp {Arith TokenMDIFF [$1,$3]}
     | Exp '<' Exp {Arith TokenMLT [$1,$3]}
     | Exp '>' Exp {Arith TokenMGT [$1,$3]}
+    | Exp '<=' Exp {Arith TokenMLEQ [$1,$3]}
+    | Exp '>=' Exp {Arith TokenMGEQ [$1,$3]}
     | '-' Exp {Arith TokenMMINUS [$2]}
     | do Mnl Exps {Do $3}
     | ident '<-' Exp {Bind $1 $3}
     | ident {Iden $1}
     | num {Num $1}
-    | if Exp then Exp else Exp {If $2 $4 $6}
+    | if Exp Mnl then Exp Mnl else Exp {If $2 $5 $8}
     | when Exp Exp {If $2 $3 (Iden "noAction")}
     | let ident CondLet in Exp {Let $2 $3 $5}
+    | let ident CondLet Exp {Let $2 $3 $4}
 
 Exps: Exp Mnl Exps {$1:$3}
       |  {[]}
@@ -143,8 +148,8 @@ data Token =
    | TokenMBOR
    | TokenMPIPE
    | TokenMTIMES
---   | TokenLEQ
---   | TokenGEQ
+   | TokenMLEQ
+   | TokenMGEQ
   deriving (Show,Generic)
 instance ToJSON Token where toJSON = gtoJson
 
@@ -163,7 +168,8 @@ lexer (')':cs) = TokenMRPAREN : lexer cs
 lexer ('+':cs) = TokenMPLUS : lexer cs
 lexer ('-':cs) = TokenMMINUS : lexer cs
 lexer ('<':'-': cs) = TokenMBIND : lexer cs
---GEQ LEQ SHOULD BE HERE IF REQUIRED
+lexer ('<':'=':cs) = TokenMLEQ : lexer cs
+lexer ('>':'=':cs) = TokenMGEQ : lexer cs
 lexer ('<':cs) = TokenMLT : lexer cs
 lexer ('>':cs) = TokenMGT : lexer cs
 lexer ('.':'&':'.':cs) = TokenMAND : lexer cs

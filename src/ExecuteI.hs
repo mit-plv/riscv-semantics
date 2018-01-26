@@ -11,9 +11,9 @@ import Prelude
 execute :: forall p t u. (RiscvProgram p t u, MonadPlus p) => Instruction -> p ()
 -- begin ast
 execute (Lui rd imm20) = setRegister rd imm20
-execute (Auipc rd imm20) = do
+execute (Auipc rd oimm20) = do
   pc <- getPC
-  setRegister rd (fromIntegral imm20 + pc)
+  setRegister rd (fromIntegral oimm20 + pc)
 execute (Jal rd jimm20) = do
   pc <- getPC
   let newPC = pc + (fromIntegral jimm20)
@@ -155,15 +155,15 @@ execute (Ori rd rs1 imm12) = do
 execute (Andi rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (x .&. (fromIntegral imm12))
-execute (Slli rd rs1 imm12) = do
+execute (Slli rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (shiftL x (shiftBits (fromIntegral imm12 :: t)))
-execute (Srli rd rs1 imm12) = do
+  setRegister rd (shiftL x (shiftBits (fromIntegral shamt6 :: t)))
+execute (Srli rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (shiftR (unsigned x) (shiftBits (fromIntegral imm12 :: t)))
-execute (Srai rd rs1 imm12) = do
+  setRegister rd (shiftR (unsigned x) (shiftBits (fromIntegral shamt6 :: t)))
+execute (Srai rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (shiftR x (shiftBits (fromIntegral imm12 :: t)))
+  setRegister rd (shiftR x (shiftBits (fromIntegral shamt6  :: t)))
 execute (Add rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
