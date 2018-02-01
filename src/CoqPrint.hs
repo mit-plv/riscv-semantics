@@ -5,50 +5,58 @@ import Data.List
 import System.IO.Unsafe
 
 coqPrint (If cond ifT ifF) =
-  let lineif = join . (intersperse " ")  $ ["(", "if", coqPrint cond]
+  let lineif = join . (intersperse " ")  $ ["if", coqPrint cond]
       linethen = join . (intersperse " ")  $ [ "then", coqPrint ifT]
-      lineelse = join . (intersperse " ")  $ [ "else", coqPrint ifF,")"] in
+      lineelse = join . (intersperse " ")  $ [ "else", coqPrint ifF] in
     (\l-> "(" ++ l ++ ")") . join . (intersperse "\n ")  $ [lineif ,linethen ,lineelse]
 coqPrint (Arith TokenMPLUS l) =
    (\l-> "(" ++ l ++ ")") . join . intersperse " ^+ " $ fmap coqPrint l
 coqPrint (Arith TokenMTIMES l) =
    (\l-> "(" ++ l ++ ")") . join . intersperse " * " $ fmap coqPrint l
-coqPrint (Arith TokenMMINUS [a]) = "(-" ++ coqPrint a ++")"
+coqPrint (Arith TokenMMINUS [a]) = "(-" ++ coqPrint a ++")" -- TODO check
 coqPrint (Arith TokenMMINUS l) =
    (\l-> "(" ++ l ++ ")") . join . intersperse " ^- " $ fmap coqPrint l
 coqPrint (Arith TokenMOR l) =
-   (\l-> "( wor " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
+   (\l-> "(wor " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
 coqPrint (Arith TokenMAND l) =
-   (\l-> "( wand " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
+   (\l-> "(wand " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
 coqPrint (Arith TokenMBAND l) = -- Gallina boolean and
    (\l-> "(" ++ l ++ ")") . join . intersperse " and " $ fmap coqPrint l
 coqPrint (Arith TokenMBOR l) = -- Gallina boolean or
    (\l-> "(" ++ l ++ ")") . join . intersperse " or " $ fmap coqPrint l
 coqPrint (Arith TokenMTYPEOF l) = -- Just ignore that
-   (\l-> "(" ++ l ++ ")") . join . intersperse " : " $ fmap coqPrint l
+  coqPrint $ head l -- (\l-> "(" ++ l ++ ")") . join . intersperse " : " $ fmap coqPrint l
 coqPrint (Arith TokenMEQUAL l) =
-   (\l-> "( weq " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
+   (\l-> "(weq " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
 coqPrint (Arith TokenMDIFF l) =
-   (\l-> "(negb ( weq " ++ l ++ "))") . join . intersperse " " $ fmap coqPrint l
+   (\l-> "(wneq " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
 coqPrint (Arith TokenMLT l) =
-   (\l-> "( wlt_dec " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
+   (\l-> "(wlt_dec " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
 coqPrint (Arith TokenMGT l) =
-   (\l-> "( wgt_dec" ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
+   (\l-> "(wgt_dec" ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
 coqPrint (Arith TokenMLEQ l) =
-   (\l-> "( wleq " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
+   (\l-> "(wleq_dec " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
 coqPrint (Arith TokenMGEQ l) =
-   (\l-> "( wgeq " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
+   (\l-> "(wgeq_dec " ++ l ++ ")") . join . intersperse " " $ fmap coqPrint l
 
 coqPrint (App a b) =
-    join . intersperse " " $ [ coqPrint a , coqPrint b]
-coqPrint (Num a) = show a
+    join . intersperse " " $ ["(", coqPrint a , coqPrint b, ")"]
+coqPrint (Num a) = "$" ++ show a
 coqPrint  (Iden s)
   | s == "imm20" = "(upper_imm_to_word imm20)"
-  | s == "jimm20" = "(upper_imm_to_word imm20)"
-  | s == "oimm12" = "(upper_imm_to_word imm20)"
-  | s == "sbimm12" = "(upper_imm_to_word imm20)"
-  | s == "simm12" = "(upper_imm_to_word imm20)"
-  | s == "imm12" = "(signed_imm_to_word imm20)"
+  | s == "jimm20" = "(signed_jimm_to_word jimm20)"
+  | s == "oimm12" = "(upper_imm_to_word oimm12)" -- Not used by Sam (Load)
+  | s == "sbimm12" = "(signed_bimm_to_word sbimm12)"
+  | s == "simm12" = "(upper_imm_to_word simm12)" -- Not used by Sam (Store)
+  | s == "imm12" = "(signed_imm_to_word imm12)"
+  | s == "shamt6" = "(wordToNat shamt6)"
+  | s == "unsigned" = ""
+  | s == "noAction" = "(Return tt)"
+  | s == "mod" = "modulo"
+  | s == "xor" = "wxor"
+  | s == "shiftL" = "wlshift"
+  | s == "shiftR" = "wrshift"
+  | s == "shiftBits" = ""
   | s == "fromIntegral" = ""
   | otherwise = s
 
@@ -59,7 +67,7 @@ coqPrint (Do ([t])) = join . intersperse " " $ [ coqPrint t]
 coqPrint (Do (t:q)) = join . intersperse "\n" $ [ coqPrint t++";;",  coqPrint (Do q)]
 coqPrint (Do []) = ""
 coqPrint (Let s l body) =
-  let firstline = join . intersperse " " $ ["let", s, "=", nestedIf l, "in"] in 
+  let firstline = join . intersperse " " $ ["let", s, ":=", nestedIf l, "in"] in 
       join . intersperse "\n" $ [firstline, coqPrint body]
 coqPrint x = trace (show x) undefined
 
