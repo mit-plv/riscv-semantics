@@ -45,11 +45,13 @@ import Data.Maybe
  ident {TokenMVar $$}
  num {TokenMNum $$}
 
-%left '\=' '::' '==' '<' '>' '<=' '>='
+
+%left '/=' '::' '==' '<' '>' '<=' '>='
 %left '+' '-' '.|.'
 %left '.&.' '*'
-%nonassoc ident num if when '('
+%nonassoc ident num if when let '(' '-'
 %nonassoc APP
+
 %%
 
 TotExecute  : Execute nl TotExecute {$1:$3}

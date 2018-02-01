@@ -1,10 +1,10 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, ScopedTypeVariables #-}
 module Utility where
 import Data.Bits
 import Data.Int
 import Data.Word
 import Prelude
-
+import Control.Monad
 type MachineInt = Int64
 
 
@@ -76,6 +76,7 @@ instance Convertible Int8 Word8
 instance Convertible Int16 Word16
 instance Convertible Int32 Word32
 instance Convertible Int64 Word64
+
 
 class MachineWidth t where
   shiftBits :: t -> Int

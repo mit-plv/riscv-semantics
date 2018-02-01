@@ -58,7 +58,8 @@ wrap :: Int32 -> MMIOClash-> MMIOClash
 wrap i s = snd $ runState (oneStep i) s 
 initState = MMIOClash { registers = replicate (SNat :: SNat 31) 0, pc = 0x200, nextPC = 0 }
 
+
 topEntity :: SystemClockReset
-  => Signal System Int32
+  => Signal System (Int32,MMIOClash)
   -> Signal System MMIOClash
-topEntity = mealy (\s i -> (wrap i s,wrap i s)) $ initState
+topEntity = fmap (\(i,s) -> wrap i s) 
