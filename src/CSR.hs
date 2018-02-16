@@ -6,8 +6,13 @@ import Data.Maybe
 import Data.Tuple
 import Prelude
 import qualified Prelude as P
-data CSR = MISA | MStatus | MTVec | MEDeleg | MIDeleg | MIP | MIE | MCycle | MInstRet |
-           MCounterEn | MScratch | MEPC | MCause | MTVal | InvalidCSR
+
+-- Machine-mode CSRs.
+data CSR = MISA | MStatus | MTVec | MEDeleg | MIDeleg | MIP | MIE | MCycle |
+           MInstRet | MCounterEn | MScratch | MEPC | MCause | MTVal |
+-- Supervisor-mode CSRs
+           SATP |
+           InvalidCSR
   deriving Eq
 
 csrTable = [(0x300, MStatus),
@@ -23,7 +28,8 @@ csrTable = [(0x300, MStatus),
             (0x343, MTVal),
             (0x344, MIP),
             (0xB00, MCycle),
-            (0xB02, MInstRet)]
+            (0xB02, MInstRet),
+            (0x180, SATP)]
 
 instance Enum CSR where
     fromEnum = fromMaybe 0x1000 . flip lookup (map swap csrTable)
@@ -45,3 +51,4 @@ lookupCSR x
       | x == 0x344 = MIP
       | x == 0xB00 = MCycle
       | x == 0xB02 = MInstRet
+      | x == 0x180 = SATP
