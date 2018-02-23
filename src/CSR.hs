@@ -52,3 +52,4 @@ lookupCSR x
       | x == 0xB00 = MCycle
       | x == 0xB02 = MInstRet
       | x == 0x180 = SATP
+      | otherwise = InvalidCSR

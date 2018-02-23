@@ -4,6 +4,7 @@ module ExecuteI where
 import Decode
 import Program
 import Utility
+import VirtualMemory
 import Data.Bits
 import Data.Word
 import Control.Monad
@@ -88,56 +89,52 @@ execute (Bgeu rs1 rs2 sbimm12) = do
       else setPC addr)
 execute (Lb rd rs1 oimm12) = do
   a <- getRegister rs1
-  x <- loadByte (a + fromIntegral oimm12)
-  setRegister rd x
+  withTranslation Load 1 (a + fromIntegral oimm12)
+    (\addr -> do
+        x <- loadByte addr
+        setRegister rd x)
 execute (Lh rd rs1 oimm12) = do
   a <- getRegister rs1
-  let addr = a + fromIntegral oimm12
-  if mod addr 2 /= 0
-    then raiseException 0 4
-    else do
-    x <- loadHalf addr
-    setRegister rd x
+  withTranslation Load 2 (a + fromIntegral oimm12)
+    (\addr -> do
+        x <- loadHalf addr
+        setRegister rd x)
 execute (Lw rd rs1 oimm12) = do
   a <- getRegister rs1
-  let addr = a + fromIntegral oimm12
-  if mod addr 4 /= 0
-    then raiseException 0 4
-    else do
-    x <- loadWord addr
-    setRegister rd x
+  withTranslation Load 4 (a + fromIntegral oimm12)
+    (\addr -> do
+        x <- loadWord addr
+        setRegister rd x)
 execute (Lbu rd rs1 oimm12) = do
   a <- getRegister rs1
-  x <- loadByte (a + fromIntegral oimm12)
-  setRegister rd (unsigned x)
+  withTranslation Load 1 (a + fromIntegral oimm12)
+    (\addr -> do
+        x <- loadByte addr
+        setRegister rd (unsigned x))
 execute (Lhu rd rs1 oimm12) = do
   a <- getRegister rs1
-  let addr = a + fromIntegral oimm12
-  if mod addr 2 /= 0
-    then raiseException 0 4
-    else do
-    x <- loadHalf addr
-    setRegister rd (unsigned x)
+  withTranslation Load 2 (a + fromIntegral oimm12)
+    (\addr -> do
+        x <- loadHalf addr
+        setRegister rd (unsigned x))
 execute (Sb rs1 rs2 simm12) = do
   a <- getRegister rs1
-  x <- getRegister rs2
-  storeByte (a + fromIntegral simm12) x
+  withTranslation Store 1 (a + fromIntegral simm12)
+    (\addr -> do
+        x <- getRegister rs2
+        storeByte addr x)
 execute (Sh rs1 rs2 simm12) = do
   a <- getRegister rs1
-  let addr = a + fromIntegral simm12
-  if mod addr 2 /= 0
-    then raiseException 0 6
-    else do
-    x <- getRegister rs2
-    storeHalf addr x
+  withTranslation Store 2 (a + fromIntegral simm12)
+    (\addr -> do
+        x <- getRegister rs2
+        storeHalf addr x)
 execute (Sw rs1 rs2 simm12) = do
   a <- getRegister rs1
-  let addr = a + fromIntegral simm12
-  if mod addr 4 /= 0
-    then raiseException 0 6
-    else do
-    x <- getRegister rs2
-    storeWord addr x
+  withTranslation Store 4 (a + fromIntegral simm12)
+    (\addr -> do
+        x <- getRegister rs2
+        storeWord addr x)
 execute (Addi rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (x + fromIntegral imm12)
