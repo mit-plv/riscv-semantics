@@ -4,7 +4,8 @@ import Program
 import Utility
 import qualified CSRField as Field
 import Data.Bits
-import Prelude 
+import Control.Monad
+import Prelude
 
 getCSR :: (RiscvProgram p t u) => CSR -> p MachineInt
 
@@ -44,6 +45,16 @@ getCSR MCause = do
   interrupt <- getCSRField Field.MCauseInterrupt
   return (shift interrupt (xlen - 1) .|. code)
 
+getCSR SATP = do
+  xlen <- getXLEN
+  mode <- getCSRField Field.MODE
+  asid <- getCSRField Field.ASID
+  ppn <- getCSRField Field.PPN
+  if xlen == 32 then do
+    return (shift mode 31 .|. shift asid 22 .|. ppn)
+    else do
+    return (shift mode 60 .|. shift asid 44 .|. ppn)
+
 -- Catch-all for other (possibly unimplemented) CSRs; hardwire to 0.
 getCSR _ = return 0
 
@@ -73,5 +84,20 @@ setCSR MCause val = do
   xlen <- getXLEN
   setCSRField Field.MCauseCode (bitSlice val 0 (xlen - 1))
   setCSRField Field.MCauseInterrupt (bitSlice val (xlen - 1) xlen)
+
+setCSR SATP val = do
+  xlen <- getXLEN
+  mode <- getCSRField Field.MODE
+  -- If the mode is unsupported, the write has no effect.
+  when (mode `elem` [1, 8, 9]) $ do
+    if xlen == 32
+      then do
+      setCSRField Field.MODE (bitSlice val 31 32)
+      setCSRField Field.ASID (bitSlice val 22 31)
+      setCSRField Field.PPN (bitSlice val 0 22)
+      else do
+      setCSRField Field.MODE (bitSlice val 60 64)
+      setCSRField Field.ASID (bitSlice val 44 60)
+      setCSRField Field.PPN (bitSlice val 0 44)
 
 setCSR _ _ = return ()

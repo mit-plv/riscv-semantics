@@ -63,6 +63,7 @@ helper maybeToHostAddress = do
     else do
       pc <- getPC
       -- trace ("pc: 0x" ++ (showHex pc "")) $ return ()
+      -- TODO: Translate PC lookup in supervisor mode.
       inst <- loadWord pc
       if inst == 0x6f -- Stop on infinite loop instruction.
         then do

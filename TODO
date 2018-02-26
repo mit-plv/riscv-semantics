@@ -116,3 +116,7 @@ Infrastructure:
 Code:
 * Virtual memory. calculateAddress helper (virtual -> physical), not in typeclass.
 * Haskell implementation of elf2hex to avoid extra dependency.
+
+Tuesday, February 13th
+* Virtual memory. Helper outside typeclass, but in the monad.
+* Run riscv-tests in Travis (pending pre-built binaries going up).

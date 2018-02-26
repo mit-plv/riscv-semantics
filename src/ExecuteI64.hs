@@ -3,6 +3,7 @@ module ExecuteI64 where
 import Decode
 import Program
 import Utility
+import VirtualMemory
 import Data.Bits
 import Data.Int
 import Control.Monad
@@ -10,16 +11,22 @@ import Control.Monad
 execute :: forall p t u. (RiscvProgram p t u, MonadPlus p) => Instruction -> p ()
 execute (Lwu rd rs1 oimm12) = do
   a <- getRegister rs1
-  x <- loadWord (a + fromIntegral oimm12)
-  setRegister rd (unsigned x)
+  withTranslation Load 4 (a + fromIntegral oimm12)
+    (\addr -> do
+        x <- loadWord addr
+        setRegister rd (unsigned x))
 execute (Ld rd rs1 oimm12) = do
   a <- getRegister rs1
-  x <- loadDouble (a + fromIntegral oimm12)
-  setRegister rd x
+  withTranslation Load 8 (a + fromIntegral oimm12)
+    (\addr -> do
+        x <- loadDouble addr
+        setRegister rd x)
 execute (Sd rs1 rs2 simm12) = do
   a <- getRegister rs1
-  x <- getRegister rs2
-  storeDouble (a + fromIntegral simm12) x
+  withTranslation Store 8 (a + fromIntegral simm12)
+    (\addr -> do
+        x <- getRegister rs2
+        storeDouble addr x)
 execute (Addiw rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (s32 (x + fromIntegral imm12))

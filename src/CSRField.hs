@@ -17,5 +17,6 @@ data CSRField = MXL | Extensions | -- misa
                 MScratch | -- mscratch
                 MEPC | -- mepc
                 MCauseInterrupt | MCauseCode | -- mcause
-                MTVal -- mtval
+                MTVal | -- mtval
+                MODE | ASID | PPN -- satp
   deriving (Ord, Eq, Show)
