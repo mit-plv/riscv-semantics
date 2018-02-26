@@ -72,7 +72,7 @@ execute (Bltu rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
-  when ((unsigned x) < (unsigned y)) (do
+  when ((ltu x y)) (do
     let addr = (pc + fromIntegral sbimm12)
     if (mod addr 4 /= 0)
       then raiseException 0 0
@@ -81,7 +81,7 @@ execute (Bgeu rs1 rs2 sbimm12) = do
   x <- getRegister rs1
   y <- getRegister rs2
   pc <- getPC
-  when ((unsigned x) >= (unsigned y)) (do
+  when (not (ltu x y)) (do
     let addr = (pc + fromIntegral sbimm12)
     if (mod addr 4 /= 0)
       then raiseException 0 0
@@ -109,7 +109,7 @@ execute (Lw rd rs1 oimm12) = do
 execute (Lbu rd rs1 oimm12) = do
   a <- getRegister rs1
   x <- loadByte (a + fromIntegral oimm12)
-  setRegister rd (unsigned x)
+  setRegister rd (unsigned x) -- zeroExtend instead of unsigned
 execute (Lhu rd rs1 oimm12) = do
   a <- getRegister rs1
   let addr = a + fromIntegral oimm12
@@ -117,7 +117,7 @@ execute (Lhu rd rs1 oimm12) = do
     then raiseException 0 4
     else do
     x <- loadHalf addr
-    setRegister rd (unsigned x)
+    setRegister rd (unsigned x) -- zeroExtend instead of unsigned
 execute (Sb rs1 rs2 simm12) = do
   a <- getRegister rs1
   x <- getRegister rs2
@@ -142,11 +142,11 @@ execute (Addi rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (x + fromIntegral imm12)
 execute (Slti rd rs1 imm12) = do
-  x <- getRegister rs1
-  setRegister rd (if x < fromIntegral imm12 then 1 else 0)
+  x <- getRegister rs1 -- Why is the fromIntegral here required?
+  setRegister rd (if x < (fromIntegral imm12) then 1 else 0)
 execute (Sltiu rd rs1 imm12) = do
   x <- getRegister rs1
-  setRegister rd (if (unsigned x) < (fromIntegral imm12 :: u) then 1 else 0)
+  setRegister rd (if (ltu x imm12) then 1 else 0)
 execute (Xori rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (xor x (fromIntegral imm12))
@@ -184,7 +184,7 @@ execute (Slt rd rs1 rs2) = do
 execute (Sltu rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (if (unsigned x) < (unsigned y) then 1 else 0)
+  setRegister rd (if (ltu x y) then 1 else 0)
 execute (Xor rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
