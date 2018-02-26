@@ -22,7 +22,7 @@ import qualified Decode as D
 import Clash.Prelude
 
 
-data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 }
+data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 , store:: Maybe (Int32,Int32), load :: Int32, loadAddress :: Int32 }
               deriving (Show)
 
 type MState = State MMIOClash
@@ -34,11 +34,11 @@ instance RiscvProgram MState Int32 Word32 where
 -- Fake load and stores
   loadByte a = state $ \comp -> (0, comp)
   loadHalf a =state $ \comp -> (0, comp)
-  loadWord a = state $ \comp -> (0, comp)
+  loadWord a = state $ \comp -> (load comp, comp{loadAddress = fromIntegral a})
   loadDouble a = state $ \comp -> (0, comp)
   storeByte a v = state $ \comp -> ((), comp)
   storeHalf a v = state $ \comp -> ((), comp)
-  storeWord  a v = state $ \comp -> ((), comp)
+  storeWord  a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v)})
   storeDouble  a v = state $ \comp -> ((), comp)
 -- fake CSR
   getCSRField field = state $ \comp -> (0, comp)
@@ -55,11 +55,10 @@ oneStep i = do
   step
 
 wrap :: Int32 -> MMIOClash-> MMIOClash
-wrap i s = snd $ runState (oneStep i) s 
-initState = MMIOClash { registers = replicate (SNat :: SNat 31) 0, pc = 0x200, nextPC = 0 }
+wrap i s = snd $ runState (oneStep i) s
 
 
 topEntity :: SystemClockReset
-  => Signal System (Int32,MMIOClash)
-  -> Signal System MMIOClash
-topEntity = fmap (\(i,s) -> wrap i s) 
+  => Signal System (Int32, MMIOClash)
+  -> Signal System (MMIOClash)
+topEntity = fmap (\(i,s) -> wrap i s )
