@@ -60,6 +60,7 @@ TotExecute  : Execute nl TotExecute {$1:$3}
 
 Execute : Mnl execute Exp '=' Exp{ExecuteCase $3 $5}
 
+
 Mnl: nl Mnl {}
      | {}
 
@@ -88,7 +89,7 @@ Exp : Exp Exp %prec APP {App $1 $2}
     | if Exp Mnl then Exp Mnl else Exp {If $2 $5 $8}
     | when Exp Exp {If $2 $3 (Iden "noAction")}
     | let ident CondLet in Exp {Let $2 $3 $5}
-    | let ident CondLet Exp {Let $2 $3 $4}
+    | let ident CondLet Exp {LetD $2 $3 $4}
 
 Exps: Exp Mnl Exps {$1:$3}
       |  {[]}
@@ -114,6 +115,7 @@ data Exp
       | Do [Exp]
       | App Exp Exp
       | Let String [(Exp,Exp)] Exp
+      | LetD String [(Exp,Exp)] Exp
       | Iden String
       | Num Integer
       | If Exp Exp Exp --When is syntaxic sugar
@@ -158,6 +160,7 @@ instance ToJSON Token where toJSON = gtoJson
 lexer :: String -> [Token]
 lexer [] = []
 lexer ('\n':cs) = TokenNl : lexer cs
+lexer ('-':'-':cs) = lexer $ dropUntil (isPrefixOf "\n") cs
 lexer (c:cs)
       | isSpace c = lexer cs
       | isAlpha c = lexerAlphaNumerical (c:cs)
