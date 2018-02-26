@@ -72,3 +72,8 @@ srai x shamt6 = (shiftR x (shiftBits (fromIntegral shamt6 :: t)))
 sll x y = (shiftL x (shiftBits y))
 srl x y = (shiftR (unsigned x) (shiftBits y))
 sra x y =(shiftR x (shiftBits y))
+
+
+ltu :: forall t u s . (Convertible t u, Integral s, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => t -> s -> Bool
+ltu x y = (unsigned  x) < (fromIntegral y :: u)
+
