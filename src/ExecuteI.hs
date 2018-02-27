@@ -122,19 +122,19 @@ execute (Sb rs1 rs2 simm12) = do
   withTranslation Store 1 (a + fromIntegral simm12)
     (\addr -> do
         x <- getRegister rs2
-        storeByte addr x)
+        storeByte addr (fromIntegral x))
 execute (Sh rs1 rs2 simm12) = do
   a <- getRegister rs1
   withTranslation Store 2 (a + fromIntegral simm12)
     (\addr -> do
         x <- getRegister rs2
-        storeHalf addr x)
+        storeHalf addr (fromIntegral x))
 execute (Sw rs1 rs2 simm12) = do
   a <- getRegister rs1
   withTranslation Store 4 (a + fromIntegral simm12)
     (\addr -> do
         x <- getRegister rs2
-        storeWord addr x)
+        storeWord addr (fromIntegral x))
 execute (Addi rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (x + fromIntegral imm12)

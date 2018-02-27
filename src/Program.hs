@@ -17,10 +17,10 @@ class (Monad p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWi
   loadHalf :: (Integral s) => s -> p Int16
   loadWord :: (Integral s) => s -> p Int32
   loadDouble :: (Integral s) => s -> p Int64
-  storeByte :: (Integral r, Integral s, Bits r, Bits s) => r -> s -> p ()
-  storeHalf :: (Integral r, Integral s, Bits r, Bits s) => r -> s -> p ()
-  storeWord :: (Integral r, Integral s, Bits r, Bits s) => r -> s -> p ()
-  storeDouble :: (Integral r, Integral s, Bits r, Bits s) => r -> s -> p ()
+  storeByte :: (Integral s, Bits s) => s -> Int8 -> p ()
+  storeHalf :: (Integral s, Bits s) => s -> Int16 -> p ()
+  storeWord :: (Integral s, Bits s) => s -> Int32 -> p ()
+  storeDouble :: (Integral s, Bits s) => s -> Int64 -> p ()
   getCSRField :: CSRField -> p MachineInt
   setCSRField :: (Integral s) => CSRField -> s -> p ()
   getPC :: p t

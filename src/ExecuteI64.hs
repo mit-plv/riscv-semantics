@@ -26,7 +26,7 @@ execute (Sd rs1 rs2 simm12) = do
   withTranslation Store 8 (a + fromIntegral simm12)
     (\addr -> do
         x <- getRegister rs2
-        storeDouble addr x)
+        storeDouble addr (fromIntegral x))
 execute (Addiw rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (s32 (x + fromIntegral imm12))
