@@ -120,3 +120,8 @@ Code:
 Tuesday, February 13th
 * Virtual memory. Helper outside typeclass, but in the monad.
 * Run riscv-tests in Travis (pending pre-built binaries going up).
+
+Tuesday, Feburary 27th
+* Travis: download riscv-gcc, build riscv-tests, and run them.
+* Change RISCV-V exceptions control-flow via Haskell exceptions.
+* Use translation for execution in supervisor mode.
