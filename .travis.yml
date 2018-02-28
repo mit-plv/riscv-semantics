@@ -16,4 +16,4 @@ install:
 
 script:
   - make
-  - stack --no-terminal --skip-ghc-check exec riscv-semantics test/build/thuemorse64
+  - stack --no-terminal --skip-ghc-check exec riscv-semantics-tests
