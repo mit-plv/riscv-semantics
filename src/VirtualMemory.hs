@@ -1,9 +1,11 @@
 {-# LANGUAGE MultiWayIf #-}
-module VirtualMemory (AccessType(..), calculateAddress, withTranslation) where
+
+module VirtualMemory where
 import Program
 import Utility
 import qualified CSRField as Field
 import Data.Bits
+import Prelude
 
 data VirtualMemoryMode = None | Sv32 | Sv39 | Sv48 deriving (Eq, Show)
 
@@ -45,8 +47,8 @@ pageFault Load = raiseException 0 13
 pageFault Store = raiseException 0 15
 
 -- Recursively traverse the page table to find the leaf entry for a given virtual address.
-findLeafEntry :: (RiscvProgram p t u) => VirtualMemoryMode -> AccessType -> MachineInt -> MachineInt -> Int -> p (Maybe (Int, MachineInt))
-findLeafEntry mode accessType va addr level = do
+findLeafEntry :: (RiscvProgram p t u) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
+findLeafEntry (mode,accessType,va,addr) level = do
   pte <- loadXLEN (addr + fromIntegral (getVPN mode va level * pteSize mode))
   let v = testBit pte 0
   let r = testBit pte 1
@@ -61,8 +63,15 @@ findLeafEntry mode accessType va addr level = do
      | level <= 0 -> do
          pageFault accessType
          return Nothing
-     | otherwise ->
-         findLeafEntry mode accessType va (shift (shiftL pte 10) 12) (level - 1)
+     | level ==1 ->
+         findLeafEntry (mode, accessType, va, (shift (shiftL pte 10) 12)) 0
+     | level ==2 ->
+         findLeafEntry (mode, accessType, va, (shift (shiftL pte 10) 12)) 1
+     | level ==3 ->
+         findLeafEntry (mode, accessType, va, (shift (shiftL pte 10) 12)) 2
+     | level ==4 ->
+         findLeafEntry (mode, accessType, va, (shift (shiftL pte 10) 12)) 3
+     | otherwise -> return Nothing
 
 translate :: VirtualMemoryMode -> MachineInt -> MachineInt -> Int -> MachineInt
 translate mode va pte level = vaSlice .|. shift ptePPN vaSplit
@@ -77,7 +86,7 @@ calculateAddress accessType va = do
     then return (Just va)
     else do
     ppn <- getCSRField Field.PPN
-    maybePTE <- findLeafEntry mode accessType va (shift ppn 12) (pageTableLevels mode - 1)
+    maybePTE <- findLeafEntry (mode,accessType, va, (shift ppn 12) )(pageTableLevels mode - 1)
     case maybePTE of
       Nothing -> return Nothing
       Just (level, pte) -> do
