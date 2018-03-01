@@ -61,13 +61,13 @@ raiseException isInterrupt exceptionCode = do
   setPC (addr * 4)
 
 slli :: forall t u .(Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => t -> MachineInt -> t
-slli x shamt6 = (shiftL x (shiftBits (fromIntegral shamt6 :: t)))
+slli x shamt6 = (shiftL x (shiftBits ((fromIntegral:: MachineInt -> t) shamt6)))
 
 srli :: forall t u . (Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => t -> MachineInt -> u
-srli x shamt6 = (shiftR ((unsigned x) :: u) (shiftBits (fromIntegral shamt6 :: t)))
+srli x shamt6 = (shiftR ((unsigned x) :: u) (shiftBits ((fromIntegral:: MachineInt -> t) shamt6)))
 
 srai :: forall t u . (Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => t -> MachineInt -> t
-srai x shamt6 = (shiftR x (shiftBits (fromIntegral shamt6 :: t)))
+srai x shamt6 = (shiftR x (shiftBits ((fromIntegral:: MachineInt -> t) shamt6)))
 
 sll x y = (shiftL x (shiftBits y))
 srl x y = (shiftR (unsigned x) (shiftBits y))
@@ -75,5 +75,5 @@ sra x y =(shiftR x (shiftBits y))
 
 
 ltu :: forall t u s . (Convertible t u, Integral s, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => t -> s -> Bool
-ltu x y = (unsigned  x) < (fromIntegral y :: u)
+ltu x y = (unsigned  x) < ((fromIntegral:: s -> u) y)
 
