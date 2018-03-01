@@ -15,15 +15,15 @@ execute (Mul rd rs1 rs2) = do
 execute (Mulh rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (highBits ((fromIntegral x) * (fromIntegral y))::t)
+  setRegister rd (highBits (((fromIntegral:: t -> Integer) x) * ((fromIntegral:: t -> Integer) y))::t)
 execute (Mulhsu rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (highBits ((fromIntegral x) * (fromIntegral (unsigned y)))::t)
+  setRegister rd (highBits (((fromIntegral:: t -> Integer) x) * ((fromIntegral:: u -> Integer) (unsigned y)))::t)
 execute (Mulhu rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (highBits ((fromIntegral ( unsigned x)) * (fromIntegral  (unsigned y)))::t)
+  setRegister rd (highBits (((fromIntegral:: u -> Integer) (unsigned x)) * ((fromIntegral:: u -> Integer)  (unsigned y)))::t)
 execute (Div rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2

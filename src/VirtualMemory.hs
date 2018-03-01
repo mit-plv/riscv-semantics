@@ -1,9 +1,10 @@
-{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE MultiWayIf, ScopedTypeVariables #-}
 module VirtualMemory (AccessType(..), calculateAddress, withTranslation) where
 import Program
 import Utility
 import qualified CSRField as Field
 import Data.Bits
+import Data.Int
 
 data VirtualMemoryMode = None | Sv32 | Sv39 | Sv48 deriving (Eq, Show)
 
@@ -34,8 +35,8 @@ loadXLEN :: (RiscvProgram p t u, Integral s) => s -> p MachineInt
 loadXLEN addr = do
   xlen <- getXLEN
   if xlen == 32
-    then fmap fromIntegral (loadWord addr)
-    else fmap fromIntegral (loadDouble addr)
+    then fmap (fromIntegral:: Int32 -> MachineInt) (loadWord addr)
+    else fmap (fromIntegral:: Int64 -> MachineInt) (loadDouble addr)
 
 data AccessType = Instruction | Load | Store deriving (Eq, Show)
 
@@ -47,7 +48,7 @@ pageFault Store = raiseException 0 15
 -- Recursively traverse the page table to find the leaf entry for a given virtual address.
 findLeafEntry :: (RiscvProgram p t u) => VirtualMemoryMode -> AccessType -> MachineInt -> MachineInt -> Int -> p (Maybe (Int, MachineInt))
 findLeafEntry mode accessType va addr level = do
-  pte <- loadXLEN (addr + fromIntegral (getVPN mode va level * pteSize mode))
+  pte <- loadXLEN (addr + (getVPN mode va level * pteSize mode))
   let v = testBit pte 0
   let r = testBit pte 1
   let w = testBit pte 2
@@ -91,13 +92,13 @@ calculateAddress accessType va = do
                pageFault accessType
                return Nothing
            | otherwise ->
-               return (Just (translate mode va (fromIntegral pte) level))
+               return (Just (translate mode va pte level))
 
-withTranslation :: (RiscvProgram p t u, Integral s) => AccessType -> Int -> s -> (s -> p ()) -> p ()
+withTranslation :: forall p t u s. (RiscvProgram p t u, Integral s) => AccessType -> Int -> s -> (s -> p ()) -> p ()
 withTranslation accessType alignment va memFunc = do
-  maybePA <- calculateAddress accessType (fromIntegral va)
+  maybePA <- calculateAddress accessType ((fromIntegral:: s -> MachineInt) va)
   case maybePA of
-    Just pa -> if mod pa (fromIntegral alignment) /= 0  -- Check alignment.
+    Just pa -> if mod pa ((fromIntegral:: Int -> MachineInt) alignment) /= 0  -- Check alignment.
                then raiseException 0 4
-               else memFunc (fromIntegral pa)
+               else memFunc ((fromIntegral:: MachineInt -> s) pa)
     Nothing -> return ()

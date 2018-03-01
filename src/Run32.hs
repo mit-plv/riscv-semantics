@@ -74,7 +74,7 @@ helper maybeToHostAddress = do
         setPC (pc + 4)
         pc <- getPC
         size <- getXLEN
-        execute (decode size $ fromIntegral inst)
+        execute (decode size $ (fromIntegral:: Int32 -> MachineInt) inst)
         interrupt <- liftIO checkInterrupt
         if interrupt then do
           -- Signal interrupt by setting MEIP high.
@@ -95,12 +95,12 @@ readProgram f = do
     else do
     mem <- readElf f
     maybeToHostAddress <- readElfSymbol "tohost" f
-    return (fmap fromIntegral maybeToHostAddress, mem)
+    return (fmap (fromIntegral:: Word64 -> Int32) maybeToHostAddress, mem)
 
 runFile :: String -> IO Int32
 runFile f = do
   (maybeToHostAddress, mem) <- readProgram f
-  let c = Minimal32 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 32), pc = fromIntegral (0x80000000 :: Word32), nextPC = 0,
+  let c = Minimal32 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 32), pc = (fromIntegral:: Word32 -> Int32) (0x80000000 :: Word32), nextPC = 0,
                       mem = S.fromList mem } in
     fmap fst $ runProgram maybeToHostAddress c
 
@@ -123,4 +123,4 @@ main = do
       return 1
     [file] -> runFile file
     files -> runFiles files
-  exitWith (if retval == 0 then ExitSuccess else ExitFailure $ fromIntegral retval)
+  exitWith (if retval == 0 then ExitSuccess else ExitFailure $ (fromIntegral:: Int32 -> Int) retval)

@@ -27,7 +27,7 @@ translateElf e = concat $ map translateElfSegment $ elfSegments e
 translateElfSegment :: ElfSegment -> [(Int, Word8)]
 translateElfSegment s =
     if elfSegmentType s == PT_LOAD
-        then addressEachByte (fromIntegral $ elfSegmentPhysAddr s) (B.unpack $ elfSegmentData s)
+        then addressEachByte ((fromIntegral:: Word64 -> Int) $ elfSegmentPhysAddr s) (B.unpack $ elfSegmentData s)
         else []
 
 addressEachByte :: Int -> [Word8] -> [(Int, Word8)]
