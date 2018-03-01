@@ -5,6 +5,8 @@ import Data.Int
 import Data.Word
 import Prelude
 import Control.Monad
+import Control.Monad.Identity
+import Control.Monad.State
 type MachineInt = Int64
 
 
@@ -89,3 +91,7 @@ instance MachineWidth Int32 where
 instance MachineWidth Int64 where
   shiftBits = lower 6
   highBits n = fromIntegral $ bitSlice n 64 128
+
+
+liftState :: (Monad m) => State a b -> StateT a m b
+liftState = mapStateT (return . runIdentity)

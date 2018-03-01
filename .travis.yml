@@ -6,11 +6,14 @@ cache:
 
 before_install:
   - mkdir -p ~/.local/bin
-  - export PATH=$HOME/.local/bin:$PATH
+  - mkdir ~/riscv-gcc
+  - export PATH=$HOME/.local/bin:$HOME/riscv-gcc/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - travis_retry curl -L https://github.com/gnu-mcu-eclipse/riscv-none-gcc/releases/download/v7.2.0-2-20180110/gnu-mcu-eclipse-riscv-none-gcc-7.2.0-2-20180111-2230-centos64.tgz | tar xz --strip-components=3 -C ~/riscv-gcc gnu-mcu-eclipse/riscv-none-gcc/7.2.0-2-20180111-2230
 
 install:
   - ./install.sh
 
 script:
-  - stack --no-terminal --skip-ghc-check exec riscv-semantics test/build/thuemorse64
+  - make
+  - stack --no-terminal --skip-ghc-check exec riscv-semantics-tests

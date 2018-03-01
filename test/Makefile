@@ -12,8 +12,8 @@ HEX32=$(addsuffix .hex,$(ELF32))
 HEX64=$(addsuffix .hex,$(ELF64))
 ELF2HEX=../elf2hex
 
-RISCVCC64=riscv64-unknown-linux-gnu-gcc -march=rv64imfd -mabi=lp64 -static -mcmodel=medany -nostdlib -nostartfiles
-RISCVCC32=riscv32-unknown-linux-gnu-gcc -march=rv32im -DRISCV -nostdlib -nostartfiles
+RISCVCC64=riscv-none-embed-gcc -march=rv64im -mabi=lp64 -static -nostdlib -nostartfiles -mcmodel=medany
+RISCVCC32=riscv-none-embed-gcc -march=rv32im -mabi=ilp32 -static -nostdlib -nostartfiles -mcmodel=medany
 
 all: $(HEX32) $(HEX64)
 all64: $(HEX64)
