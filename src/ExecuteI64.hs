@@ -32,13 +32,13 @@ execute (Addiw rd rs1 imm12) = do
   setRegister rd (s32 (x + fromImm imm12))
 execute (Slliw rd rs1 imm12) = do
   x <- getRegister rs1
-  setRegister rd (s32 (shiftL x (shiftBits ((fromIntegral:: MachineInt -> Int32) imm12))))
+  setRegister rd (s32 (shiftL x (regToShamt5 (fromImm imm12 :: t))))
 execute (Srliw rd rs1 imm12) = do
   x <- getRegister rs1
-  setRegister rd (s32 (shiftR (u32 x) (shiftBits ((fromIntegral:: MachineInt -> Int32) imm12))))
+  setRegister rd (s32 (shiftR (u32 x) (regToShamt5 (fromImm imm12 :: t))))
 execute (Sraiw rd rs1 imm12) = do
   x <- getRegister rs1
-  setRegister rd (s32 (shiftR (s32 x) (shiftBits ((fromIntegral:: MachineInt -> Int32) imm12))))
+  setRegister rd (s32 (shiftR (s32 x) (regToShamt5 (fromImm imm12 :: t))))
 execute (Addw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -50,13 +50,13 @@ execute (Subw rd rs1 rs2) = do
 execute (Sllw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (s32 (shiftL x (shiftBits (regToInt32 y))))
+  setRegister rd (s32 (shiftL x (regToShamt5 y)))
 execute (Srlw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (s32 (shiftR (u32 x) (shiftBits (regToInt32 y))))
+  setRegister rd (s32 (shiftR (u32 x) (regToShamt5 y)))
 execute (Sraw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (s32 (shiftR x (shiftBits (regToInt32 y))))
+  setRegister rd (s32 (shiftR x (regToShamt5 y)))
 execute _ = mzero

@@ -73,17 +73,6 @@ class (Integral s, Integral u) => Convertible s u | s -> u, u -> s where
   unsigned = fromIntegral
   signed :: u -> s
   signed = fromIntegral
-  fromImm :: MachineInt -> s
-  fromImm = fromIntegral
-  regToInt8 :: s -> Int8
-  regToInt8 = fromIntegral
-  regToInt16 :: s -> Int16
-  regToInt16 = fromIntegral
-  regToInt32 :: s -> Int32
-  regToInt32 = fromIntegral
-  regToInt64 :: s -> Int64
-  regToInt64 = fromIntegral
-
 
 instance Convertible Int8 Word8
 instance Convertible Int16 Word16
@@ -91,16 +80,30 @@ instance Convertible Int32 Word32
 instance Convertible Int64 Word64
 
 
-class MachineWidth t where
-  shiftBits :: t -> Int
+-- signed values in a register (we always use signed by default)
+class (Integral t) => MachineWidth t where
+  fromImm :: MachineInt -> t
+  fromImm = fromIntegral
+  regToInt8 :: t -> Int8
+  regToInt8 = fromIntegral
+  regToInt16 :: t -> Int16
+  regToInt16 = fromIntegral
+  regToInt32 :: t -> Int32
+  regToInt32 = fromIntegral
+  regToInt64 :: t -> Int64
+  regToInt64 = fromIntegral
+  regToShamt5 :: t -> Int
+  regToShamt :: t -> Int
   highBits :: Integer -> t
 
 instance MachineWidth Int32 where
-  shiftBits = lower 5
+  regToShamt5 = lower 5
+  regToShamt = lower 5
   highBits n = (fromIntegral:: Integer -> Int32) $ bitSlice n 32 64
 
 instance MachineWidth Int64 where
-  shiftBits = lower 6
+  regToShamt5 = lower 5
+  regToShamt = lower 6
   highBits n = (fromIntegral:: Integer -> Int64) $ bitSlice n 64 128
 
 
