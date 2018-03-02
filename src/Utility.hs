@@ -70,9 +70,20 @@ splitDouble = splitBytes 64
 
 class (Integral s, Integral u) => Convertible s u | s -> u, u -> s where
   unsigned :: s -> u
-  unsigned = (fromIntegral:: s -> u)
+  unsigned = fromIntegral
   signed :: u -> s
-  signed = (fromIntegral:: u -> s)
+  signed = fromIntegral
+  fromImm :: MachineInt -> s
+  fromImm = fromIntegral
+  regToInt8 :: s -> Int8
+  regToInt8 = fromIntegral
+  regToInt16 :: s -> Int16
+  regToInt16 = fromIntegral
+  regToInt32 :: s -> Int32
+  regToInt32 = fromIntegral
+  regToInt64 :: s -> Int64
+  regToInt64 = fromIntegral
+
 
 instance Convertible Int8 Word8
 instance Convertible Int16 Word16
