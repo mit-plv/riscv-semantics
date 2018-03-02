@@ -92,6 +92,10 @@ class (Integral t) => MachineWidth t where
   regToInt32 = fromIntegral
   regToInt64 :: t -> Int64
   regToInt64 = fromIntegral
+  regToZ_signed :: t -> Integer
+  regToZ_signed = fromIntegral
+  regToZ_unsigned :: forall u. (Convertible t u) => t -> Integer
+  regToZ_unsigned = (fromIntegral :: u -> Integer) . (unsigned :: t -> u)
   regToShamt5 :: t -> Int
   regToShamt :: t -> Int
   highBits :: Integer -> t
