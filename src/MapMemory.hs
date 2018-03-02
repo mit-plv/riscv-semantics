@@ -15,7 +15,7 @@ writeM mem addr val = S.insert ((fromIntegral:: a -> Int) addr) val mem
 
 helpLoad :: forall a b. (Integral a, Bits b, Integral b) => (S.Map Int Word8) -> a -> Int -> b
 helpLoad mem addr numBytes =
-  combineBytes $ fmap (\a -> readM mem a) [(fromIntegral addr)..(fromIntegral addr + numBytes - 1)]
+  combineBytes $ fmap (\a -> readM mem a) [((fromIntegral:: a -> Int) addr)..((fromIntegral:: a -> Int) addr + numBytes - 1)]
 
 helpStore :: forall a. (Integral a) => (S.Map Int Word8) -> a -> [Word8] -> (S.Map Int Word8)
 helpStore mem addr bytes =

@@ -23,7 +23,7 @@ execute (Jal rd jimm20) = do
   if (mod newPC 4 /= 0)
     then raiseException 0 0
     else (do
-      setRegister rd (fromIntegral pc + 4)
+      setRegister rd ((fromIntegral:: t -> MachineInt) pc + 4)
       setPC newPC)
 execute (Jalr rd rs1 oimm12) = do
   x <- getRegister rs1
@@ -32,7 +32,7 @@ execute (Jalr rd rs1 oimm12) = do
   if (mod newPC 4 /= 0)
     then raiseException 0 0
     else (do
-      setRegister rd (fromIntegral pc + 4)
+      setRegister rd ((fromIntegral:: t -> MachineInt) pc + 4)
       setPC newPC)
 execute (Beq rs1 rs2 sbimm12) = do
   x <- getRegister rs1
