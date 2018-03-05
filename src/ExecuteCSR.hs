@@ -22,12 +22,12 @@ execute (Csrrs rd rs1 csr12) = do
   mask <- getRegister rs1
   val <- getCSR (lookupCSR csr12)
   setRegister rd val
-  when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .|. (fromIntegral mask)))
+  when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .|. ((fromIntegral:: t -> MachineInt) mask)))
 execute (Csrrc rd rs1 csr12) = do
   mask <- getRegister rs1
   val <- getCSR (lookupCSR csr12)
   setRegister rd val
-  when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .&. (fromIntegral mask)))
+  when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .&. ((fromIntegral:: t -> MachineInt) mask)))
 execute (Csrrwi rd zimm csr12) = do
   when (rd /= 0) (do
     val <- getCSR (lookupCSR csr12)
@@ -36,7 +36,7 @@ execute (Csrrwi rd zimm csr12) = do
 execute (Csrrsi rd zimm csr12) = do
   val <- getCSR (lookupCSR csr12)
   setRegister rd val
-  when (zimm /= 0) (setCSR (lookupCSR csr12) (val .|. (fromIntegral zimm)))
+  when (zimm /= 0) (setCSR (lookupCSR csr12) (val .|. zimm))
 execute (Csrrci rd zimm csr12) = do
   val <- getCSR (lookupCSR csr12)
   setRegister rd val

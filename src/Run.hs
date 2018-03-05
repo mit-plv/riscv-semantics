@@ -75,7 +75,7 @@ helper maybeToHostAddress = do
         else do
         setPC (pc + 4)
         size <- getXLEN
-        execute (decode size $ fromIntegral inst)
+        execute (decode size $ (fromIntegral:: Int32 -> MachineInt) inst)
         interrupt <- liftIO checkInterrupt
         if interrupt then do
           -- Signal interrupt by setting MEIP high.
@@ -96,7 +96,7 @@ readProgram f = do
     else do
     mem <- readElf f
     maybeToHostAddress <- readElfSymbol "tohost" f
-    return (fmap fromIntegral maybeToHostAddress, mem)
+    return (fmap (fromIntegral:: Word64 -> Int64) maybeToHostAddress, mem)
 
 runFile :: String -> IO Int64
 runFile f = do
@@ -124,4 +124,4 @@ main = do
       return 1
     [file] -> runFile file
     files -> runFiles files
-  exitWith (if retval == 0 then ExitSuccess else ExitFailure $ fromIntegral retval)
+  exitWith (if retval == 0 then ExitSuccess else ExitFailure $ (fromIntegral:: Int64 -> Int) retval)

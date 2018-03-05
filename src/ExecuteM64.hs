@@ -34,6 +34,6 @@ execute (Remuw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
   let r | y == 0 = x
-        | otherwise = fromIntegral (rem (unsigned x) (unsigned y))
+        | otherwise = (fromIntegral:: u -> t) (rem (unsigned x) (unsigned y))
     in setRegister rd (s32 r)
 execute _ = mzero

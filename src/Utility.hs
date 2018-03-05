@@ -18,43 +18,43 @@ setIndex :: Int -> a -> [a] -> [a]
 setIndex i x l = left ++ (x:(drop 1 right))
   where (left, right) = splitAt i l
 
-s8 :: (Integral t) => t -> t
-s8 n = fromIntegral (fromIntegral n :: Int8)
+s8 :: forall t. (Integral t) => t -> t
+s8 n = (fromIntegral:: Int8 -> t) ((fromIntegral:: t -> Int8) n)
 {-# INLINE s8 #-}
 
-s16 :: (Integral t) => t -> t
-s16 n = fromIntegral (fromIntegral n :: Int16)
+s16 :: forall t. (Integral t) => t -> t
+s16 n = (fromIntegral:: Int16 -> t) ((fromIntegral:: t -> Int16) n)
 {-# INLINE s16 #-}
 
-s32 :: (Integral t) => t -> t
-s32 n = fromIntegral (fromIntegral n :: Int32)
+s32 :: forall t. (Integral t) => t -> t
+s32 n = (fromIntegral:: Int32 -> t) ((fromIntegral:: t -> Int32) n)
 {-# INLINE s32 #-}
 
-u8 :: (Integral t) => t -> t
-u8 n = fromIntegral (fromIntegral n :: Word8)
+u8 :: forall t. (Integral t) => t -> t
+u8 n = (fromIntegral:: Word8 -> t) ((fromIntegral:: t -> Word8) n)
 {-# INLINE u8 #-}
 
-u16 :: (Integral t) => t -> t
-u16 n = fromIntegral (fromIntegral n :: Word16)
+u16 :: forall t. (Integral t) => t -> t
+u16 n = (fromIntegral:: Word16 -> t) ((fromIntegral:: t -> Word16) n)
 {-# INLINE u16 #-}
 
-u32 :: (Integral t) => t -> t
-u32 n = fromIntegral (fromIntegral n :: Word32)
+u32 :: forall t. (Integral t) => t -> t
+u32 n = (fromIntegral:: Word32 -> t) ((fromIntegral:: t -> Word32) n)
 {-# INLINE u32 #-}
 
-lower :: (Bits a, Integral a, Num b) => Int -> a -> b
-lower n x = fromIntegral $ bitSlice x 0 n
+lower :: forall a b. (Bits a, Integral a, Num b) => Int -> a -> b
+lower n x = (fromIntegral:: a -> b) $ bitSlice x 0 n
 {-# INLINE lower #-}
 
-combineBytes :: (Bits a, Integral a) => [Word8] -> a
-combineBytes bytes = foldr (\(x,n) res -> res .|. shiftL (fromIntegral n) (8*x)) 0 $ zip [0..] bytes
+combineBytes :: forall a. (Bits a, Integral a) => [Word8] -> a
+combineBytes bytes = foldr (\(x,n) res -> res .|. shiftL ((fromIntegral:: Word8 -> a) n) (8*x)) 0 $ zip [0..] bytes
 {-# INLINE combineBytes #-}
 {-# SPECIALIZE combineBytes :: [Word8] -> Word64 #-}
 {-# SPECIALIZE combineBytes :: [Word8] -> Word32 #-}
 {-# SPECIALIZE combineBytes :: [Word8] -> Word16 #-}
 
-splitBytes :: (Bits a, Integral a) => Int -> a -> [Word8]
-splitBytes n w = map fromIntegral [bitSlice w p (p + 8) | p <- [0,8..n-1]]
+splitBytes :: forall a. (Bits a, Integral a) => Int -> a -> [Word8]
+splitBytes n w = map (fromIntegral:: a -> Word8)  [bitSlice w p (p + 8) | p <- [0,8..n-1]]
 
 splitHalf :: (Bits a, Integral a) => a -> [Word8]
 splitHalf = splitBytes 16
@@ -80,17 +80,35 @@ instance Convertible Int32 Word32
 instance Convertible Int64 Word64
 
 
-class MachineWidth t where
-  shiftBits :: t -> Int
+-- signed values in a register (we always use signed by default)
+class (Integral t) => MachineWidth t where
+  fromImm :: MachineInt -> t
+  fromImm = fromIntegral
+  regToInt8 :: t -> Int8
+  regToInt8 = fromIntegral
+  regToInt16 :: t -> Int16
+  regToInt16 = fromIntegral
+  regToInt32 :: t -> Int32
+  regToInt32 = fromIntegral
+  regToInt64 :: t -> Int64
+  regToInt64 = fromIntegral
+  regToZ_signed :: t -> Integer
+  regToZ_signed = fromIntegral
+  regToZ_unsigned :: forall u. (Convertible t u) => t -> Integer
+  regToZ_unsigned = (fromIntegral :: u -> Integer) . (unsigned :: t -> u)
+  regToShamt5 :: t -> Int
+  regToShamt :: t -> Int
   highBits :: Integer -> t
 
 instance MachineWidth Int32 where
-  shiftBits = lower 5
-  highBits n = fromIntegral $ bitSlice n 32 64
+  regToShamt5 = lower 5
+  regToShamt = lower 5
+  highBits n = (fromIntegral:: Integer -> Int32) $ bitSlice n 32 64
 
 instance MachineWidth Int64 where
-  shiftBits = lower 6
-  highBits n = fromIntegral $ bitSlice n 64 128
+  regToShamt5 = lower 5
+  regToShamt = lower 6
+  highBits n = (fromIntegral:: Integer -> Int64) $ bitSlice n 64 128
 
 
 liftState :: (Monad m) => State a b -> StateT a m b
