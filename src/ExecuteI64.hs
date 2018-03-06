@@ -8,7 +8,7 @@ import Data.Bits
 import Data.Int
 import Control.Monad
 
-execute :: forall p t u. (RiscvProgram p t u, MonadPlus p) => Instruction -> p ()
+execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
 execute (Lwu rd rs1 oimm12) = do
   a <- getRegister rs1
   withTranslation Load 4 (a + fromImm oimm12)

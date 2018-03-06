@@ -10,7 +10,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Prelude
 
-class (Monad p, MachineWidth t) => RiscvProgram p t u | p -> t, t -> u where
+class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   getRegister :: Register -> p t
   setRegister :: Register -> t -> p ()
   loadByte :: t -> p Int8
@@ -27,14 +27,14 @@ class (Monad p, MachineWidth t) => RiscvProgram p t u | p -> t, t -> u where
   setPC :: t -> p ()
   step :: p ()
 
-getXLEN :: forall p t u s. (RiscvProgram p t u, Integral s) => p s
+getXLEN :: forall p t s. (RiscvProgram p t, Integral s) => p s
 getXLEN = do
             mxl <- getCSRField MXL
             case mxl of
                 1 -> return 32
                 2 -> return 64
 
-instance (RiscvProgram p t u) => RiscvProgram (MaybeT p) t u where
+instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   getRegister r = lift (getRegister r)
   setRegister r v = lift (setRegister r v)
   loadByte a = lift (loadByte a)
@@ -51,7 +51,7 @@ instance (RiscvProgram p t u) => RiscvProgram (MaybeT p) t u where
   setPC v = lift (setPC v)
   step = lift step
 
-raiseException :: forall p t u. (RiscvProgram p t u) => MachineInt -> MachineInt -> p ()
+raiseException :: forall p t. (RiscvProgram p t) => MachineInt -> MachineInt -> p ()
 raiseException isInterrupt exceptionCode = do
   pc <- getPC
   addr <- getCSRField MTVecBase

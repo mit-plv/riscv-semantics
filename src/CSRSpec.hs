@@ -7,7 +7,7 @@ import Data.Bits
 import Control.Monad
 import Prelude
 
-getCSR :: (RiscvProgram p t u) => CSR -> p MachineInt
+getCSR :: (RiscvProgram p t) => CSR -> p MachineInt
 
 getCSR MStatus = do
   mpie <- getCSRField Field.MPIE
@@ -58,7 +58,7 @@ getCSR SATP = do
 -- Catch-all for other (possibly unimplemented) CSRs; hardwire to 0.
 getCSR _ = return 0
 
-setCSR :: (RiscvProgram p t u, Integral x, Bits x) => CSR -> x -> p ()
+setCSR :: (RiscvProgram p t, Integral x, Bits x) => CSR -> x -> p ()
 
 setCSR MStatus val = do
   setCSRField Field.MIE (bitSlice val 3 4)

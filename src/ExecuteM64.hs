@@ -5,7 +5,7 @@ import Program
 import Utility
 import Control.Monad
 
-execute :: forall p t u. (RiscvProgram p t u, MonadPlus p) => Instruction -> p ()
+execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
 execute (Mulw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2

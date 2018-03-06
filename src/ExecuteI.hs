@@ -11,7 +11,7 @@ import Data.Word
 import Control.Monad
 import Prelude
 
-execute :: forall p t u. (RiscvProgram p t u, MonadPlus p) => Instruction -> p ()
+execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
 -- begin ast
 execute (Lui rd imm20) = do
   setRegister rd (fromImm imm20)

@@ -44,7 +44,7 @@ wrapLoad loadFunc addr = state $ \comp -> ((fromIntegral:: r -> r') $ loadFunc (
 wrapStore :: forall a' v v'. (Integral a', Integral v, Integral v') => (S.Map Int Word8 -> Int -> v -> S.Map Int Word8) -> (a' -> v' -> MState ())
 wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)) ((fromIntegral:: v' -> v) val) })
 
-instance RiscvProgram MState Int64 Word64 where
+instance RiscvProgram MState Int64 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! ((fromIntegral:: Register -> Int) reg-1), comp)
   setRegister :: forall s. (Integral s) => Register -> s -> MState ()
   setRegister reg val = state $ \comp -> ((), if reg == 0 then comp else comp { registers = setIndex ((fromIntegral:: Register -> Int) reg-1) ((fromIntegral:: s -> Int64) val) (registers comp) })

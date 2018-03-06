@@ -33,7 +33,7 @@ ppnBits Sv48 = 9
 
 getVPN mode va i = bitSlice va 12 (12 + (i + 1) * ppnBits mode)
 
-loadXLEN :: (RiscvProgram p t u) => t -> p MachineInt
+loadXLEN :: (RiscvProgram p t) => t -> p MachineInt
 loadXLEN addr = do
   xlen <- getXLEN
   if xlen == 32
@@ -42,13 +42,13 @@ loadXLEN addr = do
 
 data AccessType = Instruction | Load | Store deriving (Eq, Show)
 
-pageFault :: (RiscvProgram p t u) => AccessType -> p ()
+pageFault :: (RiscvProgram p t) => AccessType -> p ()
 pageFault Instruction = raiseException 0 12
 pageFault Load = raiseException 0 13
 pageFault Store = raiseException 0 15
 
 -- Recursively traverse the page table to find the leaf entry for a given virtual address.
-findLeafEntry :: forall p t u. (RiscvProgram p t u) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
+findLeafEntry :: forall p t u. (RiscvProgram p t) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
 findLeafEntry (mode,accessType,va,addr) level = do
   pte <- loadXLEN ((fromIntegral:: MachineInt -> t) (addr + (getVPN mode va level * pteSize mode)))
   let v = testBit pte 0
@@ -80,7 +80,7 @@ translate mode va pte level = vaSlice .|. shift ptePPN vaSplit
         vaSlice = bitSlice va 0 vaSplit
         ptePPN = shiftL pte (10 + level * (ppnBits mode))
 
-calculateAddress :: (RiscvProgram p t u) => AccessType -> MachineInt -> p (Maybe MachineInt)
+calculateAddress :: (RiscvProgram p t) => AccessType -> MachineInt -> p (Maybe MachineInt)
 calculateAddress accessType va = do
   mode <- fmap getMode (getCSRField Field.MODE)
   if mode == None
@@ -103,7 +103,7 @@ calculateAddress accessType va = do
            | otherwise ->
                return (Just (translate mode va pte level))
 
-withTranslation :: forall p t u s. (RiscvProgram p t u, Integral s) => AccessType -> Int -> s -> (s -> p ()) -> p ()
+withTranslation :: forall p t s. (RiscvProgram p t, Integral s) => AccessType -> Int -> s -> (s -> p ()) -> p ()
 withTranslation accessType alignment va memFunc = do
   maybePA <- calculateAddress accessType ((fromIntegral:: s -> MachineInt) va)
   case maybePA of

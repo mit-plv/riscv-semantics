@@ -10,7 +10,7 @@ import ExecuteCSR as CSR
 import Control.Monad
 import Control.Monad.Trans.Maybe
 
-execute :: (RiscvProgram p t u) => Instruction -> p ()
+execute :: (RiscvProgram p t) => Instruction -> p ()
 execute InvalidInstruction = do
   raiseException 0 2
   cycles <- getCSRField Field.MCycle
