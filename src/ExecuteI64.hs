@@ -14,13 +14,13 @@ execute (Lwu rd rs1 oimm12) = do
   withTranslation Load 4 (a + fromImm oimm12)
     (\addr -> do
         x <- loadWord addr
-        setRegister rd (unsigned x))
+        setRegister rd (uInt32ToReg x))
 execute (Ld rd rs1 oimm12) = do
   a <- getRegister rs1
   withTranslation Load 8 (a + fromImm oimm12)
     (\addr -> do
         x <- loadDouble addr
-        setRegister rd x)
+        setRegister rd (int64ToReg x))
 execute (Sd rs1 rs2 simm12) = do
   a <- getRegister rs1
   withTranslation Store 8 (a + fromImm simm12)

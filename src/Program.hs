@@ -12,19 +12,19 @@ import Prelude
 
 class (Monad p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => RiscvProgram p t u | p -> t, t -> u where
   getRegister :: Register -> p t
-  setRegister :: (Integral s) => Register -> s -> p ()
-  loadByte :: (Integral s) => s -> p Int8
-  loadHalf :: (Integral s) => s -> p Int16
-  loadWord :: (Integral s) => s -> p Int32
-  loadDouble :: (Integral s) => s -> p Int64
-  storeByte :: (Integral s, Bits s) => s -> Int8 -> p ()
-  storeHalf :: (Integral s, Bits s) => s -> Int16 -> p ()
-  storeWord :: (Integral s, Bits s) => s -> Int32 -> p ()
-  storeDouble :: (Integral s, Bits s) => s -> Int64 -> p ()
+  setRegister :: Register -> t -> p ()
+  loadByte :: t -> p Int8
+  loadHalf :: t -> p Int16
+  loadWord :: t -> p Int32
+  loadDouble :: t -> p Int64
+  storeByte :: t -> Int8 -> p ()
+  storeHalf :: t -> Int16 -> p ()
+  storeWord :: t -> Int32 -> p ()
+  storeDouble :: t -> Int64 -> p ()
   getCSRField :: CSRField -> p MachineInt
   setCSRField :: (Integral s) => CSRField -> s -> p ()
   getPC :: p t
-  setPC :: (Integral s) => s -> p ()
+  setPC :: t -> p ()
   step :: p ()
 
 getXLEN :: forall p t u s. (RiscvProgram p t u, Integral s) => p s
@@ -58,7 +58,7 @@ raiseException isInterrupt exceptionCode = do
   setCSRField MEPC pc
   setCSRField MCauseInterrupt isInterrupt
   setCSRField MCauseCode exceptionCode
-  setPC (addr * 4)
+  setPC (fromImm addr * 4)
 
 
 ltu :: forall t u s . (Convertible t u, Integral s, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => t -> s -> Bool

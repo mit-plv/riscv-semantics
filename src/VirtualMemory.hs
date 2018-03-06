@@ -33,7 +33,7 @@ ppnBits Sv48 = 9
 
 getVPN mode va i = bitSlice va 12 (12 + (i + 1) * ppnBits mode)
 
-loadXLEN :: (RiscvProgram p t u, Integral s) => s -> p MachineInt
+loadXLEN :: (RiscvProgram p t u) => t -> p MachineInt
 loadXLEN addr = do
   xlen <- getXLEN
   if xlen == 32
@@ -48,9 +48,9 @@ pageFault Load = raiseException 0 13
 pageFault Store = raiseException 0 15
 
 -- Recursively traverse the page table to find the leaf entry for a given virtual address.
-findLeafEntry :: (RiscvProgram p t u) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
+findLeafEntry :: forall p t u. (RiscvProgram p t u) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
 findLeafEntry (mode,accessType,va,addr) level = do
-  pte <- loadXLEN (addr + (getVPN mode va level * pteSize mode))
+  pte <- loadXLEN ((fromIntegral:: MachineInt -> t) (addr + (getVPN mode va level * pteSize mode)))
   let v = testBit pte 0
   let r = testBit pte 1
   let w = testBit pte 2

@@ -36,7 +36,7 @@ execute (Divu rd rs1 rs2) = do
   y <- getRegister rs2
   let q | y == 0 = maxBound::u
         | otherwise = div (unsigned x) (unsigned y)
-    in setRegister rd q
+    in setRegister rd (signed q)
 execute (Rem rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -48,7 +48,7 @@ execute (Remu rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
   let r | y == 0 = x
-        | otherwise = (fromIntegral:: u -> t) (rem (unsigned x) (unsigned y))
+        | otherwise = signed (rem (unsigned x) (unsigned y))
     in setRegister rd r
 -- end ast
 execute _ = mzero

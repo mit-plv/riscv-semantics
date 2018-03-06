@@ -38,17 +38,17 @@ instance (RiscvProgram (State s) t u, Convertible t u, Bounded t, Bounded u, Bit
   setRegister r v = liftState (setRegister r v)
   loadByte a = liftState (loadByte a)
   loadHalf a = liftState (loadHalf a)
-  loadWord :: forall a. (Integral a) => a -> IOState s Int32
+  loadWord :: t -> IOState s Int32
   loadWord addr =
-    case S.lookup ((fromIntegral:: a -> MachineInt) addr) mmioTable of
+    case S.lookup ((fromIntegral:: t -> MachineInt) addr) mmioTable of
       Just (getFunc, _) -> getFunc
       Nothing -> liftState (loadWord addr)
   loadDouble a = liftState (loadDouble a)
   storeByte a v = liftState (storeByte a v)
   storeHalf a v = liftState (storeHalf a v)
-  storeWord :: forall a. (Integral a, Bits a) => a -> Int32 -> IOState s ()
+  storeWord :: t -> Int32 -> IOState s ()
   storeWord addr val =
-    case S.lookup ((fromIntegral:: a -> MachineInt) addr) mmioTable of
+    case S.lookup ((fromIntegral:: t -> MachineInt) addr) mmioTable of
       Just (_, setFunc) -> setFunc val
       Nothing -> liftState (storeWord addr val)
   storeDouble a v = liftState (storeDouble a v)

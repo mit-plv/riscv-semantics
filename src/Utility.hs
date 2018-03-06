@@ -97,6 +97,30 @@ class (Integral t, Bits t) => MachineWidth t where
   regToInt64 :: t -> Int64
   regToInt64 = fromIntegral
 
+  uInt8ToReg :: forall u. (Convertible t u) => Int8 -> t
+  uInt8ToReg x = fromIntegral (unsigned x)
+
+  uInt16ToReg :: forall u. (Convertible t u) => Int16 -> t
+  uInt16ToReg x = fromIntegral (unsigned x)
+
+  uInt32ToReg :: forall u. (Convertible t u) => Int32 -> t
+  uInt32ToReg x = fromIntegral (unsigned x)
+
+  uInt64ToReg :: forall u. (Convertible t u) => Int64 -> t
+  uInt64ToReg x = fromIntegral (unsigned x)
+
+  int8ToReg :: Int8 -> t
+  int8ToReg = fromIntegral
+
+  int16ToReg :: Int16 -> t
+  int16ToReg = fromIntegral
+
+  int32ToReg :: Int32 -> t
+  int32ToReg = fromIntegral
+
+  int64ToReg :: Int64 -> t
+  int64ToReg = fromIntegral
+
   regToZ_signed :: t -> Integer
   regToZ_signed = fromIntegral
 

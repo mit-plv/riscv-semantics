@@ -22,7 +22,7 @@ execute (Divuw rd rs1 rs2) = do
   y <- getRegister rs2
   let q | y == 0 = maxBound::u
         | otherwise = div (unsigned x) (unsigned y)
-    in setRegister rd (s32 q)
+    in setRegister rd (signed (s32 q))
 execute (Remw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -34,6 +34,6 @@ execute (Remuw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
   let r | y == 0 = x
-        | otherwise = (fromIntegral:: u -> t) (rem (unsigned x) (unsigned y))
+        | otherwise = signed (rem (unsigned x) (unsigned y))
     in setRegister rd (s32 r)
 execute _ = mzero

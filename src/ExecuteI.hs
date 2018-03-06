@@ -13,7 +13,8 @@ import Prelude
 
 execute :: forall p t u. (RiscvProgram p t u, MonadPlus p) => Instruction -> p ()
 -- begin ast
-execute (Lui rd imm20) = setRegister rd imm20
+execute (Lui rd imm20) = do
+  setRegister rd (fromImm imm20)
 execute (Auipc rd oimm20) = do
   pc <- getPC
   setRegister rd (fromImm oimm20 + pc)
@@ -93,31 +94,31 @@ execute (Lb rd rs1 oimm12) = do
   withTranslation Load 1 (a + fromImm oimm12)
     (\addr -> do
         x <- loadByte addr
-        setRegister rd x)
+        setRegister rd (int8ToReg x))
 execute (Lh rd rs1 oimm12) = do
   a <- getRegister rs1
   withTranslation Load 2 (a + fromImm oimm12)
     (\addr -> do
         x <- loadHalf addr
-        setRegister rd x)
+        setRegister rd (int16ToReg x))
 execute (Lw rd rs1 oimm12) = do
   a <- getRegister rs1
   withTranslation Load 4 (a + fromImm oimm12)
     (\addr -> do
         x <- loadWord addr
-        setRegister rd x)
+        setRegister rd (int32ToReg x))
 execute (Lbu rd rs1 oimm12) = do
   a <- getRegister rs1
   withTranslation Load 1 (a + fromImm oimm12)
     (\addr -> do
         x <- loadByte addr
-        setRegister rd (unsigned x))
+        setRegister rd (uInt8ToReg x))
 execute (Lhu rd rs1 oimm12) = do
   a <- getRegister rs1
   withTranslation Load 2 (a + fromImm oimm12)
     (\addr -> do
         x <- loadHalf addr
-        setRegister rd (unsigned x))
+        setRegister rd (uInt16ToReg x))
 execute (Sb rs1 rs2 simm12) = do
   a <- getRegister rs1
   withTranslation Store 1 (a + fromImm simm12)
