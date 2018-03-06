@@ -156,13 +156,13 @@ execute (Andi rd rs1 imm12) = do
   setRegister rd (x .&. (fromImm imm12))
 execute (Slli rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (sll x (fromImm shamt6))
+  setRegister rd (sll x (regToShamt (fromImm shamt6 :: t)))
 execute (Srli rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (srl x (fromImm shamt6))
+  setRegister rd (srl x (regToShamt (fromImm shamt6 :: t)))
 execute (Srai rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (sra x (fromImm shamt6))
+  setRegister rd (sra x (regToShamt (fromImm shamt6 :: t)))
 execute (Add rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -174,7 +174,7 @@ execute (Sub rd rs1 rs2) = do
 execute (Sll rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (sll x y)
+  setRegister rd (sll x (regToShamt y))
 execute (Slt rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -194,11 +194,11 @@ execute (Or rd rs1 rs2) = do
 execute (Srl rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (srl x y)
+  setRegister rd (srl x (regToShamt y))
 execute (Sra rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (sra x y)
+  setRegister rd (sra x (regToShamt y))
 execute (And rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2

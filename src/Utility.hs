@@ -81,24 +81,43 @@ instance Convertible Int64 Word64
 
 
 -- signed values in a register (we always use signed by default)
-class (Integral t) => MachineWidth t where
+class (Integral t, Bits t) => MachineWidth t where
   fromImm :: MachineInt -> t
   fromImm = fromIntegral
+
   regToInt8 :: t -> Int8
   regToInt8 = fromIntegral
+
   regToInt16 :: t -> Int16
   regToInt16 = fromIntegral
+
   regToInt32 :: t -> Int32
   regToInt32 = fromIntegral
+
   regToInt64 :: t -> Int64
   regToInt64 = fromIntegral
+
   regToZ_signed :: t -> Integer
   regToZ_signed = fromIntegral
+
   regToZ_unsigned :: forall u. (Convertible t u) => t -> Integer
   regToZ_unsigned = (fromIntegral :: u -> Integer) . (unsigned :: t -> u)
+  
+  sll :: t -> Int -> t
+  sll = shiftL
+
+  srl :: forall u. (Convertible t u, Bits u) => t -> Int -> t
+  srl x y = signed (shiftR (unsigned x) y)
+
+  sra :: t -> Int -> t
+  sra = shiftR
+
   regToShamt5 :: t -> Int
+
   regToShamt :: t -> Int
+
   highBits :: Integer -> t
+
 
 instance MachineWidth Int32 where
   regToShamt5 = lower 5

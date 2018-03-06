@@ -61,16 +61,6 @@ raiseException isInterrupt exceptionCode = do
   setPC (addr * 4)
 
 
-sll :: forall t u . (Convertible t u, Bits t, MachineWidth t) => t -> t -> t
-sll x y = (shiftL x (regToShamt y))
-
-srl :: forall t u . (Convertible t u, Bits u, MachineWidth t) => t -> t -> u
-srl x y = (shiftR (unsigned x) (regToShamt y))
-
-sra :: forall t u . (Convertible t u, Bits t, MachineWidth t) => t -> t -> t
-sra x y = (shiftR x (regToShamt y))
-
-
 ltu :: forall t u s . (Convertible t u, Integral s, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => t -> s -> Bool
 ltu x y = (unsigned  x) < ((fromIntegral:: s -> u) y)
 
