@@ -91,52 +91,44 @@ execute (Bgeu rs1 rs2 sbimm12) = do
       else setPC addr)
 execute (Lb rd rs1 oimm12) = do
   a <- getRegister rs1
-  withTranslation Load 1 (a + fromImm oimm12)
-    (\addr -> do
-        x <- loadByte addr
-        setRegister rd (int8ToReg x))
+  addr <- translate Load 1 (a + fromImm oimm12)
+  x <- loadByte addr
+  setRegister rd (int8ToReg x)
 execute (Lh rd rs1 oimm12) = do
   a <- getRegister rs1
-  withTranslation Load 2 (a + fromImm oimm12)
-    (\addr -> do
-        x <- loadHalf addr
-        setRegister rd (int16ToReg x))
+  addr <- translate Load 2 (a + fromImm oimm12)
+  x <- loadHalf addr
+  setRegister rd (int16ToReg x)
 execute (Lw rd rs1 oimm12) = do
   a <- getRegister rs1
-  withTranslation Load 4 (a + fromImm oimm12)
-    (\addr -> do
-        x <- loadWord addr
-        setRegister rd (int32ToReg x))
+  addr <- translate Load 4 (a + fromImm oimm12)
+  x <- loadWord addr
+  setRegister rd (int32ToReg x)
 execute (Lbu rd rs1 oimm12) = do
   a <- getRegister rs1
-  withTranslation Load 1 (a + fromImm oimm12)
-    (\addr -> do
-        x <- loadByte addr
-        setRegister rd (uInt8ToReg x))
+  addr <- translate Load 1 (a + fromImm oimm12)
+  x <- loadByte addr
+  setRegister rd (uInt8ToReg x)
 execute (Lhu rd rs1 oimm12) = do
   a <- getRegister rs1
-  withTranslation Load 2 (a + fromImm oimm12)
-    (\addr -> do
-        x <- loadHalf addr
-        setRegister rd (uInt16ToReg x))
+  addr <- translate Load 2 (a + fromImm oimm12)
+  x <- loadHalf addr
+  setRegister rd (uInt16ToReg x)
 execute (Sb rs1 rs2 simm12) = do
   a <- getRegister rs1
-  withTranslation Store 1 (a + fromImm simm12)
-    (\addr -> do
-        x <- getRegister rs2
-        storeByte addr (regToInt8 x))
+  addr <- translate Store 1 (a + fromImm simm12)
+  x <- getRegister rs2
+  storeByte addr (regToInt8 x)
 execute (Sh rs1 rs2 simm12) = do
   a <- getRegister rs1
-  withTranslation Store 2 (a + fromImm simm12)
-    (\addr -> do
-        x <- getRegister rs2
-        storeHalf addr (regToInt16 x))
+  addr <- translate Store 2 (a + fromImm simm12)
+  x <- getRegister rs2
+  storeHalf addr (regToInt16 x)
 execute (Sw rs1 rs2 simm12) = do
   a <- getRegister rs1
-  withTranslation Store 4 (a + fromImm simm12)
-    (\addr -> do
-        x <- getRegister rs2
-        storeWord addr (regToInt32 x))
+  addr <- translate Store 4 (a + fromImm simm12)
+  x <- getRegister rs2
+  storeWord addr (regToInt32 x)
 execute (Addi rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (x + fromImm imm12)

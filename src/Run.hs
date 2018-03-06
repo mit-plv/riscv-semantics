@@ -14,7 +14,10 @@ import qualified CSRField as Field
 import CSRFile
 import Decode
 import Execute
+import VirtualMemory
+import Control.Monad
 import Control.Monad.Trans
+import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.State
 import qualified Data.Map as S
 import Debug.Trace
@@ -61,28 +64,31 @@ helper maybeToHostAddress = do
         then trace "PASSED" (return 0)
         else trace ("FAILED " ++ (show $ quot toHostValue 2)) (return 1)
     else do
-      pc <- getPC
-      -- trace ("pc: 0x" ++ (showHex pc "")) $ return ()
-      -- TODO: Translate PC lookup in supervisor mode.
-      inst <- loadWord pc
-      if inst == 0x6f -- Stop on infinite loop instruction.
-        then do
-            cycles <- getCSRField Field.MCycle
-            trace ("Cycles: " ++ show cycles) (return ())
-            instret <- getCSRField Field.MInstRet
-            trace ("Insts: " ++ show instret) (return ())
-            getRegister 10
-        else do
-        setPC (pc + 4)
-        size <- getXLEN
-        execute (decode size $ (fromIntegral:: Int32 -> MachineInt) inst)
-        interrupt <- liftIO checkInterrupt
-        if interrupt then do
-          -- Signal interrupt by setting MEIP high.
-          setCSRField Field.MEIP 1
-        else return ()
-        step
-        helper maybeToHostAddress
+      result <- runMaybeT $ do
+        vpc <- getPC
+        pc <- translate Instruction 4 vpc
+        -- trace ("pc: 0x" ++ (showHex pc "")) $ return ()
+        -- TODO: Translate PC lookup in supervisor mode.
+        inst <- loadWord pc
+        if inst == 0x6f -- Stop on infinite loop instruction.
+          then do
+          cycles <- getCSRField Field.MCycle
+          trace ("Cycles: " ++ show cycles) (return ())
+          instret <- getCSRField Field.MInstRet
+          trace ("Insts: " ++ show instret) (return ())
+          getRegister 10
+          else do
+          setPC (pc + 4)
+          size <- getXLEN
+          execute (decode size $ (fromIntegral :: Int32 -> MachineInt) inst)
+          interrupt <- liftIO checkInterrupt
+          when interrupt $ do
+            -- Signal interrupt by setting MEIP high.
+            setCSRField Field.MEIP 1
+          endCycle
+      case result of
+        Nothing -> step >> helper maybeToHostAddress
+        Just r -> return r
 
 runProgram :: Maybe Int64 -> Minimal64 -> IO (Int64, Minimal64)
 runProgram maybeToHostAddress = runStateT (helper maybeToHostAddress)

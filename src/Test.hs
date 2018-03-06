@@ -2,6 +2,7 @@ module Test where
 import Data.Int
 import qualified Data.Map as S
 import Control.Monad.State
+import Control.Monad.Trans.Maybe
 import System.Exit
 
 import Minimal64
@@ -11,6 +12,8 @@ import Run (readProgram)
 import BufferMMIO
 import CSRFile
 import Program
+import Utility
+import VirtualMemory
 
 data Test = Test { name :: String, input :: String, returnValue :: Int64, output :: String }
 
@@ -47,16 +50,21 @@ helper maybeToHostAddress = do
         then return 0
         else return 1
     else do
-      pc <- getPC
-      inst <- loadWord pc
-      if inst == 0x6f -- Stop on infinite loop instruction.
-        then getRegister 10
-        else do
-        setPC (pc + 4)
-        size <- getXLEN
-        execute (decode size $ fromIntegral inst)
-        step
-        helper maybeToHostAddress
+      result <- runMaybeT $ do
+        vpc <- getPC
+        pc <- translate Instruction 4 vpc
+        inst <- loadWord pc
+        if inst == 0x6f -- Stop on infinite loop instruction.
+          then do
+          getRegister 10
+          else do
+          setPC (pc + 4)
+          size <- getXLEN
+          execute (decode size $ (fromIntegral :: Int32 -> MachineInt) inst)
+          endCycle
+      case result of
+        Nothing -> step >> helper maybeToHostAddress
+        Just r -> return r
 
 runProgram :: Maybe Int64 -> Minimal64 -> String -> (Int64, String)
 runProgram maybeToHostAddress comp input = (returnValue, output)

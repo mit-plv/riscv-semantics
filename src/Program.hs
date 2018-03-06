@@ -26,6 +26,7 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   getPC :: p t
   setPC :: t -> p ()
   step :: p ()
+  endCycle :: forall t. p t
 
 getXLEN :: forall p t s. (RiscvProgram p t, Integral s) => p s
 getXLEN = do
@@ -50,8 +51,9 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   getPC = lift getPC
   setPC v = lift (setPC v)
   step = lift step
+  endCycle = MaybeT (return Nothing)
 
-raiseException :: forall p t. (RiscvProgram p t) => MachineInt -> MachineInt -> p ()
+raiseException :: forall a p t u. (RiscvProgram p t) => MachineInt -> MachineInt -> p a
 raiseException isInterrupt exceptionCode = do
   pc <- getPC
   addr <- getCSRField MTVecBase
@@ -59,4 +61,5 @@ raiseException isInterrupt exceptionCode = do
   setCSRField MCauseInterrupt isInterrupt
   setCSRField MCauseCode exceptionCode
   setPC ((fromIntegral:: MachineInt -> t) addr * 4)
+  endCycle
 

@@ -125,3 +125,9 @@ Tuesday, Feburary 27th
 * Travis: download riscv-gcc, build riscv-tests, and run them.
 * Change RISCV-V exceptions control-flow via Haskell exceptions.
 * Use translation for execution in supervisor mode.
+
+Tuesday, March 6th
+* Travis: build isa, run rv64ui tests.
+* Rename step -> commit, helper -> something reasonable.
+* Add some type variables and an interrupt callback to helper, and stop copying it everywhere.
+* Add processor mode to typeclass.
