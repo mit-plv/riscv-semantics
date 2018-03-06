@@ -68,17 +68,6 @@ splitDouble :: (Bits a, Integral a) => a -> [Word8]
 splitDouble = splitBytes 64
 {-# INLINE splitDouble #-}
 
-class (Integral s, Integral u) => Convertible s u | s -> u, u -> s where
-  unsigned :: s -> u
-  unsigned = fromIntegral
-  signed :: u -> s
-  signed = fromIntegral
-
-instance Convertible Int8 Word8
-instance Convertible Int16 Word16
-instance Convertible Int32 Word32
-instance Convertible Int64 Word64
-
 
 -- signed values in a register (we always use signed by default)
 class (Integral t, Bits t) => MachineWidth t where
@@ -97,17 +86,13 @@ class (Integral t, Bits t) => MachineWidth t where
   regToInt64 :: t -> Int64
   regToInt64 = fromIntegral
 
-  uInt8ToReg :: forall u. (Convertible t u) => Int8 -> t
-  uInt8ToReg x = fromIntegral (unsigned x)
+  uInt8ToReg :: Int8 -> t
 
-  uInt16ToReg :: forall u. (Convertible t u) => Int16 -> t
-  uInt16ToReg x = fromIntegral (unsigned x)
+  uInt16ToReg :: Int16 -> t
 
-  uInt32ToReg :: forall u. (Convertible t u) => Int32 -> t
-  uInt32ToReg x = fromIntegral (unsigned x)
+  uInt32ToReg :: Int32 -> t
 
-  uInt64ToReg :: forall u. (Convertible t u) => Int64 -> t
-  uInt64ToReg x = fromIntegral (unsigned x)
+  uInt64ToReg :: Int64 -> t
 
   int8ToReg :: Int8 -> t
   int8ToReg = fromIntegral
@@ -124,20 +109,15 @@ class (Integral t, Bits t) => MachineWidth t where
   regToZ_signed :: t -> Integer
   regToZ_signed = fromIntegral
 
-  regToZ_unsigned :: forall u. (Convertible t u) => t -> Integer
-  regToZ_unsigned = (fromIntegral :: u -> Integer) . (unsigned :: t -> u)
+  regToZ_unsigned :: t -> Integer
   
   sll :: t -> Int -> t
-  sll = shiftL
 
-  srl :: forall u. (Convertible t u, Bits u) => t -> Int -> t
-  srl x y = signed (shiftR (unsigned x) y)
+  srl :: t -> Int -> t
 
   sra :: t -> Int -> t
-  sra = shiftR
 
-  ltu :: forall u. (Convertible t u) => t -> t -> Bool
-  ltu x y = (unsigned x) < (unsigned y)
+  ltu :: t -> t -> Bool
 
   divu :: t -> t -> t
 
@@ -155,6 +135,15 @@ class (Integral t, Bits t) => MachineWidth t where
 
 
 instance MachineWidth Int32 where
+  uInt8ToReg  x = (fromIntegral:: Word8  -> Int32) ((fromIntegral:: Int8  -> Word8 ) x)
+  uInt16ToReg x = (fromIntegral:: Word16 -> Int32) ((fromIntegral:: Int16 -> Word16) x)
+  uInt32ToReg x = (fromIntegral:: Word32 -> Int32) ((fromIntegral:: Int32 -> Word32) x)
+  uInt64ToReg x = (fromIntegral:: Word64 -> Int32) ((fromIntegral:: Int64 -> Word64) x)
+  regToZ_unsigned = (fromIntegral:: Word32 -> Integer) . (fromIntegral :: Int32 -> Word32)
+  sll = shiftL
+  srl x y = (fromIntegral:: Word32 -> Int32) (shiftR ((fromIntegral:: Int32 -> Word32) x) y)
+  sra = shiftR
+  ltu x y = ((fromIntegral:: Int32 -> Word32) x) < ((fromIntegral:: Int32 -> Word32) y)
   regToShamt5 = lower 5
   regToShamt = lower 5
   highBits n = (fromIntegral:: Integer -> Int32) $ bitSlice n 32 64
@@ -169,6 +158,15 @@ instance MachineWidth Int32 where
   minSigned = minBound
 
 instance MachineWidth Int64 where
+  uInt8ToReg  x = (fromIntegral:: Word8  -> Int64) ((fromIntegral:: Int8  -> Word8 ) x)
+  uInt16ToReg x = (fromIntegral:: Word16 -> Int64) ((fromIntegral:: Int16 -> Word16) x)
+  uInt32ToReg x = (fromIntegral:: Word32 -> Int64) ((fromIntegral:: Int32 -> Word32) x)
+  uInt64ToReg x = (fromIntegral:: Word64 -> Int64) ((fromIntegral:: Int64 -> Word64) x)
+  regToZ_unsigned = (fromIntegral:: Word64 -> Integer) . (fromIntegral :: Int64 -> Word64)
+  sll = shiftL
+  srl x y = (fromIntegral:: Word64 -> Int64) (shiftR ((fromIntegral:: Int64 -> Word64) x) y)
+  sra = shiftR
+  ltu x y = ((fromIntegral:: Int64 -> Word64) x) < ((fromIntegral:: Int64 -> Word64) y)
   regToShamt5 = lower 5
   regToShamt = lower 6
   highBits n = (fromIntegral:: Integer -> Int64) $ bitSlice n 64 128
