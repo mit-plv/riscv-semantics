@@ -60,15 +60,6 @@ raiseException isInterrupt exceptionCode = do
   setCSRField MCauseCode exceptionCode
   setPC (addr * 4)
 
-slli :: forall t u .(Convertible t u, Bits t, MachineWidth t) => t -> MachineInt -> t
-slli x shamt6 = (shiftL x (regToShamt (fromImm shamt6 :: t)))
-
-srli :: forall t u . (Convertible t u, Bits u, MachineWidth t) => t -> MachineInt -> u
-srli x shamt6 = (shiftR ((unsigned x) :: u) (regToShamt (fromImm shamt6 :: t)))
-
-srai :: forall t u . (Convertible t u, Bits t, MachineWidth t) => t -> MachineInt -> t
-srai x shamt6 = (shiftR x (regToShamt (fromImm shamt6 :: t)))
-
 
 sll :: forall t u . (Convertible t u, Bits t, MachineWidth t) => t -> t -> t
 sll x y = (shiftL x (regToShamt y))
