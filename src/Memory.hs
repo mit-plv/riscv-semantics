@@ -1,12 +1,13 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Memory where
 import Data.Word
 
-class Memory m where
-  loadByte :: (Integral a) => m -> a -> Word8
-  loadHalf :: (Integral a) => m -> a -> Word16
-  loadWord :: (Integral a) => m -> a -> Word32
-  loadDouble :: (Integral a) => m -> a -> Word64
-  storeByte :: (Integral a) => m -> a -> Word8 -> m
-  storeHalf :: (Integral a) => m -> a -> Word16 -> m
-  storeWord :: (Integral a) => m -> a -> Word32 -> m
-  storeDouble :: (Integral a) => m -> a -> Word64 -> m
+class Memory m a where
+  loadByte :: m -> a -> Word8
+  loadHalf :: m -> a -> Word16
+  loadWord :: m -> a -> Word32
+  loadDouble :: m -> a -> Word64
+  storeByte :: m -> a -> Word8 -> m
+  storeHalf :: m -> a -> Word16 -> m
+  storeWord :: m -> a -> Word32 -> m
+  storeDouble :: m -> a -> Word64 -> m
