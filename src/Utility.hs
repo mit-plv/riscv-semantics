@@ -139,6 +139,14 @@ class (Integral t, Bits t) => MachineWidth t where
   ltu :: forall u. (Convertible t u) => t -> t -> Bool
   ltu x y = (unsigned x) < (unsigned y)
 
+  divu :: t -> t -> t
+
+  remu :: t -> t -> t
+
+  maxSigned :: t
+  maxUnsigned :: t
+  minSigned :: t
+
   regToShamt5 :: t -> Int
 
   regToShamt :: t -> Int
@@ -150,12 +158,29 @@ instance MachineWidth Int32 where
   regToShamt5 = lower 5
   regToShamt = lower 5
   highBits n = (fromIntegral:: Integer -> Int32) $ bitSlice n 32 64
+  divu x y = (fromIntegral:: Word32 -> Int32)
+                (rem ((fromIntegral:: Int32 -> Word32) x)
+                     ((fromIntegral:: Int32 -> Word32) y))
+  remu x y = (fromIntegral:: Word32 -> Int32)
+                (rem ((fromIntegral:: Int32 -> Word32) x)
+                     ((fromIntegral:: Int32 -> Word32) y))
+  maxSigned = maxBound
+  maxUnsigned = (fromIntegral:: Word32 -> Int32) (maxBound :: Word32)
+  minSigned = minBound
 
 instance MachineWidth Int64 where
   regToShamt5 = lower 5
   regToShamt = lower 6
   highBits n = (fromIntegral:: Integer -> Int64) $ bitSlice n 64 128
-
+  divu x y = (fromIntegral:: Word64 -> Int64)
+                (rem ((fromIntegral:: Int64 -> Word64) x)
+                     ((fromIntegral:: Int64 -> Word64) y))
+  remu x y = (fromIntegral:: Word64 -> Int64)
+                (rem ((fromIntegral:: Int64 -> Word64) x)
+                     ((fromIntegral:: Int64 -> Word64) y))
+  maxSigned = maxBound
+  maxUnsigned = (fromIntegral:: Word64 -> Int64) (maxBound :: Word64)
+  minSigned = minBound
 
 liftState :: (Monad m) => State a b -> StateT a m b
 liftState = mapStateT (return . runIdentity)
