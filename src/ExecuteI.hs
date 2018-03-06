@@ -145,7 +145,7 @@ execute (Slti rd rs1 imm12) = do
   setRegister rd (if x < (fromImm imm12) then 1 else 0)
 execute (Sltiu rd rs1 imm12) = do
   x <- getRegister rs1
-  setRegister rd (if (ltu x imm12) then 1 else 0)
+  setRegister rd (if (ltu x (fromImm imm12)) then 1 else 0)
 execute (Xori rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (xor x (fromImm imm12))

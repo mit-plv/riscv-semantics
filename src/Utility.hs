@@ -136,6 +136,9 @@ class (Integral t, Bits t) => MachineWidth t where
   sra :: t -> Int -> t
   sra = shiftR
 
+  ltu :: forall u. (Convertible t u) => t -> t -> Bool
+  ltu x y = (unsigned x) < (unsigned y)
+
   regToShamt5 :: t -> Int
 
   regToShamt :: t -> Int

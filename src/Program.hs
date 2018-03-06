@@ -60,7 +60,3 @@ raiseException isInterrupt exceptionCode = do
   setCSRField MCauseCode exceptionCode
   setPC ((fromIntegral:: MachineInt -> t) addr * 4)
 
-
-ltu :: forall t u s . (Convertible t u, Integral s, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => t -> s -> Bool
-ltu x y = (unsigned  x) < ((fromIntegral:: s -> u) y)
-
