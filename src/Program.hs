@@ -26,6 +26,7 @@ class (Monad p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWi
   getPC :: p t
   setPC :: (Integral s) => s -> p ()
   step :: p ()
+  endCycle :: forall t. p t
 
 getXLEN :: forall p t u s. (RiscvProgram p t u, Integral s) => p s
 getXLEN = do
@@ -50,8 +51,9 @@ instance (RiscvProgram p t u) => RiscvProgram (MaybeT p) t u where
   getPC = lift getPC
   setPC v = lift (setPC v)
   step = lift step
+  endCycle = MaybeT (return Nothing)
 
-raiseException :: (RiscvProgram p t u) => MachineInt -> MachineInt -> p ()
+raiseException :: forall a p t u. (RiscvProgram p t u) => MachineInt -> MachineInt -> p a
 raiseException isInterrupt exceptionCode = do
   pc <- getPC
   addr <- getCSRField MTVecBase
@@ -59,6 +61,7 @@ raiseException isInterrupt exceptionCode = do
   setCSRField MCauseInterrupt isInterrupt
   setCSRField MCauseCode exceptionCode
   setPC (addr * 4)
+  endCycle
 
 slli :: forall t u .(Convertible t u, Bits t, MachineWidth t) => t -> MachineInt -> t
 slli x shamt6 = (shiftL x (regToShamt (fromImm shamt6 :: t)))

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiWayIf, ScopedTypeVariables #-}
 
-module VirtualMemory where
+module VirtualMemory (AccessType(..), translate) where
 import Program
 import Utility
 import qualified CSRField as Field
@@ -42,7 +42,7 @@ loadXLEN addr = do
 
 data AccessType = Instruction | Load | Store deriving (Eq, Show)
 
-pageFault :: (RiscvProgram p t u) => AccessType -> p ()
+pageFault :: forall a p t u. (RiscvProgram p t u) => AccessType -> p a
 pageFault Instruction = raiseException 0 12
 pageFault Load = raiseException 0 13
 pageFault Store = raiseException 0 15
@@ -74,40 +74,36 @@ findLeafEntry (mode,accessType,va,addr) level = do
          findLeafEntry (mode, accessType, va, (shift (shiftL pte 10) 12)) 3
      | otherwise -> return Nothing
 
-translate :: VirtualMemoryMode -> MachineInt -> MachineInt -> Int -> MachineInt
-translate mode va pte level = vaSlice .|. shift ptePPN vaSplit
+translateHelper :: VirtualMemoryMode -> MachineInt -> MachineInt -> Int -> MachineInt
+translateHelper mode va pte level = vaSlice .|. shift ptePPN vaSplit
   where vaSplit = 12 + level * (ppnBits mode)
         vaSlice = bitSlice va 0 vaSplit
         ptePPN = shiftL pte (10 + level * (ppnBits mode))
 
-calculateAddress :: (RiscvProgram p t u) => AccessType -> MachineInt -> p (Maybe MachineInt)
+calculateAddress :: (RiscvProgram p t u) => AccessType -> MachineInt -> p MachineInt
 calculateAddress accessType va = do
   mode <- fmap getMode (getCSRField Field.MODE)
   if mode == None
-    then return (Just va)
+    then return va
     else do
     ppn <- getCSRField Field.PPN
     maybePTE <- findLeafEntry (mode,accessType, va, (shift ppn 12) )(pageTableLevels mode - 1)
     case maybePTE of
-      Nothing -> return Nothing
+      Nothing -> pageFault accessType
       Just (level, pte) -> do
         -- TODO: Raise page fault if the permissions are wrong. (Check r, w, x, u, mstatus.)
         let a = testBit pte 6
         let d = testBit pte 7
         if | level > 0 && bitSlice pte 10 (10 + level * ppnBits mode) /= 0 -> do
                pageFault accessType
-               return Nothing
            | not a || (accessType == Store && not d) -> do
                pageFault accessType
-               return Nothing
            | otherwise ->
-               return (Just (translate mode va pte level))
+               return (translateHelper mode va pte level)
 
-withTranslation :: forall p t u s. (RiscvProgram p t u, Integral s) => AccessType -> Int -> s -> (s -> p ()) -> p ()
-withTranslation accessType alignment va memFunc = do
-  maybePA <- calculateAddress accessType ((fromIntegral:: s -> MachineInt) va)
-  case maybePA of
-    Just pa -> if mod pa ((fromIntegral:: Int -> MachineInt) alignment) /= 0  -- Check alignment.
-               then raiseException 0 4
-               else memFunc ((fromIntegral:: MachineInt -> s) pa)
-    Nothing -> return ()
+translate :: forall p t u. (RiscvProgram p t u) => AccessType -> Int -> t -> p t
+translate accessType alignment va = do
+  pa <- calculateAddress accessType ((fromIntegral :: t -> MachineInt) va)
+  if mod pa ((fromIntegral:: Int -> MachineInt) alignment) /= 0  -- Check alignment.
+  then raiseException 0 4
+  else return ((fromIntegral :: MachineInt -> t) pa)
