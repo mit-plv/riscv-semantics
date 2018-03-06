@@ -51,14 +51,14 @@ instance (RiscvProgram p t u) => RiscvProgram (MaybeT p) t u where
   setPC v = lift (setPC v)
   step = lift step
 
-raiseException :: (RiscvProgram p t u) => MachineInt -> MachineInt -> p ()
+raiseException :: forall p t u. (RiscvProgram p t u) => MachineInt -> MachineInt -> p ()
 raiseException isInterrupt exceptionCode = do
   pc <- getPC
   addr <- getCSRField MTVecBase
   setCSRField MEPC pc
   setCSRField MCauseInterrupt isInterrupt
   setCSRField MCauseCode exceptionCode
-  setPC (fromImm addr * 4)
+  setPC ((fromIntegral:: MachineInt -> t) addr * 4)
 
 
 ltu :: forall t u s . (Convertible t u, Integral s, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => t -> s -> Bool

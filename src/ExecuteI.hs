@@ -141,7 +141,7 @@ execute (Addi rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (x + fromImm imm12)
 execute (Slti rd rs1 imm12) = do
-  x <- getRegister rs1 -- Why is the fromIntegral here required?
+  x <- getRegister rs1
   setRegister rd (if x < (fromImm imm12) then 1 else 0)
 execute (Sltiu rd rs1 imm12) = do
   x <- getRegister rs1
