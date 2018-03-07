@@ -9,6 +9,7 @@ import Data.Int
 import Control.Monad
 
 execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+-- begin ast
 execute (Lwu rd rs1 oimm12) = do
   a <- getRegister rs1
   addr <- translate Load 4 (a + fromImm oimm12)
@@ -56,4 +57,5 @@ execute (Sraw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
   setRegister rd (s32 (sra (s32 x) (regToShamt5 y)))
+-- end ast
 execute _ = mzero

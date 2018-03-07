@@ -6,6 +6,7 @@ import Utility
 import Control.Monad
 
 execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+-- begin ast
 execute (Mulw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -36,4 +37,5 @@ execute (Remuw rd rs1 rs2) = do
   let r | y == 0 = x
         | otherwise = remu x y
     in setRegister rd (s32 r)
+-- end ast
 execute _ = mzero
