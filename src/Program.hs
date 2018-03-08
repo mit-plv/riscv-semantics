@@ -10,32 +10,32 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Prelude
 
-class (Monad p, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => RiscvProgram p t u | p -> t, t -> u where
+class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   getRegister :: Register -> p t
-  setRegister :: (Integral s) => Register -> s -> p ()
-  loadByte :: (Integral s) => s -> p Int8
-  loadHalf :: (Integral s) => s -> p Int16
-  loadWord :: (Integral s) => s -> p Int32
-  loadDouble :: (Integral s) => s -> p Int64
-  storeByte :: (Integral s, Bits s) => s -> Int8 -> p ()
-  storeHalf :: (Integral s, Bits s) => s -> Int16 -> p ()
-  storeWord :: (Integral s, Bits s) => s -> Int32 -> p ()
-  storeDouble :: (Integral s, Bits s) => s -> Int64 -> p ()
+  setRegister :: Register -> t -> p ()
+  loadByte :: t -> p Int8
+  loadHalf :: t -> p Int16
+  loadWord :: t -> p Int32
+  loadDouble :: t -> p Int64
+  storeByte :: t -> Int8 -> p ()
+  storeHalf :: t -> Int16 -> p ()
+  storeWord :: t -> Int32 -> p ()
+  storeDouble :: t -> Int64 -> p ()
   getCSRField :: CSRField -> p MachineInt
   setCSRField :: (Integral s) => CSRField -> s -> p ()
   getPC :: p t
-  setPC :: (Integral s) => s -> p ()
+  setPC :: t -> p ()
   step :: p ()
   endCycle :: forall t. p t
 
-getXLEN :: forall p t u s. (RiscvProgram p t u, Integral s) => p s
+getXLEN :: forall p t s. (RiscvProgram p t, Integral s) => p s
 getXLEN = do
             mxl <- getCSRField MXL
             case mxl of
                 1 -> return 32
                 2 -> return 64
 
-instance (RiscvProgram p t u) => RiscvProgram (MaybeT p) t u where
+instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   getRegister r = lift (getRegister r)
   setRegister r v = lift (setRegister r v)
   loadByte a = lift (loadByte a)
@@ -53,36 +53,13 @@ instance (RiscvProgram p t u) => RiscvProgram (MaybeT p) t u where
   step = lift step
   endCycle = MaybeT (return Nothing)
 
-raiseException :: forall a p t u. (RiscvProgram p t u) => MachineInt -> MachineInt -> p a
+raiseException :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> p a
 raiseException isInterrupt exceptionCode = do
   pc <- getPC
   addr <- getCSRField MTVecBase
   setCSRField MEPC pc
   setCSRField MCauseInterrupt isInterrupt
   setCSRField MCauseCode exceptionCode
-  setPC (addr * 4)
+  setPC ((fromIntegral:: MachineInt -> t) addr * 4)
   endCycle
-
-slli :: forall t u .(Convertible t u, Bits t, MachineWidth t) => t -> MachineInt -> t
-slli x shamt6 = (shiftL x (regToShamt (fromImm shamt6 :: t)))
-
-srli :: forall t u . (Convertible t u, Bits u, MachineWidth t) => t -> MachineInt -> u
-srli x shamt6 = (shiftR ((unsigned x) :: u) (regToShamt (fromImm shamt6 :: t)))
-
-srai :: forall t u . (Convertible t u, Bits t, MachineWidth t) => t -> MachineInt -> t
-srai x shamt6 = (shiftR x (regToShamt (fromImm shamt6 :: t)))
-
-
-sll :: forall t u . (Convertible t u, Bits t, MachineWidth t) => t -> t -> t
-sll x y = (shiftL x (regToShamt y))
-
-srl :: forall t u . (Convertible t u, Bits u, MachineWidth t) => t -> t -> u
-srl x y = (shiftR (unsigned x) (regToShamt y))
-
-sra :: forall t u . (Convertible t u, Bits t, MachineWidth t) => t -> t -> t
-sra x y = (shiftR x (regToShamt y))
-
-
-ltu :: forall t u s . (Convertible t u, Integral s, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => t -> s -> Bool
-ltu x y = (unsigned  x) < ((fromIntegral:: s -> u) y)
 

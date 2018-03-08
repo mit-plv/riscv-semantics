@@ -33,7 +33,7 @@ ppnBits Sv48 = 9
 
 getVPN mode va i = bitSlice va 12 (12 + (i + 1) * ppnBits mode)
 
-loadXLEN :: (RiscvProgram p t u, Integral s) => s -> p MachineInt
+loadXLEN :: (RiscvProgram p t) => t -> p MachineInt
 loadXLEN addr = do
   xlen <- getXLEN
   if xlen == 32
@@ -42,15 +42,15 @@ loadXLEN addr = do
 
 data AccessType = Instruction | Load | Store deriving (Eq, Show)
 
-pageFault :: forall a p t u. (RiscvProgram p t u) => AccessType -> p a
+pageFault :: forall a p t. (RiscvProgram p t) => AccessType -> p a
 pageFault Instruction = raiseException 0 12
 pageFault Load = raiseException 0 13
 pageFault Store = raiseException 0 15
 
 -- Recursively traverse the page table to find the leaf entry for a given virtual address.
-findLeafEntry :: (RiscvProgram p t u) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
+findLeafEntry :: forall p t. (RiscvProgram p t) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
 findLeafEntry (mode,accessType,va,addr) level = do
-  pte <- loadXLEN (addr + (getVPN mode va level * pteSize mode))
+  pte <- loadXLEN ((fromIntegral:: MachineInt -> t) (addr + (getVPN mode va level * pteSize mode)))
   let v = testBit pte 0
   let r = testBit pte 1
   let w = testBit pte 2
@@ -80,7 +80,7 @@ translateHelper mode va pte level = vaSlice .|. shift ptePPN vaSplit
         vaSlice = bitSlice va 0 vaSplit
         ptePPN = shiftL pte (10 + level * (ppnBits mode))
 
-calculateAddress :: (RiscvProgram p t u) => AccessType -> MachineInt -> p MachineInt
+calculateAddress :: (RiscvProgram p t) => AccessType -> MachineInt -> p MachineInt
 calculateAddress accessType va = do
   mode <- fmap getMode (getCSRField Field.MODE)
   if mode == None
@@ -101,9 +101,10 @@ calculateAddress accessType va = do
            | otherwise ->
                return (translateHelper mode va pte level)
 
-translate :: forall p t u. (RiscvProgram p t u) => AccessType -> Int -> t -> p t
+translate :: forall p t. (RiscvProgram p t) => AccessType -> Int -> t -> p t
 translate accessType alignment va = do
   pa <- calculateAddress accessType ((fromIntegral :: t -> MachineInt) va)
   if mod pa ((fromIntegral:: Int -> MachineInt) alignment) /= 0  -- Check alignment.
   then raiseException 0 4
   else return ((fromIntegral :: MachineInt -> t) pa)
+

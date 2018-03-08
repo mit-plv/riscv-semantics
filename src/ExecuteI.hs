@@ -11,9 +11,10 @@ import Data.Word
 import Control.Monad
 import Prelude
 
-execute :: forall p t u. (RiscvProgram p t u, MonadPlus p) => Instruction -> p ()
+execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
 -- begin ast
-execute (Lui rd imm20) = setRegister rd imm20
+execute (Lui rd imm20) = do
+  setRegister rd (fromImm imm20)
 execute (Auipc rd oimm20) = do
   pc <- getPC
   setRegister rd (fromImm oimm20 + pc)
@@ -92,27 +93,27 @@ execute (Lb rd rs1 oimm12) = do
   a <- getRegister rs1
   addr <- translate Load 1 (a + fromImm oimm12)
   x <- loadByte addr
-  setRegister rd x
+  setRegister rd (int8ToReg x)
 execute (Lh rd rs1 oimm12) = do
   a <- getRegister rs1
   addr <- translate Load 2 (a + fromImm oimm12)
   x <- loadHalf addr
-  setRegister rd x
+  setRegister rd (int16ToReg x)
 execute (Lw rd rs1 oimm12) = do
   a <- getRegister rs1
   addr <- translate Load 4 (a + fromImm oimm12)
   x <- loadWord addr
-  setRegister rd x
+  setRegister rd (int32ToReg x)
 execute (Lbu rd rs1 oimm12) = do
   a <- getRegister rs1
   addr <- translate Load 1 (a + fromImm oimm12)
   x <- loadByte addr
-  setRegister rd (unsigned x)
+  setRegister rd (uInt8ToReg x)
 execute (Lhu rd rs1 oimm12) = do
   a <- getRegister rs1
   addr <- translate Load 2 (a + fromImm oimm12)
   x <- loadHalf addr
-  setRegister rd (unsigned x)
+  setRegister rd (uInt16ToReg x)
 execute (Sb rs1 rs2 simm12) = do
   a <- getRegister rs1
   addr <- translate Store 1 (a + fromImm simm12)
@@ -132,11 +133,11 @@ execute (Addi rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (x + fromImm imm12)
 execute (Slti rd rs1 imm12) = do
-  x <- getRegister rs1 -- Why is the fromIntegral here required?
+  x <- getRegister rs1
   setRegister rd (if x < (fromImm imm12) then 1 else 0)
 execute (Sltiu rd rs1 imm12) = do
   x <- getRegister rs1
-  setRegister rd (if (ltu x imm12) then 1 else 0)
+  setRegister rd (if (ltu x (fromImm imm12)) then 1 else 0)
 execute (Xori rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (xor x (fromImm imm12))
@@ -148,13 +149,13 @@ execute (Andi rd rs1 imm12) = do
   setRegister rd (x .&. (fromImm imm12))
 execute (Slli rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (slli x shamt6)
+  setRegister rd (sll x (regToShamt (fromImm shamt6 :: t)))
 execute (Srli rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (srli x shamt6)
+  setRegister rd (srl x (regToShamt (fromImm shamt6 :: t)))
 execute (Srai rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (srai x shamt6)
+  setRegister rd (sra x (regToShamt (fromImm shamt6 :: t)))
 execute (Add rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -166,7 +167,7 @@ execute (Sub rd rs1 rs2) = do
 execute (Sll rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (sll x y)
+  setRegister rd (sll x (regToShamt y))
 execute (Slt rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -186,11 +187,11 @@ execute (Or rd rs1 rs2) = do
 execute (Srl rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (srl x y)
+  setRegister rd (srl x (regToShamt y))
 execute (Sra rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (sra x y)
+  setRegister rd (sra x (regToShamt y))
 execute (And rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2

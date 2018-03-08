@@ -1,4 +1,4 @@
-module Main where
+module Run32 where
 import System.IO
 import System.Environment
 import System.Exit

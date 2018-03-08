@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 module MapMemory where
 import Memory
 import Utility
@@ -7,21 +7,21 @@ import Data.Word
 import Data.Bits
 import qualified Data.Map as S
 
-readM :: forall a. (Integral a) => (S.Map Int Word8) -> a -> Word8
-readM mem addr = fromMaybe 0 (S.lookup ((fromIntegral:: a -> Int) addr) mem)
+readM :: (S.Map Int Word8) -> Int -> Word8
+readM mem addr = fromMaybe 0 (S.lookup addr mem)
 
-writeM :: forall a. (Integral a) => (S.Map Int Word8) -> a -> Word8 -> (S.Map Int Word8)
-writeM mem addr val = S.insert ((fromIntegral:: a -> Int) addr) val mem
+writeM :: (S.Map Int Word8) -> Int -> Word8 -> (S.Map Int Word8)
+writeM mem addr val = S.insert addr val mem
 
-helpLoad :: forall a b. (Integral a, Bits b, Integral b) => (S.Map Int Word8) -> a -> Int -> b
+helpLoad :: (Bits b, Integral b) => (S.Map Int Word8) -> Int -> Int -> b
 helpLoad mem addr numBytes =
-  combineBytes $ fmap (\a -> readM mem a) [((fromIntegral:: a -> Int) addr)..((fromIntegral:: a -> Int) addr + numBytes - 1)]
+  combineBytes $ fmap (\a -> readM mem a) [addr..(addr + numBytes - 1)]
 
-helpStore :: forall a. (Integral a) => (S.Map Int Word8) -> a -> [Word8] -> (S.Map Int Word8)
+helpStore :: (S.Map Int Word8) -> Int -> [Word8] -> (S.Map Int Word8)
 helpStore mem addr bytes =
   foldr (\(b,a) m -> writeM m a b) mem $ zip bytes [addr + i | i <- [0..]]
 
-instance Memory (S.Map Int Word8) where
+instance Memory (S.Map Int Word8) Int where
   loadByte mem addr = readM mem addr
   loadHalf mem addr = helpLoad mem addr 2
   loadWord mem addr = helpLoad mem addr 4

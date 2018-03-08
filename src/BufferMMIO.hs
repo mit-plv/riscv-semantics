@@ -45,7 +45,7 @@ rvPutChar val = lift (bufferPutChar val)
 mmioTable :: S.Map MachineInt (LoadFunc s, StoreFunc s)
 mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar))]
 
-instance (RiscvProgram (State s) t u, Convertible t u, Bounded t, Bounded u, Bits t, Bits u, MachineWidth t) => RiscvProgram (BufferState s) t u where
+instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (BufferState s) t where
   getRegister r = liftState (getRegister r)
   setRegister r v = liftState (setRegister r v)
   loadByte a = liftState (loadByte a)
