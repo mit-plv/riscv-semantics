@@ -48,7 +48,7 @@ pageFault Load = raiseException 0 13
 pageFault Store = raiseException 0 15
 
 -- Recursively traverse the page table to find the leaf entry for a given virtual address.
-findLeafEntry :: forall p t u. (RiscvProgram p t) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
+findLeafEntry :: forall p t. (RiscvProgram p t) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
 findLeafEntry (mode,accessType,va,addr) level = do
   pte <- loadXLEN ((fromIntegral:: MachineInt -> t) (addr + (getVPN mode va level * pteSize mode)))
   let v = testBit pte 0
