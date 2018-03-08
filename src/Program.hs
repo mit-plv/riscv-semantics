@@ -53,7 +53,7 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   step = lift step
   endCycle = MaybeT (return Nothing)
 
-raiseException :: forall a p t u. (RiscvProgram p t) => MachineInt -> MachineInt -> p a
+raiseException :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> p a
 raiseException isInterrupt exceptionCode = do
   pc <- getPC
   addr <- getCSRField MTVecBase
