@@ -1,7 +1,7 @@
 #!/bin/bash
 
-cp installclash.yml stack.yml
+cp installclash.yml stack.yaml
 git submodule update --recursive
 stack build
-git checkout stack.yml
+git checkout stack.yaml
 
