@@ -22,7 +22,7 @@ import qualified Decode as D
 import Clash.Prelude
 
 
-data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 , store:: Maybe (Int32,Int32), load :: Int32, loadAddress :: Maybe Int32 }
+data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 , store:: Maybe (Int32,Int32), load :: Int32, loadAddress :: Maybe Int32, exception :: Bool }
               deriving (Show)
 
 type MState = State MMIOClash
@@ -46,7 +46,7 @@ instance RiscvProgram MState Int32 where
   getPC = state $ \comp -> (pc comp, comp)
   setPC val = state $ \comp -> ((), comp { nextPC = fromIntegral val })
   step = state $ \comp -> ((), comp { pc = nextPC comp })
-  endCycle = state $ \comp -> (undefined , comp)  
+  endCycle = state $ \comp -> (undefined , comp{exception=True}) -- Hack in the typesystem 
 
 oneStep :: Int32 -> MState ()
 oneStep i = do
@@ -71,10 +71,11 @@ wrap i s = snd $ runState (oneStep i) s
           t_output=PortField "" [PortName "out_registers",
                                 PortName "out_nextPC",PortName "out_storeValid",
                                 PortName "out_storeAddress", PortName "out_storeData",
-                                PortName "out_loadValid",PortName "out_loadAddress"]})#-}
+                                PortName "out_loadValid",PortName "out_loadAddress",
+                                PortName "out_exception"]})#-}
 topEntity :: SystemClockReset
   => Signal System (Vec 31 Int32,Int32, Int32, Int32)
-  -> Signal System (Vec 31 Int32, Int32, Bool, Int32, Int32, Bool, Int32)
+  -> Signal System (Vec 31 Int32, Int32, Bool, Int32, Int32, Bool, Int32, Bool)
 topEntity = fmap (\(
                     iregister, i, ipc, 
                     loadData) ->
@@ -83,7 +84,8 @@ topEntity = fmap (\(
                                                      nextPC= ipc,
                                                      store = Nothing,
                                                      load = loadData,
-                                                     loadAddress = Nothing
+                                                     loadAddress = Nothing,
+						     exception = False
                                                     }
                      in
                        let storeNext = store newstate
@@ -95,5 +97,6 @@ topEntity = fmap (\(
                           fst $ fromMaybe (0,0) storeNext,
                           snd $ fromMaybe (0,0) storeNext,
                           lv,
-                          fromMaybe 0 loadNext))
+                          fromMaybe 0 loadNext,
+                          exception newstate ))
 
