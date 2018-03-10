@@ -52,3 +52,6 @@ It's failing on some of the entries but I think it means that we will just simpl
 	$ ./make-circuit.sh
 
 The output will be in src/verilog/...
+
+To get red of intermediate files create in the src folder:
+	$ ./clean-circuit.sh
