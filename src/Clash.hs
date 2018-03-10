@@ -60,20 +60,25 @@ wrap i s = snd $ runState (oneStep i) s
 
 {-# ANN topEntity 
  (defTop {t_name="rvspec",
-          t_inputs=[PortName "in_instr", PortName "in_registers",
-                    PortName "in_pc", PortName "in_nextPC",PortName "in_loadData"],
-          t_output=PortField "" [PortName "out_registers",PortName "out_pc",
+          t_inputs=[PortField ""
+                      [ PortName "clk"
+                      , PortName "arst"
+                      ]
+                   ,PortField "" 
+		    [ PortName "in_registers", PortName "in_instr",
+                      PortName "in_pc", PortName "in_loadData"]],
+          t_output=PortField "" [PortName "out_registers",
                                PortName "out_nextPC",PortName "out_storeValid",
                                PortName "out_storeAddress", PortName "out_loadValid",PortName "out_loadAddress"]})#-}
 topEntity :: SystemClockReset
-  => Signal System (Int32, Vec 31 Int32, Int32, Int32, Int32)
-  -> Signal System (Vec 31 Int32, Int32, Int32, Bool, Int32, Int32, Bool, Int32)
-topEntity = fmap (\(i,
-                    iregister, ipc, inPC,
+  => Signal System (Vec 31 Int32,Int32, Int32, Int32)
+  -> Signal System (Vec 31 Int32, Int32, Bool, Int32, Int32, Bool, Int32)
+topEntity = fmap (\(
+                    iregister, i, ipc, 
                     loadData) ->
                      let newstate = wrap i MMIOClash{registers = iregister,
                                                      pc = ipc,
-                                                     nextPC= inPC,
+                                                     nextPC= ipc,
                                                      store = Nothing,
                                                      load = loadData,
                                                      loadAddress = Nothing
@@ -84,7 +89,7 @@ topEntity = fmap (\(i,
                            loadNext = loadAddress newstate
                            lv = if (loadNext == Nothing) then False else True
                        in
-                         (registers newstate,pc newstate, nextPC newstate, sv,
+                         (registers newstate,pc newstate,sv,
                           fst $ fromMaybe (0,0) storeNext,
                           snd $ fromMaybe (0,0) storeNext,
                           lv,
