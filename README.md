@@ -48,6 +48,7 @@ It's failing on some of the entries but I think it means that we will just simpl
 
 ### Generation of verilog (work in progress)
 
+	$ ./install-clash.sh
+	$ ./make-circuit.sh
 
-	$ cd src; stack exec -- clash --verilog Clash.hs  -clash-inline-limit=200
-
+The output will be in src/verilog/...
