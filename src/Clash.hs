@@ -26,7 +26,7 @@ data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: I
               deriving (Show)
 
 type MState = State MMIOClash
-
+type MMState = MaybeT MState
 
 instance RiscvProgram MState Int32 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
@@ -46,14 +46,21 @@ instance RiscvProgram MState Int32 where
   getPC = state $ \comp -> (pc comp, comp)
   setPC val = state $ \comp -> ((), comp { nextPC = fromIntegral val })
   step = state $ \comp -> ((), comp { pc = nextPC comp })
-  endCycle = state $ \comp -> (undefined , comp{exception=True}) -- Hack in the typesystem 
+
+
+
+
 
 oneStep :: Int32 -> MState ()
-oneStep i = do
-  pc <- getPC
-  setPC (pc + 4)
-  execute (D.decode 32 $ fromIntegral i)
-  step
+oneStep i = do 
+  result <- runMaybeT $ do
+    pc <- getPC
+    setPC (pc + 4)
+    execute (D.decode 32 $ fromIntegral i)
+    step
+  case result of
+    Nothing -> state $ \comp -> ((), comp{exception = True}) -- early return
+    Just r -> return r
 
 wrap :: Int32 -> MMIOClash-> MMIOClash
 wrap i s = snd $ runState (oneStep i) s
@@ -85,7 +92,7 @@ topEntity = fmap (\(
                                                      store = Nothing,
                                                      load = loadData,
                                                      loadAddress = Nothing,
-						     exception = False
+                                                     exception = False
                                                     }
                      in
                        let storeNext = store newstate
@@ -98,5 +105,5 @@ topEntity = fmap (\(
                           snd $ fromMaybe (0,0) storeNext,
                           lv,
                           fromMaybe 0 loadNext,
-                          exception newstate ))
+                          exception newstate))
 
