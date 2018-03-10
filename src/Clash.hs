@@ -65,8 +65,8 @@ wrap i s = snd $ runState (oneStep i) s
                       , PortName "arst"
                       ]
                    ,PortField "" 
-		    [ PortName "in_registers", PortName "in_instr",
-                      PortName "in_pc", PortName "in_loadData"]],
+                      [ PortName "in_registers", PortName "in_instr",
+                        PortName "in_pc", PortName "in_loadData"]],
           t_output=PortField "" [PortName "out_registers",
                                PortName "out_nextPC",PortName "out_storeValid",
                                PortName "out_storeAddress", PortName "out_loadValid",PortName "out_loadAddress"]})#-}
