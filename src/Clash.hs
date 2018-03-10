@@ -46,6 +46,7 @@ instance RiscvProgram MState Int32 where
   getPC = state $ \comp -> (pc comp, comp)
   setPC val = state $ \comp -> ((), comp { nextPC = fromIntegral val })
   step = state $ \comp -> ((), comp { pc = nextPC comp })
+  endCycle = state $ \comp -> (undefined , comp)  
 
 oneStep :: Int32 -> MState ()
 oneStep i = do
@@ -68,8 +69,9 @@ wrap i s = snd $ runState (oneStep i) s
                       [ PortName "in_registers", PortName "in_instr",
                         PortName "in_pc", PortName "in_loadData"]],
           t_output=PortField "" [PortName "out_registers",
-                               PortName "out_nextPC",PortName "out_storeValid",
-                               PortName "out_storeAddress", PortName "out_loadValid",PortName "out_loadAddress"]})#-}
+                                PortName "out_nextPC",PortName "out_storeValid",
+                                PortName "out_storeAddress", PortName "out_storeData",
+                                PortName "out_loadValid",PortName "out_loadAddress"]})#-}
 topEntity :: SystemClockReset
   => Signal System (Vec 31 Int32,Int32, Int32, Int32)
   -> Signal System (Vec 31 Int32, Int32, Bool, Int32, Int32, Bool, Int32)
