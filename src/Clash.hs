@@ -29,11 +29,11 @@ type MState = State MMIOClash
 type MMState = MaybeT MState
 
 extract :: Integral a => (Bool,Bool,Bool,Bool) -> Int32 -> a
-extract byteen load | -- quot get rid of the bits on the right fromIntegral, those on the left.
-	byteen == (_,_,_,True) = fromIntegral load
-	byteen == (_,_,True,_) = fromIntegral (load `quot` 256)
-	byteen == (_,True,_,_) = fromIntegral (load `quot` 65536)
-	byteen == (True,_,_,_) = fromIntegral (load `quot` 16777216)
+extract byteen load  -- quot get rid of the bits on the right fromIntegral, those on the left.
+	|(\(x,y,z,t)-> t) byteen == True  = fromIntegral load
+	|(\(x,y,z,t)-> z) byteen == True  = fromIntegral (load `quot` 256)
+	|(\(x,y,z,t)-> y) byteen == True  = fromIntegral (load `quot` 65536)
+	|(\(x,y,z,t)-> x) byteen == True  = fromIntegral (load `quot` 16777216)
 
  
 instance RiscvProgram MState Int32 where
