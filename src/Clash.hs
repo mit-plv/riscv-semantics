@@ -32,12 +32,12 @@ instance RiscvProgram MState Int32 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = state $ \comp ->((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
 -- Fake load and stores
-  loadByte a = state $ \comp -> (0, comp)
-  loadHalf a =state $ \comp -> (0, comp)
+  loadByte a = state $ \comp -> (load comp, comp{loadAddress = Just $ fromIntegral a})
+  loadHalf a =state $ \comp -> (load comp, comp{loadAddress = Just $ fromIntegral a})
   loadWord a = state $ \comp -> (load comp, comp{loadAddress = Just $ fromIntegral a})
   loadDouble a = state $ \comp -> (0, comp)
-  storeByte a v = state $ \comp -> ((), comp)
-  storeHalf a v = state $ \comp -> ((), comp)
+  storeByte a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v)})
+  storeHalf a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v)})
   storeWord  a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v)})
   storeDouble  a v = state $ \comp -> ((), comp)
 -- fake CSR
