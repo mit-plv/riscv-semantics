@@ -22,7 +22,7 @@ import qualified Decode as D
 import Clash.Prelude
 
 
-data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 , store:: Maybe (Int32,Int32), load :: Int32, loadAddress :: Maybe Int32, exception :: Bool }
+data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 , store:: Maybe (Int32,Int32,(Bool,Bool,Bool,Bool)), load :: Int32, loadAddress :: Maybe (Int32,(Bool,Bool,Bool,Bool)), exception :: Bool }
               deriving (Show)
 
 type MState = State MMIOClash
@@ -32,13 +32,13 @@ instance RiscvProgram MState Int32 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = state $ \comp ->((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
 -- Fake load and stores
-  loadByte a = state $ \comp -> (load comp, comp{loadAddress = Just $ fromIntegral a})
-  loadHalf a =state $ \comp -> (load comp, comp{loadAddress = Just $ fromIntegral a})
-  loadWord a = state $ \comp -> (load comp, comp{loadAddress = Just $ fromIntegral a})
+  loadByte a = state $ \comp -> (load comp, comp{loadAddress = Just $ fromIntegral (a, byteen)})
+  loadHalf a =state $ \comp -> (load comp, comp{loadAddress = Just $ fromIntegral (a, byteen)})
+  loadWord a = state $ \comp -> (load comp, comp{loadAddress = Just $ fromIntegral (a,(True,True,True,True))})
   loadDouble a = state $ \comp -> (0, comp)
   storeByte a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v)})
   storeHalf a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v)})
-  storeWord  a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v)})
+  storeWord  a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v,(True,True,True,True))})
   storeDouble  a v = state $ \comp -> ((), comp)
 -- fake CSR
   getCSRField field = state $ \comp -> (0, comp)
@@ -76,13 +76,15 @@ wrap i s = snd $ runState (oneStep i) s
                       [ PortName "in_registers", PortName "in_instr",
                         PortName "in_pc", PortName "in_loadData"]],
           t_output=PortField "" [PortName "out_registers",
-                                PortName "out_nextPC",PortName "out_storeValid",
+                                PortName "out_nextPC",
                                 PortName "out_storeAddress", PortName "out_storeData",
-                                PortName "out_loadValid",PortName "out_loadAddress",
+                                PortName "out_storeEnable",
+                                PortName "out_loadAddress",
+				PortName "out_loadEn",
                                 PortName "out_exception"]})#-}
 topEntity :: SystemClockReset
   => Signal System (Vec 31 Int32,Int32, Int32, Int32)
-  -> Signal System (Vec 31 Int32, Int32, Bool, Int32, Int32, Bool, Int32, Bool)
+  -> Signal System (Vec 31 Int32, Int32, Int32, Int32, (Bool,Bool,Bool,Bool), Int32, (Bool,Bool,Bool,Bool), Bool)
 topEntity = fmap (\(
                     iregister, i, ipc, 
                     loadData) ->
@@ -96,14 +98,13 @@ topEntity = fmap (\(
                                                     }
                      in
                        let storeNext = store newstate
-                           sv = if (storeNext == Nothing) then False else True
                            loadNext = loadAddress newstate
-                           lv = if (loadNext == Nothing) then False else True
                        in
-                         (registers newstate,pc newstate,sv,
-                          fst $ fromMaybe (0,0) storeNext,
-                          snd $ fromMaybe (0,0) storeNext,
-                          lv,
-                          fromMaybe 0 loadNext,
+                         (registers newstate,pc newstate,
+                          (\(x,y,z)->x) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
+                          (\(x,y,z)->y) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
+                          (\(x,y,z)->z) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
+                          (\(x,y)-> x) $ fromMaybe (0,(False,False,False,False)) loadNext,
+                          (\(x,y)-> y) $ fromMaybe (0,(False,False,False,False)) loadNext,
                           exception newstate))
 
