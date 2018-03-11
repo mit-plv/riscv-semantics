@@ -59,7 +59,7 @@ oneStep i = do
     execute (D.decode 32 $ fromIntegral i)
     step
   case result of
-    Nothing -> state $ \comp -> ((), comp{exception = True}) -- early return
+    Nothing -> step >> (state $ \comp -> ((), comp{exception = True})) -- early return
     Just r -> return r
 
 wrap :: Int32 -> MMIOClash-> MMIOClash
