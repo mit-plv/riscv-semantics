@@ -23,12 +23,12 @@ import Clash.Prelude
 
 
 data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 , store:: Maybe (Int32,Int32,(Bool,Bool,Bool,Bool)), load :: Int32, loadAddress :: Maybe (Int32,(Bool,Bool,Bool,Bool)), exception :: Bool }
-              deriving (Show)
+              deriving (Show) -- Beurk, I need to use Word32 instead of Int32 for the addresses.
 
 type MState = State MMIOClash
 type MMState = MaybeT MState
 
-extract :: Integral a => (Bool,Bool,Bool,Bool) -> Int32 -> a
+extract :: Integral a => (Bool,Bool,Bool,Bool) -> Word32 -> a
 extract byteen load  -- quot get rid of the bits on the right fromIntegral, those on the left.
 	|(\(x,y,z,t)-> t) byteen == True  = fromIntegral load
 	|(\(x,y,z,t)-> z) byteen == True  = fromIntegral (load `quot` 256)
@@ -40,30 +40,30 @@ instance RiscvProgram MState Int32 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = state $ \comp ->((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
 -- Fake load and stores
-  loadByte ina = state $ \comp -> let a = (ina `quot` 4) * 4 
+  loadByte ina = state $ \comp -> let a = ina .&. (complement 3) 
                                       offset = mod ina 4 
                                       byteen | offset == 3 = (True,False,False,False)
                                              | offset == 2 = (False,True,False,False)
                                              | offset == 1 = (False,False,True,False)
                                              | offset == 0 = (False,False,False,True) in
-                         (extract byteen (load comp), comp{loadAddress = Just $ (fromIntegral a, byteen)})
-  loadHalf ina =state $ \comp -> let a = (ina `quot` 4) * 4 -- zeroed the bottom two bits probably ot the smartest way Clash-wise
+                         (extract byteen (fromIntegral (load comp)), comp{loadAddress = Just $ (fromIntegral a, byteen)})
+  loadHalf ina =state $ \comp -> let a = ina .&. (complement 3) 
                                      offset = mod ina 4 
                                      byteen | offset == 2 = (True,True,False,False)
                                             | offset == 0 = (False,False,True,True)
                                             | otherwise = (False,False,False,False) -- Should not happen
                          in
-                         (extract byteen (load comp), comp{loadAddress = Just $ (fromIntegral a, byteen)})
-  loadWord a = state $ \comp -> (load comp, comp{loadAddress = Just $ (fromIntegral a,(True,True,True,True))})
+                         (extract byteen (fromIntegral (load comp)), comp{loadAddress = Just $ (fromIntegral a, byteen)})
+  loadWord a = state $ \comp -> (extract (True,True,True,True) (fromIntegral (load comp)), comp{loadAddress = Just $ (fromIntegral a,(True,True,True,True))})
   loadDouble a = state $ \comp -> (0, comp)
-  storeByte ina v = state $ \comp -> let a = (ina `quot` 4) * 4 -- zeroed the bottom two bits probably ot the smartest way Clash-wise
+  storeByte ina v = state $ \comp -> let a = ina .&. (complement 3) 
                                          offset = mod ina 4 
                                          byteen | offset == 3 = (True,False,False,False)
                                                 | offset == 2 = (False,True,False,False)
                                                 | offset == 1 = (False,False,True,False)
                                                 | offset == 0 = (False,False,False,True)
                          in ((), comp{store=Just (fromIntegral a, fromIntegral v, byteen)})
-  storeHalf ina v = state $ \comp ->let a = (ina `quot` 4) * 4 -- zeroed the bottom two bits probably ot the smartest way Clash-wise
+  storeHalf ina v = state $ \comp ->let a = ina .&. (complement 3)
                                         offset = mod ina 4 
                                         byteen | offset == 2 = (True,True,False,False)
                                                | offset == 0 = (False,False,True,True)
