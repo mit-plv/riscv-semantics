@@ -36,6 +36,13 @@ extract byteen load  -- quot get rid of the bits on the right fromIntegral, thos
 	|(\(x,y,z,t)-> x) byteen == True  = fromIntegral (load `quot` 16777216)
 
  
+embed :: Integral a => (Bool,Bool,Bool,Bool) -> Word32 -> a
+embed byteen store  -- quot get rid of the bits on the right fromIntegral, those on the left.
+	|(\(x,y,z,t)-> t) byteen == True  = fromIntegral store
+	|(\(x,y,z,t)-> z) byteen == True  = fromIntegral (store * 256)
+	|(\(x,y,z,t)-> y) byteen == True  = fromIntegral (store * 65536)
+	|(\(x,y,z,t)-> x) byteen == True  = fromIntegral (store * 16777216)
+
 instance RiscvProgram MState Int32 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = state $ \comp ->((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
@@ -62,14 +69,14 @@ instance RiscvProgram MState Int32 where
                                                 | offset == 2 = (False,True,False,False)
                                                 | offset == 1 = (False,False,True,False)
                                                 | offset == 0 = (False,False,False,True)
-                         in ((), comp{store=Just (fromIntegral a, fromIntegral v, byteen)})
+                         in ((), comp{store=Just (fromIntegral a, embed byteen (fromIntegral v), byteen)})
   storeHalf ina v = state $ \comp ->let a = ina .&. (complement 3)
                                         offset = mod ina 4 
                                         byteen | offset == 2 = (True,True,False,False)
                                                | offset == 0 = (False,False,True,True)
                                                | otherwise = (False,False,False,False) -- Should not happen
                          in
-                         ((), comp{store=Just (fromIntegral a, fromIntegral v, byteen)})
+                         ((), comp{store=Just (fromIntegral a, embed byteen (fromIntegral v), byteen)})
   storeWord  a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v,(True,True,True,True))})
   storeDouble  a v = state $ \comp -> ((), comp)
 -- fake CSR
