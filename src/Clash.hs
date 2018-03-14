@@ -119,7 +119,7 @@ wrap i s = snd $ runState (oneStep i) s
                                 PortName "out_storeAddress", PortName "out_storeData",
                                 PortName "out_storeEnable",
                                 PortName "out_loadAddress",
-				PortName "out_loadEn",
+				PortName "out_loadEnable",
                                 PortName "out_exception"]})#-}
 topEntity :: SystemClockReset
   => Signal System (Vec 31 Int32,Int32, Int32, Int32)
