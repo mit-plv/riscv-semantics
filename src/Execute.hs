@@ -7,7 +7,6 @@ import ExecuteI64 as I64
 import ExecuteM as M
 import ExecuteM64 as M64
 import ExecuteCSR as CSR
-import ExecuteUnsupported as Unsupported
 import Control.Monad
 import Control.Monad.Trans.Maybe
 
@@ -17,7 +16,7 @@ execute InvalidInstruction = do
 --  cycles <- getCSRField Field.MCycle -- NOTE: should we count or not count an invalid instruction -> check later, if yes it should come before raiseException
 --  setCSRField Field.MCycle (cycles + 1)
 execute inst = do
-  msum (map (\f -> f inst) [I.execute, I64.execute, M.execute, M64.execute, CSR.execute, Unsupported.execute])
+  msum (map (\f -> f inst) [I.execute, I64.execute, M.execute, M64.execute, CSR.execute])
   cycles <- getCSRField Field.MCycle
   setCSRField Field.MCycle (cycles + 1)
   instret <- getCSRField Field.MInstRet
