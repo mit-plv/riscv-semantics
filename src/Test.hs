@@ -26,13 +26,15 @@ runTest (Test name iset input returnValue output) = do
 
 -- TODO: Read this from a file.
 tests :: [Test]
-tests = [Test "add" RV64IM ""  11 "",
+tests = [Test "add" RV64I ""  11 "",
          Test "ebreak" RV64IM "" 0 "D\n?\n",
-         Test "sub" RV64IM ""   7 "",
+         Test "mul_support" RV64IM "" 0 "A\n",
+         Test "mul_support" RV64I  "" 0 "c\nB\n",
+         Test "sub" RV64I ""   7 "",
          Test "mul" RV64IM ""  42 "",
-         Test "and" RV64IM ""  35 "",
+         Test "and" RV64I ""  35 "",
          Test "or"  RV64IM "" 111 "",
-         Test "xor" RV64IM ""  76 "",
+         Test "xor" RV64I ""  76 "",
          Test "csr" RV64IM ""  29 "",
          Test "hello" RV64IM "" 0 "Hello, world!\n",
          Test "reverse" RV64IM "asdf" 0 "fdsa\n",
