@@ -1,4 +1,4 @@
-# riscv-semantic
+# riscv-semantic https://travis-ci.org/mit-plv/riscv-semantics.svg?branch=master
 
 riscv-semantics is a formal specification of the RISC-V ISA written in Haskell.
 
