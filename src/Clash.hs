@@ -127,7 +127,7 @@ topEntity :: SystemClockReset
 topEntity = fmap (\(
                     iregister, i, ipc, 
                     loadData) ->
-                     let newstate = wrap i MMIOClash{registers = iregister,
+                     let newstate = wrap i MMIOClash{registers = reverse iregister,
                                                      pc = ipc,
                                                      nextPC= ipc,
                                                      store = Nothing,
@@ -139,7 +139,7 @@ topEntity = fmap (\(
                        let storeNext = store newstate
                            loadNext = loadAddress newstate
                        in
-                         (registers newstate,pc newstate,
+                         (reverse $ registers newstate,pc newstate,
                           (\(x,y,z)->x) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
                           (\(x,y,z)->y) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
                           (\(x,y,z)->z) $ fromMaybe (0,0,(False,False,False,False)) storeNext,

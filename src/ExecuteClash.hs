@@ -5,7 +5,6 @@ import qualified CSRField as Field
 import ExecuteI as I
 import ExecuteM as M
 import ExecuteCSR as CSR
-import ExecuteUnsupported as Unsupported
 import Control.Monad
 import Control.Monad.Trans.Maybe
 import Prelude 
