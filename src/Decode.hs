@@ -439,11 +439,11 @@ decode xlen inst = decode_sub opcode
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, funct7==funct7_SFENCE_VM        = Sfence_vm {rs1=rs1, rs2=rs2}
 
       | opcode==opcode_SYSTEM, funct3==funct3_CSRRW  = Csrrw   {rd=rd, rs1=rs1,   csr12=csr12}
-      | opcode==opcode_SYSTEM, funct3==funct3_CSRRS  = Csrrw   {rd=rd, rs1=rs1,   csr12=csr12}
-      | opcode==opcode_SYSTEM, funct3==funct3_CSRRC  = Csrrw   {rd=rd, rs1=rs1,   csr12=csr12}
+      | opcode==opcode_SYSTEM, funct3==funct3_CSRRS  = Csrrs   {rd=rd, rs1=rs1,   csr12=csr12}
+      | opcode==opcode_SYSTEM, funct3==funct3_CSRRC  = Csrrc   {rd=rd, rs1=rs1,   csr12=csr12}
       | opcode==opcode_SYSTEM, funct3==funct3_CSRRWI = Csrrwi  {rd=rd, zimm=zimm, csr12=csr12}
-      | opcode==opcode_SYSTEM, funct3==funct3_CSRRSI = Csrrwi  {rd=rd, zimm=zimm, csr12=csr12}
-      | opcode==opcode_SYSTEM, funct3==funct3_CSRRCI = Csrrwi  {rd=rd, zimm=zimm, csr12=csr12}
+      | opcode==opcode_SYSTEM, funct3==funct3_CSRRSI = Csrrsi  {rd=rd, zimm=zimm, csr12=csr12}
+      | opcode==opcode_SYSTEM, funct3==funct3_CSRRCI = Csrrci  {rd=rd, zimm=zimm, csr12=csr12}
 
       -- The following are RV64 only
       | opcode==opcode_LOAD, funct3==funct3_LD,  xlen==64 = Ld  {rd=rd, rs1=rs1, oimm12=oimm12}
