@@ -20,11 +20,14 @@ data Test = Test { name :: String, input :: String, returnValue :: Int64, output
 runTest :: Test -> IO Bool
 runTest (Test name input returnValue output) = do
   result <- runFile ("test/build/" ++ name ++ "64") input
-  return $ result == (returnValue, output)
+  let isSuccess = (result == (returnValue, output))
+  when (not isSuccess) (putStrLn ("Running " ++ name ++ " gave output " ++ show result ++ " but expected " ++ show (returnValue, output)))
+  return $ isSuccess
 
 -- TODO: Read this from a file.
 tests :: [Test]
 tests = [Test "add" ""  11 "",
+         Test "ebreak" "" 0 "D\n?\n",
          Test "sub" ""   7 "",
          Test "mul" ""  42 "",
          Test "and" ""  35 "",
