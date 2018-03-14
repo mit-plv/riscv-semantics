@@ -29,7 +29,7 @@ execute (Jal rd jimm20) = do
 execute (Jalr rd rs1 oimm12) = do
   x <- getRegister rs1
   pc <- getPC
-  let newPC = x + fromImm oimm12
+  let newPC = (x + fromImm oimm12) .&. (complement 1) 
   if (mod newPC 4 /= 0)
     then raiseException 0 0
     else (do
