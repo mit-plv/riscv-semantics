@@ -74,7 +74,7 @@ helper maybeToHostAddress = do
         setPC (pc + 4)
         pc <- getPC
         size <- getXLEN
-        execute (decode size $ (fromIntegral:: Int32 -> MachineInt) inst)
+        execute RV64IM (decode size $ (fromIntegral:: Int32 -> MachineInt) inst)
         interrupt <- liftIO checkInterrupt
         if interrupt then do
           -- Signal interrupt by setting MEIP high.
