@@ -10,20 +10,27 @@ import ExecuteCSR as CSR
 import Control.Monad
 import Control.Monad.Trans.Maybe
 
-data InstructionSet = RV64I | RV64IM
-
-isetToExecuteFuncs :: (RiscvProgram p t, MonadPlus p) => InstructionSet -> [Instruction -> p ()]
-isetToExecuteFuncs RV64I = [I.execute, I64.execute, CSR.execute]
-isetToExecuteFuncs RV64IM = [I.execute, I64.execute, M.execute, M64.execute, CSR.execute]
-
-execute :: (RiscvProgram p t, MonadPlus p) => InstructionSet -> Instruction -> p ()
-execute iset InvalidInstruction = do
+executeInvalid :: (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+executeInvalid InvalidInstruction = do
   raiseException 0 2
 --  cycles <- getCSRField Field.MCycle -- NOTE: should we count or not count an invalid instruction -> check later, if yes it should come before raiseException
 --  setCSRField Field.MCycle (cycles + 1)
-execute iset inst = do
-  msum (map (\f -> f inst) (isetToExecuteFuncs iset))
+
+executeValid :: (RiscvProgram p t, MonadPlus p) => (Instruction -> p ()) -> Instruction -> p ()
+executeValid f inst = do
+  f inst
   cycles <- getCSRField Field.MCycle
   setCSRField Field.MCycle (cycles + 1)
   instret <- getCSRField Field.MInstRet
   setCSRField Field.MInstRet (instret + 1)
+
+-- Note: instructions belonging to unsupported extensions were already filtered out by the decoder
+execute :: (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+execute = applyByExtInstructionMapper $ ByExtInstructionMapper {
+  map_Invalid = executeInvalid,
+  map_I = executeValid I.execute,
+  map_M = executeValid M.execute,
+  map_I64 = executeValid I64.execute,
+  map_M64 = executeValid M64.execute,
+  map_CSR = executeValid CSR.execute
+}

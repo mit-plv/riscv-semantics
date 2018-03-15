@@ -64,8 +64,7 @@ helper iset maybeToHostAddress = do
           getRegister 10
           else do
           setPC (pc + 4)
-          size <- getXLEN
-          execute iset (decode size $ (fromIntegral :: Int32 -> MachineInt) inst)
+          execute (decode iset $ (fromIntegral :: Int32 -> MachineInt) inst)
           endCycle
       case result of
         Nothing -> step >> helper iset maybeToHostAddress

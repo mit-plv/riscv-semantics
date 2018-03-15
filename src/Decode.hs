@@ -109,6 +109,137 @@ data Instruction =
 
 -- ================================================================
 
+data ByExtInstructionMapper t = ByExtInstructionMapper {
+  map_Invalid :: Instruction -> t,
+  map_I :: Instruction -> t,
+  map_M :: Instruction -> t,
+  map_I64 :: Instruction -> t,
+  map_M64 :: Instruction -> t,
+  map_CSR :: Instruction -> t
+}
+
+applyByExtInstructionMapper :: ByExtInstructionMapper t -> Instruction -> t
+applyByExtInstructionMapper m inst = case inst of
+  InvalidInstruction {} -> map_Invalid m inst
+
+  Lb {} -> map_I m inst
+  Lh {} -> map_I m inst
+  Lw {} -> map_I m inst
+  Ld {} -> map_I64 m inst
+  Lbu {} -> map_I m inst
+  Lhu {} -> map_I m inst
+  Lwu {} -> map_I64 m inst
+
+  Fence {} -> map_I m inst
+  Fence_i {} -> map_I m inst
+
+  Addi {} -> map_I m inst
+  Slli {} -> map_I m inst
+  Slti {} -> map_I m inst
+  Sltiu {} -> map_I m inst
+  Xori {} -> map_I m inst
+  Ori {} -> map_I m inst
+  Andi {} -> map_I m inst
+  Srli {} -> map_I m inst
+  Srai {} -> map_I m inst
+
+  Auipc {} -> map_I m inst
+
+  Addiw {} -> map_I64 m inst
+  Slliw {} -> map_I64 m inst
+  Srliw {} -> map_I64 m inst
+  Sraiw {} -> map_I64 m inst
+
+  Sb {} -> map_I m inst
+  Sh {} -> map_I m inst
+  Sw {} -> map_I m inst
+  Sd {} -> map_I64 m inst
+  Add {} -> map_I m inst
+  Sub {} -> map_I m inst
+  Sll {} -> map_I m inst
+  Slt {} -> map_I m inst
+  Sltu {} -> map_I m inst
+  Xor {} -> map_I m inst
+  Srl {} -> map_I m inst
+  Sra {} -> map_I m inst
+  Or {} -> map_I m inst
+  And {} -> map_I m inst
+  Mul {} -> map_M m inst
+  Mulh {} -> map_M m inst
+  Mulhsu {} -> map_M m inst
+  Mulhu {} -> map_M m inst
+  Div {} -> map_M m inst
+  Divu {} -> map_M m inst
+  Rem {} -> map_M m inst
+  Remu {} -> map_M m inst
+
+  Lui {} -> map_I m inst
+
+  Addw {} -> map_I64 m inst
+  Subw {} -> map_I64 m inst
+  Sllw {} -> map_I64 m inst
+  Srlw {} -> map_I64 m inst
+  Sraw {} -> map_I64 m inst
+  Mulw {} -> map_M64 m inst
+  Divw {} -> map_M64 m inst
+  Divuw {} -> map_M64 m inst
+  Remw {} -> map_M64 m inst
+  Remuw {} -> map_M64 m inst
+
+  Beq {} -> map_I m inst
+  Bne {} -> map_I m inst
+  Blt {} -> map_I m inst
+  Bge {} -> map_I m inst
+  Bltu {} -> map_I m inst
+  Bgeu {} -> map_I m inst
+
+  Jalr {} -> map_I m inst
+
+  Jal {} -> map_I m inst
+
+  Ecall {} -> map_I m inst
+  Ebreak {} -> map_I m inst
+  Uret {} -> map_I m inst
+  Sret {} -> map_I m inst
+  Mret {} -> map_I m inst
+  Wfi {} -> map_I m inst
+  Sfence_vm {} -> map_I m inst
+
+  Csrrw {} -> map_CSR m inst
+  Csrrs {} -> map_CSR m inst
+  Csrrc {} -> map_CSR m inst
+  Csrrwi {} -> map_CSR m inst
+  Csrrsi {} -> map_CSR m inst
+  Csrrci {} -> map_CSR m inst
+
+
+data InstructionSet = RV32I | RV32IM | RV64I | RV64IM deriving (Eq, Show)
+
+bitwidth :: InstructionSet -> Int
+bitwidth RV32I = 32
+bitwidth RV32IM = 32
+bitwidth RV64I = 64
+bitwidth RV64IM = 64
+
+supportsM :: InstructionSet -> Bool
+supportsM RV32I = False
+supportsM RV32IM = True
+supportsM RV64I = False
+supportsM RV64IM = True
+
+instructionSetFilter :: InstructionSet -> Instruction -> Instruction
+instructionSetFilter iset = applyByExtInstructionMapper $ ByExtInstructionMapper {
+  map_Invalid = id,
+  map_I = id,
+  map_M = \inst -> if supportsM iset then inst else InvalidInstruction,
+  map_I64 = id,
+  map_M64 = \inst -> if supportsM iset then inst else InvalidInstruction,
+  map_CSR = id
+}
+
+
+-- ================================================================
+
 type Register = MachineInt
 
 -- ================================================================
@@ -324,9 +455,10 @@ signExtend l n = if testBit n (l-1)
 -- The main decoder function
 -- TODO: 1st arg should be MISA bits, instead of xlen, and more filters need to be added per MISA bits
 
-decode          :: Int -> MachineInt -> Instruction
-decode xlen inst = decode_sub opcode
+decode :: InstructionSet -> MachineInt -> Instruction
+decode iset inst = instructionSetFilter iset (decode_sub opcode)
   where
+    xlen = bitwidth iset
     -- Symbolic names for notable bitfields in the 32b instruction 'inst'
     -- Note: 'bitSlice x i j' is, roughly, Verilog's 'x [j-1, i]'
     opcode  = bitSlice inst 0 7        -- = Verilog's: inst [6:0]
