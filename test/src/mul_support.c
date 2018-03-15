@@ -1,6 +1,8 @@
 #include "../trap_handler.h"
 #include "../mmio.h"
 
+int trap_handler_ran = 0;
+char result = 0;
 
 void trap_handler() {
   // register char causechar asm ("x15");
@@ -10,7 +12,8 @@ void trap_handler() {
 
   causechar += 'a';
   putchar(causechar);
-  putchar('\n');
+  result = 65; // the trap handler is knows how to do the multiplication
+  trap_handler_ran = 1;
 }
 
 int main() {
@@ -19,7 +22,7 @@ int main() {
 
   register char a = 5;
   register char b = 13;
-  register char c = 'B';
+  register char c;
 
   // write mul in assembly to make sure the compiler doesn't
   // constant propagate or do other stuff.
@@ -28,10 +31,10 @@ int main() {
 	       : "=r"(c)           // output register
 	       : "r"(a), "r"(b));  // input registers
 
-  // runs in any case, but if mul was unavailable, it will print the
-  // old value 'B' instead of the new value 'A', and the trap handler
-  // will not have run before
-  putchar(c);
+  if (trap_handler_ran) {
+    c = result;
+  }
+  putchar(c); 
   putchar('\n');
   return 0;
 }

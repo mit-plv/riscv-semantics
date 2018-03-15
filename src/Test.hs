@@ -29,7 +29,7 @@ tests :: [Test]
 tests = [Test "add" RV64I ""  11 "",
          Test "ebreak" RV64IM "" 0 "D\n?\n",
          Test "mul_support" RV64IM "" 0 "A\n",
-         Test "mul_support" RV64I  "" 0 "c\nB\n",
+         Test "mul_support" RV64I  "" 0 "cA\n",
          Test "sub" RV64I ""   7 "",
          Test "mul" RV64IM ""  42 "",
          Test "and" RV64I ""  35 "",
