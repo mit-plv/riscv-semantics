@@ -8,7 +8,7 @@ import Data.Bits
 import Data.Int
 import Control.Monad
 
-execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+execute :: forall p t. (RiscvProgram p t) => Instruction -> p ()
 -- begin ast
 execute (Lwu rd rs1 oimm12) = do
   a <- getRegister rs1
@@ -58,4 +58,4 @@ execute (Sraw rd rs1 rs2) = do
   y <- getRegister rs2
   setRegister rd (s32 (sra (s32 x) (regToShamt5 y)))
 -- end ast
-execute _ = mzero
+execute _ = error "dispatch bug"

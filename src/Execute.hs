@@ -10,13 +10,13 @@ import ExecuteCSR as CSR
 import Control.Monad
 import Control.Monad.Trans.Maybe
 
-executeInvalid :: (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+executeInvalid :: (RiscvProgram p t) => Instruction -> p ()
 executeInvalid InvalidInstruction = do
   raiseException 0 2
 --  cycles <- getCSRField Field.MCycle -- NOTE: should we count or not count an invalid instruction -> check later, if yes it should come before raiseException
 --  setCSRField Field.MCycle (cycles + 1)
 
-executeValid :: (RiscvProgram p t, MonadPlus p) => (Instruction -> p ()) -> Instruction -> p ()
+executeValid :: (RiscvProgram p t) => (Instruction -> p ()) -> Instruction -> p ()
 executeValid f inst = do
   f inst
   cycles <- getCSRField Field.MCycle
@@ -25,7 +25,7 @@ executeValid f inst = do
   setCSRField Field.MInstRet (instret + 1)
 
 -- Note: instructions belonging to unsupported extensions were already filtered out by the decoder
-execute :: (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+execute :: (RiscvProgram p t) => Instruction -> p ()
 execute = applyByExtInstructionMapper $ ByExtInstructionMapper {
   map_Invalid = executeInvalid,
   map_I = executeValid I.execute,

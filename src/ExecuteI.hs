@@ -11,7 +11,7 @@ import Data.Word
 import Control.Monad
 import Prelude
 
-execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+execute :: forall p t. (RiscvProgram p t) => Instruction -> p ()
 -- begin ast
 execute (Lui rd imm20) = do
   setRegister rd (fromImm imm20)
@@ -197,5 +197,5 @@ execute (And rd rs1 rs2) = do
   y <- getRegister rs2
   setRegister rd (x .&. y)
 -- end ast
-execute _ = mzero
+execute inst = error $ "dispatch bug: " ++ show inst
 -- TODO: Fence/Fence.i?
