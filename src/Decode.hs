@@ -197,13 +197,13 @@ applyByExtInstructionMapper m inst = case inst of
 
   Jal {} -> map_I m inst
 
-  Ecall {} -> map_I m inst
-  Ebreak {} -> map_I m inst
-  Uret {} -> map_I m inst
-  Sret {} -> map_I m inst
-  Mret {} -> map_I m inst
-  Wfi {} -> map_I m inst
-  Sfence_vm {} -> map_I m inst
+  Ecall {} -> map_CSR m inst
+  Ebreak {} -> map_CSR m inst
+  Uret {} -> map_CSR m inst
+  Sret {} -> map_CSR m inst
+  Mret {} -> map_CSR m inst
+  Wfi {} -> map_CSR m inst
+  Sfence_vm {} -> map_CSR m inst
 
   Csrrw {} -> map_CSR m inst
   Csrrs {} -> map_CSR m inst
