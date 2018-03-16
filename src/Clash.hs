@@ -95,7 +95,7 @@ oneStep i = do
   result <- runMaybeT $ do
     pc <- getPC
     setPC (pc + 4)
-    execute (D.decode 32 $ fromIntegral i)
+    execute (D.decode D.RV32I $ fromIntegral i)
     step
   case result of
     Nothing -> step >> (state $ \comp -> ((), comp{exception = True})) -- early return
