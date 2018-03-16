@@ -10,7 +10,7 @@ import Data.Bits
 import Control.Monad
 import Prelude
 
-execute :: forall p t. (RiscvProgram p t) => Instruction -> p ()
+execute :: forall p t. (RiscvProgram p t) => InstructionCSR -> p ()
 -- begin ast
 execute (Csrrw rd rs1 csr12) = do
   x <- getRegister rs1
