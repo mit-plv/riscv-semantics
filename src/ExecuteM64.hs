@@ -5,7 +5,7 @@ import Program
 import Utility
 import Control.Monad
 
-execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+execute :: forall p t. (RiscvProgram p t) => InstructionM64 -> p ()
 -- begin ast
 execute (Mulw rd rs1 rs2) = do
   x <- getRegister rs1
@@ -38,4 +38,4 @@ execute (Remuw rd rs1 rs2) = do
         | otherwise = remu x y
     in setRegister rd (s32 r)
 -- end ast
-execute _ = mzero
+execute inst = error $ "dispatch bug: " ++ show inst

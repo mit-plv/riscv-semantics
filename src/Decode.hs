@@ -1,3 +1,5 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+
 module Decode where
 
 -- Haskell lib imports
@@ -12,41 +14,31 @@ import Utility
 -- ================================================================
 -- Decoded instructions
 
-data Instruction =
-  InvalidInstruction |
-
+data InstructionI =
   Lb { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
   Lh { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
   Lw { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
-  Ld { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
   Lbu { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
   Lhu { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
-  Lwu { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
 
   Fence { pred :: MachineInt, succ :: MachineInt } |
   Fence_i |
 
   Addi { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
-  Slli { rd :: Register, rs1 :: Register, shamt6 :: MachineInt } |
+  Slli { rd :: Register, rs1 :: Register, shamt6 :: Int } |
   Slti { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
   Sltiu { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
   Xori { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
   Ori { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
   Andi { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
-  Srli { rd :: Register, rs1 :: Register, shamt6 :: MachineInt } |
-  Srai { rd :: Register, rs1 :: Register, shamt6 :: MachineInt } |
+  Srli { rd :: Register, rs1 :: Register, shamt6 :: Int } |
+  Srai { rd :: Register, rs1 :: Register, shamt6 :: Int } |
 
   Auipc { rd :: Register, oimm20 :: MachineInt } |
-
-  Addiw { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
-  Slliw { rd :: Register, rs1 :: Register, shamt5 :: MachineInt } |
-  Srliw { rd :: Register, rs1 :: Register, shamt5 :: MachineInt } |
-  Sraiw { rd :: Register, rs1 :: Register, shamt5 :: MachineInt } |
 
   Sb { rs1 :: Register, rs2 :: Register, simm12 :: MachineInt } |
   Sh { rs1 :: Register, rs2 :: Register, simm12 :: MachineInt } |
   Sw { rs1 :: Register, rs2 :: Register, simm12 :: MachineInt } |
-  Sd { rs1 :: Register, rs2 :: Register, simm12 :: MachineInt } |
 
   Add { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Sub { rd :: Register, rs1 :: Register, rs2 :: Register } |
@@ -58,27 +50,8 @@ data Instruction =
   Sra { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Or { rd :: Register, rs1 :: Register, rs2 :: Register } |
   And { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Mul { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Mulh { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Mulhsu { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Mulhu { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Div { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Divu { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Rem { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Remu { rd :: Register, rs1 :: Register, rs2 :: Register } |
 
   Lui { rd :: Register, imm20 :: MachineInt } |
-
-  Addw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Subw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Sllw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Srlw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Sraw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Mulw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Divw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Divuw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Remw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Remuw { rd :: Register, rs1 :: Register, rs2 :: Register } |
 
   Beq { rs1 :: Register, rs2 :: Register, sbimm12 :: MachineInt } |
   Bne { rs1 :: Register, rs2 :: Register, sbimm12 :: MachineInt } |
@@ -88,9 +61,57 @@ data Instruction =
   Bgeu { rs1 :: Register, rs2 :: Register, sbimm12 :: MachineInt } |
 
   Jalr { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
-
   Jal { rd :: Register, jimm20 :: MachineInt } |
 
+  InvalidI
+  deriving (Eq, Read, Show)
+
+
+data InstructionM =
+  Mul { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Mulh { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Mulhsu { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Mulhu { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Div { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Divu { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Rem { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Remu { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  InvalidM
+  deriving (Eq, Read, Show)
+
+
+data InstructionI64 =
+  Ld { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
+  Lwu { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
+
+  Addiw { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
+  Slliw { rd :: Register, rs1 :: Register, shamt5 :: Int } |
+  Srliw { rd :: Register, rs1 :: Register, shamt5 :: Int } |
+  Sraiw { rd :: Register, rs1 :: Register, shamt5 :: Int } |
+
+  Sd { rs1 :: Register, rs2 :: Register, simm12 :: MachineInt } |
+
+  Addw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Subw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Sllw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Srlw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Sraw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+
+  InvalidI64
+  deriving (Eq, Read, Show)
+
+
+data InstructionM64 =
+  Mulw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Divw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Divuw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Remw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Remuw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  InvalidM64
+  deriving (Eq, Read, Show)
+
+
+data InstructionCSR =
   Ecall |
   Ebreak |
   Uret |
@@ -98,14 +119,40 @@ data Instruction =
   Mret |
   Wfi |
   Sfence_vm { rs1 :: Register, rs2 :: Register } |
-
   Csrrw { rd :: Register, rs1 :: Register, csr12 :: MachineInt } |
   Csrrs { rd :: Register, rs1 :: Register, csr12 :: MachineInt } |
   Csrrc { rd :: Register, rs1 :: Register, csr12 :: MachineInt } |
   Csrrwi { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt } |
   Csrrsi { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt } |
-  Csrrci { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt }
+  Csrrci { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt } |
+  InvalidCSR
   deriving (Eq, Read, Show)
+
+
+data Instruction =
+  IInstruction   { iInstruction   :: InstructionI   } |
+  MInstruction   { mInstruction   :: InstructionM   } |
+  I64Instruction { i64Instruction :: InstructionI64 } |
+  M64Instruction { m64Instruction :: InstructionM64 } |
+  CSRInstruction { csrInstruction :: InstructionCSR } |
+  InvalidInstruction
+  deriving (Eq, Read, Show)
+
+-- ================================================================
+
+data InstructionSet = RV32I | RV32IM | RV64I | RV64IM deriving (Eq, Show)
+
+bitwidth :: InstructionSet -> Int
+bitwidth RV32I = 32
+bitwidth RV32IM = 32
+bitwidth RV64I = 64
+bitwidth RV64IM = 64
+
+supportsM :: InstructionSet -> Bool
+supportsM RV32I = False
+supportsM RV32IM = True
+supportsM RV64I = False
+supportsM RV64IM = True
 
 -- ================================================================
 
@@ -166,11 +213,7 @@ funct3_SRAI  :: MachineInt;    funct3_SRAI  = 0x5      -- 3'b_101
 funct3_ORI   :: MachineInt;    funct3_ORI   = 0x6      -- 3'b_110
 funct3_ANDI  :: MachineInt;    funct3_ANDI  = 0x7      -- 3'b_111
 
--- OP_IMM.SLLI/SRLI/SRAI for RV32
-funct7_SLLI  :: MachineInt;    funct7_SLLI  = 0x00     -- 7'b_0000000
-funct7_SRLI  :: MachineInt;    funct7_SRLI  = 0x00     -- 7'b_0000000
-funct7_SRAI  :: MachineInt;    funct7_SRAI  = 0x20     -- 7'b_0100000
--- OP_IMM.SLLI/SRLI/SRAI for RV64
+-- OP_IMM.SLLI/SRLI/SRAI
 funct6_SLLI  :: MachineInt;    funct6_SLLI  = 0x00     -- 6'b_000000
 funct6_SRLI  :: MachineInt;    funct6_SRLI  = 0x00     -- 6'b_000000
 funct6_SRAI  :: MachineInt;    funct6_SRAI  = 0x10     -- 6'b_010000
@@ -320,13 +363,33 @@ signExtend l n = if testBit n (l-1)
                  then n-2^l
                  else n
 
+machineIntToShamt :: MachineInt -> Int
+machineIntToShamt = fromIntegral
+
 -- ================================================================
 -- The main decoder function
--- TODO: 1st arg should be MISA bits, instead of xlen, and more filters need to be added per MISA bits
 
-decode          :: Int -> MachineInt -> Instruction
-decode xlen inst = decode_sub opcode
+decode :: InstructionSet -> MachineInt -> Instruction
+decode iset inst = case results of
+    [singleResult] -> singleResult         -- this case is the "normal" case
+    [] -> InvalidInstruction               -- this case is also part of the spec
+    _ -> error "ambiguous decoding result" -- this case means there's a bug in the spec
+
   where
+    results :: [Instruction]
+    results =
+      resultI ++
+      (if supportsM iset then resultM else []) ++
+      (if bitwidth iset == 64 then resultI64 else []) ++
+      (if bitwidth iset == 64 && supportsM iset then resultM64 else []) ++
+      resultCSR
+
+    resultI   = if decodeI   == InvalidI   then [] else [IInstruction   decodeI  ]
+    resultM   = if decodeM   == InvalidM   then [] else [MInstruction   decodeM  ]
+    resultI64 = if decodeI64 == InvalidI64 then [] else [I64Instruction decodeI64]
+    resultM64 = if decodeM64 == InvalidM64 then [] else [M64Instruction decodeM64]
+    resultCSR = if decodeCSR == InvalidCSR then [] else [CSRInstruction decodeCSR]
+
     -- Symbolic names for notable bitfields in the 32b instruction 'inst'
     -- Note: 'bitSlice x i j' is, roughly, Verilog's 'x [j-1, i]'
     opcode  = bitSlice inst 0 7        -- = Verilog's: inst [6:0]
@@ -364,13 +427,15 @@ decode xlen inst = decode_sub opcode
                                 shift (bitSlice inst 8 12) 1  .|.
                                 shift (bitSlice inst 7 8) 11)
 
-    shamt5  = bitSlice inst 20 25    -- for RV32 SLLI, SRLI, SRAI
-    shamt6  = bitSlice inst 20 26    -- for RV64 SLLI, SRLI, SRAI
-    funct6  = bitSlice inst 26 32    -- for RV64 SLLI, SRLI, SRAI
+    shamt5  = machineIntToShamt (bitSlice inst 20 25)
+    shamt6  = machineIntToShamt (bitSlice inst 20 26)
+    shamtHi = bitSlice inst 25 26
+    funct6  = bitSlice inst 26 32
+    shamtHiTest = shamtHi == 0 || bitwidth iset == 64
 
     zimm    = bitSlice inst 15 20    -- for CSRRxI
 
-    decode_sub opcode
+    decodeI
       | opcode==opcode_LOAD, funct3==funct3_LB  = Lb  {rd=rd, rs1=rs1, oimm12=oimm12}
       | opcode==opcode_LOAD, funct3==funct3_LH  = Lh  {rd=rd, rs1=rs1, oimm12=oimm12}
       | opcode==opcode_LOAD, funct3==funct3_LW  = Lw  {rd=rd, rs1=rs1, oimm12=oimm12}
@@ -380,15 +445,16 @@ decode xlen inst = decode_sub opcode
       | opcode==opcode_MISC_MEM, rd==0, funct3==funct3_FENCE,   rs1==0, msb4==0  = Fence {Decode.pred=pred, Decode.succ=succ}
       | opcode==opcode_MISC_MEM, rd==0, funct3==funct3_FENCE_I, rs1==0, imm12==0 = Fence_i
 
-      | opcode==opcode_OP_IMM, funct3==funct3_ADDI                                = Addi  {rd=rd, rs1=rs1, imm12=imm12}
-      | opcode==opcode_OP_IMM, funct3==funct3_SLLI, funct7==funct7_SLLI, xlen==32 = Slli  {rd=rd, rs1=rs1, shamt6=shamt5}
-      | opcode==opcode_OP_IMM, funct3==funct3_SLTI                                = Slti  {rd=rd, rs1=rs1, imm12=imm12}
-      | opcode==opcode_OP_IMM, funct3==funct3_SLTIU                               = Sltiu {rd=rd, rs1=rs1, imm12=imm12}
-      | opcode==opcode_OP_IMM, funct3==funct3_XORI                                = Xori  {rd=rd, rs1=rs1, imm12=imm12}
-      | opcode==opcode_OP_IMM, funct3==funct3_ORI                                 = Ori   {rd=rd, rs1=rs1, imm12=imm12}
-      | opcode==opcode_OP_IMM, funct3==funct3_ANDI                                = Andi  {rd=rd, rs1=rs1, imm12=imm12}
-      | opcode==opcode_OP_IMM, funct3==funct3_SRLI, funct7==funct7_SRLI, xlen==32 = Srli  {rd=rd, rs1=rs1, shamt6=shamt5}
-      | opcode==opcode_OP_IMM, funct3==funct3_SRAI, funct7==funct7_SRAI, xlen==32 = Srai  {rd=rd, rs1=rs1, shamt6=shamt5}
+      | opcode==opcode_OP_IMM, funct3==funct3_ADDI  = Addi  {rd=rd, rs1=rs1, imm12=imm12}
+      | opcode==opcode_OP_IMM, funct3==funct3_SLTI  = Slti  {rd=rd, rs1=rs1, imm12=imm12}
+      | opcode==opcode_OP_IMM, funct3==funct3_SLTIU = Sltiu {rd=rd, rs1=rs1, imm12=imm12}
+      | opcode==opcode_OP_IMM, funct3==funct3_XORI  = Xori  {rd=rd, rs1=rs1, imm12=imm12}
+      | opcode==opcode_OP_IMM, funct3==funct3_ORI   = Ori   {rd=rd, rs1=rs1, imm12=imm12}
+      | opcode==opcode_OP_IMM, funct3==funct3_ANDI  = Andi  {rd=rd, rs1=rs1, imm12=imm12}
+
+      | opcode==opcode_OP_IMM, funct3==funct3_SLLI, funct6==funct6_SLLI, shamtHiTest = Slli {rd=rd, rs1=rs1, shamt6=shamt6}
+      | opcode==opcode_OP_IMM, funct3==funct3_SRLI, funct6==funct6_SRLI, shamtHiTest = Srli {rd=rd, rs1=rs1, shamt6=shamt6}
+      | opcode==opcode_OP_IMM, funct3==funct3_SRAI, funct6==funct6_SRAI, shamtHiTest = Srai {rd=rd, rs1=rs1, shamt6=shamt6}
 
       | opcode==opcode_AUIPC = Auipc {rd=rd, oimm20=oimm20}
 
@@ -407,15 +473,6 @@ decode xlen inst = decode_sub opcode
       | opcode==opcode_OP, funct3==funct3_OR,   funct7==funct7_OR   = Or   {rd=rd, rs1=rs1, rs2=rs2}
       | opcode==opcode_OP, funct3==funct3_AND,  funct7==funct7_AND  = And  {rd=rd, rs1=rs1, rs2=rs2}
 
-      | opcode==opcode_OP, funct3==funct3_MUL,    funct7==funct7_MUL    = Mul    {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP, funct3==funct3_MULH,   funct7==funct7_MULH   = Mulh   {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP, funct3==funct3_MULHSU, funct7==funct7_MULHSU = Mulhsu {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP, funct3==funct3_MULHU,  funct7==funct7_MULHU  = Mulhu  {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP, funct3==funct3_DIV,    funct7==funct7_DIV    = Div    {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP, funct3==funct3_DIVU,   funct7==funct7_DIVU   = Divu   {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP, funct3==funct3_REM,    funct7==funct7_REM    = Rem    {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP, funct3==funct3_REMU,   funct7==funct7_REMU   = Remu   {rd=rd, rs1=rs1, rs2=rs2}
-
       | opcode==opcode_LUI = Lui {rd=rd, imm20=imm20}
 
       | opcode==opcode_BRANCH, funct3==funct3_BEQ  = Beq  {rs1=rs1, rs2=rs2, sbimm12=sbimm12}
@@ -426,52 +483,62 @@ decode xlen inst = decode_sub opcode
       | opcode==opcode_BRANCH, funct3==funct3_BGEU = Bgeu {rs1=rs1, rs2=rs2, sbimm12=sbimm12}
 
       | opcode==opcode_JALR = Jalr {rd=rd, rs1=rs1, oimm12=oimm12}
-
       | opcode==opcode_JAL  = Jal {rd=rd, jimm20=jimm20}
 
+      | True = InvalidI
+
+    decodeM
+      | opcode==opcode_OP, funct3==funct3_MUL,    funct7==funct7_MUL    = Mul    {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP, funct3==funct3_MULH,   funct7==funct7_MULH   = Mulh   {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP, funct3==funct3_MULHSU, funct7==funct7_MULHSU = Mulhsu {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP, funct3==funct3_MULHU,  funct7==funct7_MULHU  = Mulhu  {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP, funct3==funct3_DIV,    funct7==funct7_DIV    = Div    {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP, funct3==funct3_DIVU,   funct7==funct7_DIVU   = Divu   {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP, funct3==funct3_REM,    funct7==funct7_REM    = Rem    {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP, funct3==funct3_REMU,   funct7==funct7_REMU   = Remu   {rd=rd, rs1=rs1, rs2=rs2}
+      | True = InvalidM
+
+    decodeI64
+      | opcode==opcode_LOAD, funct3==funct3_LD  = Ld  {rd=rd, rs1=rs1, oimm12=oimm12}
+      | opcode==opcode_LOAD, funct3==funct3_LWU = Lwu {rd=rd, rs1=rs1, oimm12=oimm12}
+
+      | opcode==opcode_OP_IMM_32, funct3==funct3_ADDIW                       = Addiw  {rd=rd, rs1=rs1, imm12=imm12}
+      | opcode==opcode_OP_IMM_32, funct3==funct3_SLLIW, funct7==funct7_SLLIW = Slliw  {rd=rd, rs1=rs1, shamt5=shamt5}
+      | opcode==opcode_OP_IMM_32, funct3==funct3_SRLIW, funct7==funct7_SRLIW = Srliw  {rd=rd, rs1=rs1, shamt5=shamt5}
+      | opcode==opcode_OP_IMM_32, funct3==funct3_SRAIW, funct7==funct7_SRAIW = Sraiw  {rd=rd, rs1=rs1, shamt5=shamt5}
+
+      | opcode==opcode_STORE, funct3==funct3_SD = Sd {rs1=rs1, rs2=rs2, simm12=simm12}
+
+      | opcode==opcode_OP_32, funct3==funct3_ADDW, funct7==funct7_ADDW = Addw  {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP_32, funct3==funct3_SUBW, funct7==funct7_SUBW = Subw  {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP_32, funct3==funct3_SLLW, funct7==funct7_SLLW = Sllw  {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP_32, funct3==funct3_SRLW, funct7==funct7_SRLW = Srlw  {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP_32, funct3==funct3_SRAW, funct7==funct7_SRAW = Sraw  {rd=rd, rs1=rs1, rs2=rs2}
+
+      | True = InvalidI64
+
+    decodeM64
+      | opcode==opcode_OP_32, funct3==funct3_MULW,  funct7==funct7_MULW  = Mulw  {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP_32, funct3==funct3_DIVW,  funct7==funct7_DIVW  = Divw  {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP_32, funct3==funct3_DIVUW, funct7==funct7_DIVUW = Divuw {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP_32, funct3==funct3_REMW,  funct7==funct7_REMW  = Remw  {rd=rd, rs1=rs1, rs2=rs2}
+      | opcode==opcode_OP_32, funct3==funct3_REMUW, funct7==funct7_REMUW = Remuw {rd=rd, rs1=rs1, rs2=rs2}
+      | True = InvalidM64
+
+    decodeCSR
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_ECALL  = Ecall
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_EBREAK = Ebreak
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_URET   = Uret
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_SRET   = Sret
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_MRET   = Mret
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_WFI    = Wfi
-
-      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, funct7==funct7_SFENCE_VM        = Sfence_vm {rs1=rs1, rs2=rs2}
-
       | opcode==opcode_SYSTEM, funct3==funct3_CSRRW  = Csrrw   {rd=rd, rs1=rs1,   csr12=csr12}
       | opcode==opcode_SYSTEM, funct3==funct3_CSRRS  = Csrrs   {rd=rd, rs1=rs1,   csr12=csr12}
       | opcode==opcode_SYSTEM, funct3==funct3_CSRRC  = Csrrc   {rd=rd, rs1=rs1,   csr12=csr12}
       | opcode==opcode_SYSTEM, funct3==funct3_CSRRWI = Csrrwi  {rd=rd, zimm=zimm, csr12=csr12}
       | opcode==opcode_SYSTEM, funct3==funct3_CSRRSI = Csrrsi  {rd=rd, zimm=zimm, csr12=csr12}
       | opcode==opcode_SYSTEM, funct3==funct3_CSRRCI = Csrrci  {rd=rd, zimm=zimm, csr12=csr12}
+      | True = InvalidCSR
 
-      -- The following are RV64 only
-      | opcode==opcode_LOAD, funct3==funct3_LD,  xlen==64 = Ld  {rd=rd, rs1=rs1, oimm12=oimm12}
-      | opcode==opcode_LOAD, funct3==funct3_LWU, xlen==64 = Lwu {rd=rd, rs1=rs1, oimm12=oimm12}
-
-      | opcode==opcode_OP_IMM, funct3==funct3_SLLI, funct6==funct6_SLLI, xlen==64 = Slli  {rd=rd, rs1=rs1, shamt6=shamt6}
-      | opcode==opcode_OP_IMM, funct3==funct3_SRLI, funct6==funct6_SRLI, xlen==64 = Srli  {rd=rd, rs1=rs1, shamt6=shamt6}
-      | opcode==opcode_OP_IMM, funct3==funct3_SRAI, funct6==funct6_SRAI, xlen==64 = Srai  {rd=rd, rs1=rs1, shamt6=shamt6}
-
-      | opcode==opcode_OP_IMM_32, funct3==funct3_ADDIW,                       xlen==64 = Addiw  {rd=rd, rs1=rs1, imm12=imm12}
-      | opcode==opcode_OP_IMM_32, funct3==funct3_SLLIW, funct7==funct7_SLLIW, xlen==64 = Slliw  {rd=rd, rs1=rs1, shamt5=shamt5}
-      | opcode==opcode_OP_IMM_32, funct3==funct3_SRLIW, funct7==funct7_SRLIW, xlen==64 = Srliw  {rd=rd, rs1=rs1, shamt5=shamt5}
-      | opcode==opcode_OP_IMM_32, funct3==funct3_SRAIW, funct7==funct7_SRAIW, xlen==64 = Sraiw  {rd=rd, rs1=rs1, shamt5=shamt5}
-
-      | opcode==opcode_STORE, funct3==funct3_SD, xlen==64 = Sd {rs1=rs1, rs2=rs2, simm12=simm12}
-
-      | opcode==opcode_OP_32, funct3==funct3_ADDW,  funct7==funct7_ADDW,  xlen==64 = Addw  {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP_32, funct3==funct3_SUBW,  funct7==funct7_SUBW,  xlen==64 = Subw  {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP_32, funct3==funct3_SLLW,  funct7==funct7_SLLW,  xlen==64 = Sllw  {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP_32, funct3==funct3_SRLW,  funct7==funct7_SRLW,  xlen==64 = Srlw  {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP_32, funct3==funct3_SRAW,  funct7==funct7_SRAW,  xlen==64 = Sraw  {rd=rd, rs1=rs1, rs2=rs2}
-
-      | opcode==opcode_OP_32, funct3==funct3_MULW,  funct7==funct7_MULW,  xlen==64 = Mulw  {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP_32, funct3==funct3_DIVW,  funct7==funct7_DIVW,  xlen==64 = Divw  {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP_32, funct3==funct3_DIVUW, funct7==funct7_DIVUW, xlen==64 = Divuw {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP_32, funct3==funct3_REMW,  funct7==funct7_REMW,  xlen==64 = Remw  {rd=rd, rs1=rs1, rs2=rs2}
-      | opcode==opcode_OP_32, funct3==funct3_REMUW, funct7==funct7_REMUW, xlen==64 = Remuw {rd=rd, rs1=rs1, rs2=rs2}
-
-      | True                      = InvalidInstruction
 
 -- ================================================================

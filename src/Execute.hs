@@ -7,16 +7,18 @@ import ExecuteI64 as I64
 import ExecuteM as M
 import ExecuteM64 as M64
 import ExecuteCSR as CSR
-import Control.Monad
-import Control.Monad.Trans.Maybe
 
-execute :: (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
-execute InvalidInstruction = do
-  raiseException 0 2
---  cycles <- getCSRField Field.MCycle -- NOTE: should we count or not count an invalid instruction -> check later, if yes it should come before raiseException
---  setCSRField Field.MCycle (cycles + 1)
+
+-- Note: instructions belonging to unsupported extensions were already filtered out by the decoder
+execute :: (RiscvProgram p t) => Instruction -> p ()
 execute inst = do
-  msum (map (\f -> f inst) [I.execute, I64.execute, M.execute, M64.execute, CSR.execute])
+  case inst of
+    IInstruction   i   -> I.execute   i
+    MInstruction   i   -> M.execute   i
+    I64Instruction i   -> I64.execute i
+    M64Instruction i   -> M64.execute i
+    CSRInstruction i   -> CSR.execute i
+    InvalidInstruction -> raiseException 0 2
   cycles <- getCSRField Field.MCycle
   setCSRField Field.MCycle (cycles + 1)
   instret <- getCSRField Field.MInstRet

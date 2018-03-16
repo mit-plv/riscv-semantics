@@ -11,7 +11,7 @@ import Data.Word
 import Control.Monad
 import Prelude
 
-execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+execute :: forall p t. (RiscvProgram p t) => InstructionI -> p ()
 -- begin ast
 execute (Lui rd imm20) = do
   setRegister rd (fromImm imm20)
@@ -149,13 +149,13 @@ execute (Andi rd rs1 imm12) = do
   setRegister rd (x .&. (fromImm imm12))
 execute (Slli rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (sll x (regToShamt (fromImm shamt6 :: t)))
+  setRegister rd (sll x shamt6)
 execute (Srli rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (srl x (regToShamt (fromImm shamt6 :: t)))
+  setRegister rd (srl x shamt6)
 execute (Srai rd rs1 shamt6) = do
   x <- getRegister rs1
-  setRegister rd (sra x (regToShamt (fromImm shamt6 :: t)))
+  setRegister rd (sra x shamt6)
 execute (Add rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
@@ -197,5 +197,5 @@ execute (And rd rs1 rs2) = do
   y <- getRegister rs2
   setRegister rd (x .&. y)
 -- end ast
-execute _ = mzero
+execute inst = error $ "dispatch bug: " ++ show inst
 -- TODO: Fence/Fence.i?

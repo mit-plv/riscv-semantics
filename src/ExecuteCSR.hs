@@ -10,7 +10,7 @@ import Data.Bits
 import Control.Monad
 import Prelude
 
-execute :: forall p t. (RiscvProgram p t, MonadPlus p) => Instruction -> p ()
+execute :: forall p t. (RiscvProgram p t) => InstructionCSR -> p ()
 -- begin ast
 execute (Csrrw rd rs1 csr12) = do
   x <- getRegister rs1
@@ -52,4 +52,4 @@ execute Mret = do
   mepc <- getCSRField Field.MEPC
   setPC ((fromIntegral:: MachineInt -> t) mepc)
 -- end ast
-execute _ = mzero
+execute inst = error $ "dispatch bug: " ++ show inst
