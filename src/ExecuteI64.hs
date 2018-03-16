@@ -30,13 +30,13 @@ execute (Addiw rd rs1 imm12) = do
   setRegister rd (s32 (x + fromImm imm12))
 execute (Slliw rd rs1 shamt5) = do
   x <- getRegister rs1
-  setRegister rd (s32 (sll x (regToShamt5 (fromImm shamt5 :: t))))
+  setRegister rd (s32 (sll x shamt5))
 execute (Srliw rd rs1 shamt5) = do
   x <- getRegister rs1
-  setRegister rd (s32 (srl (u32 x) (regToShamt5 (fromImm shamt5 :: t))))
+  setRegister rd (s32 (srl (u32 x) shamt5))
 execute (Sraiw rd rs1 shamt5) = do
   x <- getRegister rs1
-  setRegister rd (s32 (sra (s32 x) (regToShamt5 (fromImm shamt5 :: t))))
+  setRegister rd (s32 (sra (s32 x) shamt5))
 execute (Addw rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
