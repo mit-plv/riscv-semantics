@@ -105,13 +105,10 @@ wrap :: Int32 -> MMIOClash-> MMIOClash
 wrap i s = snd $ runState (oneStep i) s
 
 
+
 {-# ANN topEntity 
  (defTop {t_name="rvspec",
-          t_inputs=[PortField ""
-                      [ PortName "clk"
-                      , PortName "arst"
-                      ]
-                   ,PortField "" 
+          t_inputs=[PortField "" 
                       [ PortName "in_registers", PortName "in_instr",
                         PortName "in_pc", PortName "in_loadData"]],
           t_output=PortField "" [PortName "out_registers",
@@ -121,10 +118,9 @@ wrap i s = snd $ runState (oneStep i) s
                                 PortName "out_loadAddress",
 				PortName "out_loadEnable",
                                 PortName "out_exception"]})#-}
-topEntity :: SystemClockReset
-  => Signal System (Vec 31 Int32,Int32, Int32, Int32)
-  -> Signal System (Vec 31 Int32, Int32, Int32, Int32, (Bool,Bool,Bool,Bool), Int32, (Bool,Bool,Bool,Bool), Bool)
-topEntity = fmap (\(
+topEntity :: (Vec 31 Int32,Int32, Int32, Int32)
+  -> (Vec 31 Int32, Int32, Int32, Int32, (Bool,Bool,Bool,Bool), Int32, (Bool,Bool,Bool,Bool), Bool)
+topEntity =       (\(
                     iregister, i, ipc, 
                     loadData) ->
                      let newstate = wrap i MMIOClash{registers = reverse iregister,
