@@ -79,7 +79,7 @@ helper maybeToHostAddress = do
           -- Signal interrupt by setting MEIP high.
           setCSRField Field.MEIP 1
         else return ()
-        step
+        commit
         helper maybeToHostAddress
 
 runProgram :: Maybe Int32 -> Minimal32 -> IO (Int32, Minimal32)

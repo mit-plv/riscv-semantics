@@ -25,7 +25,7 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   setCSRField :: (Integral s) => CSRField -> s -> p ()
   getPC :: p t
   setPC :: t -> p ()
-  step :: p ()
+  commit :: p ()
   endCycle :: forall t. p t
 
 getXLEN :: forall p t s. (RiscvProgram p t, Integral s) => p s
@@ -50,7 +50,7 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   setCSRField f v = lift (setCSRField f v)
   getPC = lift getPC
   setPC v = lift (setPC v)
-  step = lift step
+  commit = lift commit
   endCycle = MaybeT (return Nothing)
 
 raiseException :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> p a

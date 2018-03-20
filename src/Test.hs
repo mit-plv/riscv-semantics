@@ -12,6 +12,7 @@ import Run (readProgram)
 import BufferMMIO
 import CSRFile
 import Program
+import Spec
 import Utility
 import VirtualMemory
 
@@ -42,37 +43,9 @@ tests = [Test "add" RV64I ""  11 "",
          Test "illegal" RV64IM "" 0 "!\n?\n",
          Test "time" RV64IM "" 0 "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\n!\n.\n"]
 
--- TODO: Reduce code duplication with Run.
-helper :: InstructionSet -> Maybe Int64 -> BufferState Minimal64 Int64
-helper iset maybeToHostAddress = do
-  toHostValue <- case maybeToHostAddress of
-    Nothing -> return 0 -- default value
-    Just toHostAddress -> loadWord toHostAddress
-  if toHostValue /= 0
-    then do
-      -- quit running
-      if toHostValue == 1
-        then return 0
-        else return 1
-    else do
-      result <- runMaybeT $ do
-        vpc <- getPC
-        pc <- translate Instruction 4 vpc
-        inst <- loadWord pc
-        if inst == 0x6f -- Stop on infinite loop instruction.
-          then do
-          getRegister 10
-          else do
-          setPC (pc + 4)
-          execute (decode iset $ (fromIntegral :: Int32 -> MachineInt) inst)
-          endCycle
-      case result of
-        Nothing -> step >> helper iset maybeToHostAddress
-        Just r -> return r
-
 runProgram :: InstructionSet -> Maybe Int64 -> Minimal64 -> String -> (Int64, String)
 runProgram iset maybeToHostAddress comp input = (returnValue, output)
-  where ((returnValue, _), output) = runBufferIO (runStateT (helper iset maybeToHostAddress) comp) input
+  where ((returnValue, _), output) = runBufferIO (runStateT (stepHelper iset maybeToHostAddress (return False) :: BufferState Minimal64 Int64) comp) input
 
 runFile :: InstructionSet -> String -> String -> IO (Int64, String)
 runFile iset f input = do

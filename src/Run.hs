@@ -15,6 +15,7 @@ import CSRFile
 import Decode
 import Execute
 import VirtualMemory
+import Spec
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
@@ -52,45 +53,8 @@ checkInterrupt = do
     else return False
   else return False
 
-helper :: Maybe Int64 -> IOState Minimal64 Int64
-helper maybeToHostAddress = do
-  toHostValue <- case maybeToHostAddress of
-    Nothing -> return 0 -- default value
-    Just toHostAddress -> loadWord toHostAddress
-  if toHostValue /= 0
-    then do
-      -- quit running
-      if toHostValue == 1
-        then trace "PASSED" (return 0)
-        else trace ("FAILED " ++ (show $ quot toHostValue 2)) (return 1)
-    else do
-      result <- runMaybeT $ do
-        vpc <- getPC
-        pc <- translate Instruction 4 vpc
-        -- trace ("pc: 0x" ++ (showHex pc "")) $ return ()
-        -- TODO: Translate PC lookup in supervisor mode.
-        inst <- loadWord pc
-        if inst == 0x6f -- Stop on infinite loop instruction.
-          then do
-          cycles <- getCSRField Field.MCycle
-          trace ("Cycles: " ++ show cycles) (return ())
-          instret <- getCSRField Field.MInstRet
-          trace ("Insts: " ++ show instret) (return ())
-          getRegister 10
-          else do
-          setPC (pc + 4)
-          execute (decode RV64IM $ (fromIntegral :: Int32 -> MachineInt) inst)
-          interrupt <- liftIO checkInterrupt
-          when interrupt $ do
-            -- Signal interrupt by setting MEIP high.
-            setCSRField Field.MEIP 1
-          endCycle
-      case result of
-        Nothing -> step >> helper maybeToHostAddress
-        Just r -> return r
-
 runProgram :: Maybe Int64 -> Minimal64 -> IO (Int64, Minimal64)
-runProgram maybeToHostAddress = runStateT (helper maybeToHostAddress)
+runProgram maybeToHostAddress = runStateT (stepHelper RV64IM maybeToHostAddress (liftIO checkInterrupt) :: IOState Minimal64 Int64)
 
 readProgram :: String -> IO (Maybe Int64, [(Int, Word8)])
 readProgram f = do

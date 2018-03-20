@@ -51,7 +51,7 @@ instance RiscvProgram MState Int64 where
   getPC = state $ \comp -> (pc comp, comp)
   setPC :: forall s. (Integral s) => s -> MState ()
   setPC val = state $ \comp -> ((), comp { nextPC = (fromIntegral:: s -> Int64) val })
-  step = do
+  commit = do
     -- Post interrupt if mtime >= mtimecmp
     mtime <- getMTime
     mtimecmp <- loadWord mtimecmp_addr

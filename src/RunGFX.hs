@@ -67,7 +67,7 @@ helper gfx = do
     else do
     setPC (pc + 4)
     execute (decode $ fromIntegral inst)
-    step
+    commit
     pixels <- getPixels
     updateWrapper gfx pixels
     helper gfx

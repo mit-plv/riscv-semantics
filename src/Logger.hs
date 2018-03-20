@@ -47,6 +47,6 @@ instance (RiscvProgram p t u) => RiscvProgram (WriterT String p) t u where
   setPC v = do
     tell ("setPC 0x" ++ (showHex (fromIntegral v) "\n"))
     lift (setPC v)
-  step = do
-    tell "step\n"
-    lift step
+  commit = do
+    tell "commit\n"
+    lift commit

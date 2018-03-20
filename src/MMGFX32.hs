@@ -100,7 +100,7 @@ instance RiscvProgram (MState MMGFX32) Int32 Word32 where
                                                                            (addr, decode addr $ fromIntegral val) (csrs comp) })
   getPC = MState $ \comp -> return (pc comp, comp)
   setPC val = MState $ \comp -> return ((), comp { nextPC = fromIntegral val })
-  step = MState $ \comp -> return ((), comp { pc = nextPC comp })
+  commit = MState $ \comp -> return ((), comp { pc = nextPC comp })
 
 getPixels :: MState MMGFX32 BS.ByteString
 getPixels = MState $ \comp -> return (BS.pack $ take screenBytes $ drop 0x2000 (mem comp), comp)

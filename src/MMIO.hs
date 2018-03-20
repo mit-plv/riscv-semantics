@@ -56,4 +56,4 @@ instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (IOState s) 
   setCSRField f v = liftState (setCSRField f v)
   getPC = liftState getPC
   setPC v = liftState (setPC v)
-  step = liftState step
+  commit = liftState commit
