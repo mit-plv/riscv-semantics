@@ -131,3 +131,11 @@ Tuesday, March 6th
 * Rename step -> commit, helper -> something reasonable.
 * Add some type variables and an interrupt callback to helper, and stop copying it everywhere.
 * Add processor mode to typeclass.
+
+Friday, March 16th
+(Abridged meeting.)
+
+Tuesday, March 20th
+* Add processor mode outside typeclass
+* Virtual memory when fetching instructions
+* Update Travis
