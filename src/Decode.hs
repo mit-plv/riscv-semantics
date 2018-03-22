@@ -64,7 +64,6 @@ data InstructionI =
   Jal { rd :: Register, jimm20 :: MachineInt } |
 
   InvalidI
-  deriving (Eq, Read, Show)
 
 
 data InstructionM =
@@ -77,7 +76,6 @@ data InstructionM =
   Rem { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Remu { rd :: Register, rs1 :: Register, rs2 :: Register } |
   InvalidM
-  deriving (Eq, Read, Show)
 
 
 data InstructionI64 =
@@ -98,7 +96,6 @@ data InstructionI64 =
   Sraw { rd :: Register, rs1 :: Register, rs2 :: Register } |
 
   InvalidI64
-  deriving (Eq, Read, Show)
 
 
 data InstructionM64 =
@@ -108,7 +105,6 @@ data InstructionM64 =
   Remw { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Remuw { rd :: Register, rs1 :: Register, rs2 :: Register } |
   InvalidM64
-  deriving (Eq, Read, Show)
 
 
 data InstructionCSR =
@@ -126,7 +122,6 @@ data InstructionCSR =
   Csrrsi { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt } |
   Csrrci { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt } |
   InvalidCSR
-  deriving (Eq, Read, Show)
 
 
 data Instruction =
@@ -136,11 +131,10 @@ data Instruction =
   M64Instruction { m64Instruction :: InstructionM64 } |
   CSRInstruction { csrInstruction :: InstructionCSR } |
   InvalidInstruction
-  deriving (Eq, Read, Show)
 
 -- ================================================================
 
-data InstructionSet = RV32I | RV32IM | RV64I | RV64IM deriving (Eq, Show)
+data InstructionSet = RV32I | RV32IM | RV64I | RV64IM
 
 bitwidth :: InstructionSet -> Int
 bitwidth RV32I = 32
@@ -384,11 +378,16 @@ decode iset inst = case results of
       (if bitwidth iset == 64 && supportsM iset then resultM64 else []) ++
       resultCSR
 
-    resultI   = if decodeI   == InvalidI   then [] else [IInstruction   decodeI  ]
-    resultM   = if decodeM   == InvalidM   then [] else [MInstruction   decodeM  ]
-    resultI64 = if decodeI64 == InvalidI64 then [] else [I64Instruction decodeI64]
-    resultM64 = if decodeM64 == InvalidM64 then [] else [M64Instruction decodeM64]
-    resultCSR = if decodeCSR == InvalidCSR then [] else [CSRInstruction decodeCSR]
+    resultI   | InvalidI <- decodeI     = []
+              | otherwise               = [IInstruction   decodeI  ]
+    resultM   | InvalidM <- decodeM     = []
+              | otherwise               = [MInstruction   decodeM  ]
+    resultI64 | InvalidI64 <- decodeI64 = []
+              | otherwise               = [I64Instruction decodeI64]
+    resultM64 | InvalidM64 <- decodeM64 = []
+              | otherwise               = [M64Instruction decodeM64]
+    resultCSR | InvalidCSR <- decodeCSR = []
+              | otherwise               = [CSRInstruction decodeCSR]
 
     -- Symbolic names for notable bitfields in the 32b instruction 'inst'
     -- Note: 'bitSlice x i j' is, roughly, Verilog's 'x [j-1, i]'
