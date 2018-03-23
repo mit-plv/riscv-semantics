@@ -357,16 +357,6 @@ funct3_CSRRCI :: MachineInt;    funct3_CSRRCI = 0b111
 -- TODO: sub-opcodes for MADD, MSUB, NMSUB, NMADD
 
 -- ================================================================
-
-signExtend :: Int -> MachineInt -> MachineInt
-signExtend l n = if testBit n (l-1)
-                 then n-2^l
-                 else n
-
-machineIntToShamt :: MachineInt -> Int
-machineIntToShamt = fromIntegral
-
--- ================================================================
 -- The main decoder function
 
 decode :: InstructionSet -> MachineInt -> Instruction
