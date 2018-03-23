@@ -64,6 +64,7 @@ data InstructionI =
   Jal { rd :: Register, jimm20 :: MachineInt } |
 
   InvalidI
+  deriving (Eq, Read, Show)
 
 
 data InstructionM =
@@ -76,6 +77,7 @@ data InstructionM =
   Rem { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Remu { rd :: Register, rs1 :: Register, rs2 :: Register } |
   InvalidM
+  deriving (Eq, Read, Show)
 
 
 data InstructionI64 =
@@ -96,6 +98,7 @@ data InstructionI64 =
   Sraw { rd :: Register, rs1 :: Register, rs2 :: Register } |
 
   InvalidI64
+  deriving (Eq, Read, Show)
 
 
 data InstructionM64 =
@@ -105,6 +108,7 @@ data InstructionM64 =
   Remw { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Remuw { rd :: Register, rs1 :: Register, rs2 :: Register } |
   InvalidM64
+  deriving (Eq, Read, Show)
 
 
 data InstructionCSR =
@@ -122,6 +126,7 @@ data InstructionCSR =
   Csrrsi { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt } |
   Csrrci { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt } |
   InvalidCSR
+  deriving (Eq, Read, Show)
 
 
 data Instruction =
@@ -131,10 +136,11 @@ data Instruction =
   M64Instruction { m64Instruction :: InstructionM64 } |
   CSRInstruction { csrInstruction :: InstructionCSR } |
   InvalidInstruction
+  deriving (Eq, Read, Show)
 
 -- ================================================================
 
-data InstructionSet = RV32I | RV32IM | RV64I | RV64IM -- deriving (Eq, Show)
+data InstructionSet = RV32I | RV32IM | RV64I | RV64IM deriving (Eq, Show)
 
 bitwidth :: InstructionSet -> Int
 bitwidth RV32I = 32
