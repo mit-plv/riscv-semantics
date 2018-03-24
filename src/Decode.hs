@@ -61,9 +61,8 @@ data InstructionI =
   Bgeu { rs1 :: Register, rs2 :: Register, sbimm12 :: MachineInt } |
 
   Jalr { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
-  Jal { rd :: Register, jimm20 :: MachineInt } |
+  Jal { rd :: Register, jimm20 :: MachineInt }
 
-  InvalidI
   deriving (Eq, Read, Show)
 
 
@@ -75,8 +74,7 @@ data InstructionM =
   Div { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Divu { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Rem { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Remu { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  InvalidM
+  Remu { rd :: Register, rs1 :: Register, rs2 :: Register }
   deriving (Eq, Read, Show)
 
 
@@ -95,9 +93,8 @@ data InstructionI64 =
   Subw { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Sllw { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Srlw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Sraw { rd :: Register, rs1 :: Register, rs2 :: Register } |
+  Sraw { rd :: Register, rs1 :: Register, rs2 :: Register }
 
-  InvalidI64
   deriving (Eq, Read, Show)
 
 
@@ -106,8 +103,7 @@ data InstructionM64 =
   Divw { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Divuw { rd :: Register, rs1 :: Register, rs2 :: Register } |
   Remw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  Remuw { rd :: Register, rs1 :: Register, rs2 :: Register } |
-  InvalidM64
+  Remuw { rd :: Register, rs1 :: Register, rs2 :: Register }
   deriving (Eq, Read, Show)
 
 
@@ -124,8 +120,7 @@ data InstructionCSR =
   Csrrc { rd :: Register, rs1 :: Register, csr12 :: MachineInt } |
   Csrrwi { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt } |
   Csrrsi { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt } |
-  Csrrci { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt } |
-  InvalidCSR
+  Csrrci { rd :: Register, zimm :: MachineInt, csr12 :: MachineInt }
   deriving (Eq, Read, Show)
 
 
@@ -384,16 +379,11 @@ decode iset inst = case results of
       (if bitwidth iset == 64 && supportsM iset then resultM64 else []) ++
       resultCSR
 
-    resultI   | InvalidI <- decodeI     = []
-              | otherwise               = [IInstruction   decodeI  ]
-    resultM   | InvalidM <- decodeM     = []
-              | otherwise               = [MInstruction   decodeM  ]
-    resultI64 | InvalidI64 <- decodeI64 = []
-              | otherwise               = [I64Instruction decodeI64]
-    resultM64 | InvalidM64 <- decodeM64 = []
-              | otherwise               = [M64Instruction decodeM64]
-    resultCSR | InvalidCSR <- decodeCSR = []
-              | otherwise               = [CSRInstruction decodeCSR]
+    resultI   = map IInstruction   decodeI
+    resultM   = map MInstruction   decodeM
+    resultI64 = map I64Instruction decodeI64
+    resultM64 = map M64Instruction decodeM64
+    resultCSR = map CSRInstruction decodeCSR
 
     -- Symbolic names for notable bitfields in the 32b instruction 'inst'
     -- Note: 'bitSlice x i j' is, roughly, Verilog's 'x [j-1, i]'
@@ -441,108 +431,108 @@ decode iset inst = case results of
     zimm    = bitSlice inst 15 20    -- for CSRRxI
 
     decodeI
-      | opcode==opcode_LOAD, funct3==funct3_LB  = Lb  rd rs1 oimm12
-      | opcode==opcode_LOAD, funct3==funct3_LH  = Lh  rd rs1 oimm12
-      | opcode==opcode_LOAD, funct3==funct3_LW  = Lw  rd rs1 oimm12
-      | opcode==opcode_LOAD, funct3==funct3_LBU = Lbu rd rs1 oimm12
-      | opcode==opcode_LOAD, funct3==funct3_LHU = Lhu rd rs1 oimm12
+      | opcode==opcode_LOAD, funct3==funct3_LB  = [Lb  rd rs1 oimm12]
+      | opcode==opcode_LOAD, funct3==funct3_LH  = [Lh  rd rs1 oimm12]
+      | opcode==opcode_LOAD, funct3==funct3_LW  = [Lw  rd rs1 oimm12]
+      | opcode==opcode_LOAD, funct3==funct3_LBU = [Lbu rd rs1 oimm12]
+      | opcode==opcode_LOAD, funct3==funct3_LHU = [Lhu rd rs1 oimm12]
 
-      | opcode==opcode_MISC_MEM, rd==0, funct3==funct3_FENCE,   rs1==0, msb4==0  = Fence pred succ
-      | opcode==opcode_MISC_MEM, rd==0, funct3==funct3_FENCE_I, rs1==0, imm12==0 = Fence_i
+      | opcode==opcode_MISC_MEM, rd==0, funct3==funct3_FENCE,   rs1==0, msb4==0  = [Fence pred succ]
+      | opcode==opcode_MISC_MEM, rd==0, funct3==funct3_FENCE_I, rs1==0, imm12==0 = [Fence_i]
 
-      | opcode==opcode_OP_IMM, funct3==funct3_ADDI  = Addi  rd rs1 imm12
-      | opcode==opcode_OP_IMM, funct3==funct3_SLTI  = Slti  rd rs1 imm12
-      | opcode==opcode_OP_IMM, funct3==funct3_SLTIU = Sltiu rd rs1 imm12
-      | opcode==opcode_OP_IMM, funct3==funct3_XORI  = Xori  rd rs1 imm12
-      | opcode==opcode_OP_IMM, funct3==funct3_ORI   = Ori   rd rs1 imm12
-      | opcode==opcode_OP_IMM, funct3==funct3_ANDI  = Andi  rd rs1 imm12
+      | opcode==opcode_OP_IMM, funct3==funct3_ADDI  = [Addi  rd rs1 imm12]
+      | opcode==opcode_OP_IMM, funct3==funct3_SLTI  = [Slti  rd rs1 imm12]
+      | opcode==opcode_OP_IMM, funct3==funct3_SLTIU = [Sltiu rd rs1 imm12]
+      | opcode==opcode_OP_IMM, funct3==funct3_XORI  = [Xori  rd rs1 imm12]
+      | opcode==opcode_OP_IMM, funct3==funct3_ORI   = [Ori   rd rs1 imm12]
+      | opcode==opcode_OP_IMM, funct3==funct3_ANDI  = [Andi  rd rs1 imm12]
 
-      | opcode==opcode_OP_IMM, funct3==funct3_SLLI, funct6==funct6_SLLI, shamtHiTest = Slli rd rs1 shamt6
-      | opcode==opcode_OP_IMM, funct3==funct3_SRLI, funct6==funct6_SRLI, shamtHiTest = Srli rd rs1 shamt6
-      | opcode==opcode_OP_IMM, funct3==funct3_SRAI, funct6==funct6_SRAI, shamtHiTest = Srai rd rs1 shamt6
+      | opcode==opcode_OP_IMM, funct3==funct3_SLLI, funct6==funct6_SLLI, shamtHiTest = [Slli rd rs1 shamt6]
+      | opcode==opcode_OP_IMM, funct3==funct3_SRLI, funct6==funct6_SRLI, shamtHiTest = [Srli rd rs1 shamt6]
+      | opcode==opcode_OP_IMM, funct3==funct3_SRAI, funct6==funct6_SRAI, shamtHiTest = [Srai rd rs1 shamt6]
 
-      | opcode==opcode_AUIPC = Auipc rd oimm20
+      | opcode==opcode_AUIPC = [Auipc rd oimm20]
 
-      | opcode==opcode_STORE, funct3==funct3_SB = Sb rs1 rs2 simm12
-      | opcode==opcode_STORE, funct3==funct3_SH = Sh rs1 rs2 simm12
-      | opcode==opcode_STORE, funct3==funct3_SW = Sw rs1 rs2 simm12
+      | opcode==opcode_STORE, funct3==funct3_SB = [Sb rs1 rs2 simm12]
+      | opcode==opcode_STORE, funct3==funct3_SH = [Sh rs1 rs2 simm12]
+      | opcode==opcode_STORE, funct3==funct3_SW = [Sw rs1 rs2 simm12]
 
-      | opcode==opcode_OP, funct3==funct3_ADD,  funct7==funct7_ADD  = Add  rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_SUB,  funct7==funct7_SUB  = Sub  rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_SLL,  funct7==funct7_SLL  = Sll  rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_SLT,  funct7==funct7_SLT  = Slt  rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_SLTU, funct7==funct7_SLTU = Sltu rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_XOR,  funct7==funct7_XOR  = Xor  rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_SRL,  funct7==funct7_SRL  = Srl  rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_SRA,  funct7==funct7_SRA  = Sra  rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_OR,   funct7==funct7_OR   = Or   rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_AND,  funct7==funct7_AND  = And  rd rs1 rs2
+      | opcode==opcode_OP, funct3==funct3_ADD,  funct7==funct7_ADD  = [Add  rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_SUB,  funct7==funct7_SUB  = [Sub  rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_SLL,  funct7==funct7_SLL  = [Sll  rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_SLT,  funct7==funct7_SLT  = [Slt  rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_SLTU, funct7==funct7_SLTU = [Sltu rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_XOR,  funct7==funct7_XOR  = [Xor  rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_SRL,  funct7==funct7_SRL  = [Srl  rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_SRA,  funct7==funct7_SRA  = [Sra  rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_OR,   funct7==funct7_OR   = [Or   rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_AND,  funct7==funct7_AND  = [And  rd rs1 rs2]
 
-      | opcode==opcode_LUI = Lui rd imm20
+      | opcode==opcode_LUI = [Lui rd imm20]
 
-      | opcode==opcode_BRANCH, funct3==funct3_BEQ  = Beq  rs1 rs2 sbimm12
-      | opcode==opcode_BRANCH, funct3==funct3_BNE  = Bne  rs1 rs2 sbimm12
-      | opcode==opcode_BRANCH, funct3==funct3_BLT  = Blt  rs1 rs2 sbimm12
-      | opcode==opcode_BRANCH, funct3==funct3_BGE  = Bge  rs1 rs2 sbimm12
-      | opcode==opcode_BRANCH, funct3==funct3_BLTU = Bltu rs1 rs2 sbimm12
-      | opcode==opcode_BRANCH, funct3==funct3_BGEU = Bgeu rs1 rs2 sbimm12
+      | opcode==opcode_BRANCH, funct3==funct3_BEQ  = [Beq  rs1 rs2 sbimm12]
+      | opcode==opcode_BRANCH, funct3==funct3_BNE  = [Bne  rs1 rs2 sbimm12]
+      | opcode==opcode_BRANCH, funct3==funct3_BLT  = [Blt  rs1 rs2 sbimm12]
+      | opcode==opcode_BRANCH, funct3==funct3_BGE  = [Bge  rs1 rs2 sbimm12]
+      | opcode==opcode_BRANCH, funct3==funct3_BLTU = [Bltu rs1 rs2 sbimm12]
+      | opcode==opcode_BRANCH, funct3==funct3_BGEU = [Bgeu rs1 rs2 sbimm12]
 
-      | opcode==opcode_JALR = Jalr rd rs1 oimm12
-      | opcode==opcode_JAL  = Jal  rd jimm20
+      | opcode==opcode_JALR = [Jalr rd rs1 oimm12]
+      | opcode==opcode_JAL  = [Jal rd jimm20]
 
-      | True = InvalidI
+      | True = []
 
     decodeM
-      | opcode==opcode_OP, funct3==funct3_MUL,    funct7==funct7_MUL    = Mul    rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_MULH,   funct7==funct7_MULH   = Mulh   rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_MULHSU, funct7==funct7_MULHSU = Mulhsu rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_MULHU,  funct7==funct7_MULHU  = Mulhu  rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_DIV,    funct7==funct7_DIV    = Div    rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_DIVU,   funct7==funct7_DIVU   = Divu   rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_REM,    funct7==funct7_REM    = Rem    rd rs1 rs2
-      | opcode==opcode_OP, funct3==funct3_REMU,   funct7==funct7_REMU   = Remu   rd rs1 rs2
-      | True = InvalidM
+      | opcode==opcode_OP, funct3==funct3_MUL,    funct7==funct7_MUL    = [Mul    rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_MULH,   funct7==funct7_MULH   = [Mulh   rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_MULHSU, funct7==funct7_MULHSU = [Mulhsu rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_MULHU,  funct7==funct7_MULHU  = [Mulhu  rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_DIV,    funct7==funct7_DIV    = [Div    rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_DIVU,   funct7==funct7_DIVU   = [Divu   rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_REM,    funct7==funct7_REM    = [Rem    rd rs1 rs2]
+      | opcode==opcode_OP, funct3==funct3_REMU,   funct7==funct7_REMU   = [Remu   rd rs1 rs2]
+      | True = []
 
     decodeI64
-      | opcode==opcode_LOAD, funct3==funct3_LD  = Ld  rd rs1 oimm12
-      | opcode==opcode_LOAD, funct3==funct3_LWU = Lwu rd rs1 oimm12
+      | opcode==opcode_LOAD, funct3==funct3_LD  = [Ld  rd rs1 oimm12]
+      | opcode==opcode_LOAD, funct3==funct3_LWU = [Lwu rd rs1 oimm12]
 
-      | opcode==opcode_OP_IMM_32, funct3==funct3_ADDIW                       = Addiw rd rs1 imm12
-      | opcode==opcode_OP_IMM_32, funct3==funct3_SLLIW, funct7==funct7_SLLIW = Slliw rd rs1 shamt5
-      | opcode==opcode_OP_IMM_32, funct3==funct3_SRLIW, funct7==funct7_SRLIW = Srliw rd rs1 shamt5
-      | opcode==opcode_OP_IMM_32, funct3==funct3_SRAIW, funct7==funct7_SRAIW = Sraiw rd rs1 shamt5
+      | opcode==opcode_OP_IMM_32, funct3==funct3_ADDIW                       = [Addiw rd rs1 imm12 ]
+      | opcode==opcode_OP_IMM_32, funct3==funct3_SLLIW, funct7==funct7_SLLIW = [Slliw rd rs1 shamt5]
+      | opcode==opcode_OP_IMM_32, funct3==funct3_SRLIW, funct7==funct7_SRLIW = [Srliw rd rs1 shamt5]
+      | opcode==opcode_OP_IMM_32, funct3==funct3_SRAIW, funct7==funct7_SRAIW = [Sraiw rd rs1 shamt5]
 
-      | opcode==opcode_STORE, funct3==funct3_SD = Sd rs1 rs2 simm12
+      | opcode==opcode_STORE, funct3==funct3_SD = [Sd rs1 rs2 simm12]
 
-      | opcode==opcode_OP_32, funct3==funct3_ADDW, funct7==funct7_ADDW = Addw rd rs1 rs2
-      | opcode==opcode_OP_32, funct3==funct3_SUBW, funct7==funct7_SUBW = Subw rd rs1 rs2
-      | opcode==opcode_OP_32, funct3==funct3_SLLW, funct7==funct7_SLLW = Sllw rd rs1 rs2
-      | opcode==opcode_OP_32, funct3==funct3_SRLW, funct7==funct7_SRLW = Srlw rd rs1 rs2
-      | opcode==opcode_OP_32, funct3==funct3_SRAW, funct7==funct7_SRAW = Sraw rd rs1 rs2
+      | opcode==opcode_OP_32, funct3==funct3_ADDW, funct7==funct7_ADDW = [Addw rd rs1 rs2]
+      | opcode==opcode_OP_32, funct3==funct3_SUBW, funct7==funct7_SUBW = [Subw rd rs1 rs2]
+      | opcode==opcode_OP_32, funct3==funct3_SLLW, funct7==funct7_SLLW = [Sllw rd rs1 rs2]
+      | opcode==opcode_OP_32, funct3==funct3_SRLW, funct7==funct7_SRLW = [Srlw rd rs1 rs2]
+      | opcode==opcode_OP_32, funct3==funct3_SRAW, funct7==funct7_SRAW = [Sraw rd rs1 rs2]
 
-      | True = InvalidI64
+      | True = []
 
     decodeM64
-      | opcode==opcode_OP_32, funct3==funct3_MULW,  funct7==funct7_MULW  = Mulw  rd rs1 rs2
-      | opcode==opcode_OP_32, funct3==funct3_DIVW,  funct7==funct7_DIVW  = Divw  rd rs1 rs2
-      | opcode==opcode_OP_32, funct3==funct3_DIVUW, funct7==funct7_DIVUW = Divuw rd rs1 rs2
-      | opcode==opcode_OP_32, funct3==funct3_REMW,  funct7==funct7_REMW  = Remw  rd rs1 rs2
-      | opcode==opcode_OP_32, funct3==funct3_REMUW, funct7==funct7_REMUW = Remuw rd rs1 rs2
-      | True = InvalidM64
+      | opcode==opcode_OP_32, funct3==funct3_MULW,  funct7==funct7_MULW  = [Mulw  rd rs1 rs2]
+      | opcode==opcode_OP_32, funct3==funct3_DIVW,  funct7==funct7_DIVW  = [Divw  rd rs1 rs2]
+      | opcode==opcode_OP_32, funct3==funct3_DIVUW, funct7==funct7_DIVUW = [Divuw rd rs1 rs2]
+      | opcode==opcode_OP_32, funct3==funct3_REMW,  funct7==funct7_REMW  = [Remw  rd rs1 rs2]
+      | opcode==opcode_OP_32, funct3==funct3_REMUW, funct7==funct7_REMUW = [Remuw rd rs1 rs2]
+      | True = []
 
     decodeCSR
-      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_ECALL  = Ecall
-      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_EBREAK = Ebreak
-      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_URET   = Uret
-      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_SRET   = Sret
-      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_MRET   = Mret
-      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_WFI    = Wfi
-      | opcode==opcode_SYSTEM, funct3==funct3_CSRRW  = Csrrw rd rs1 csr12
-      | opcode==opcode_SYSTEM, funct3==funct3_CSRRS  = Csrrs rd rs1 csr12
-      | opcode==opcode_SYSTEM, funct3==funct3_CSRRC  = Csrrc rd rs1 csr12
-      | opcode==opcode_SYSTEM, funct3==funct3_CSRRWI = Csrrwi rd zimm csr12
-      | opcode==opcode_SYSTEM, funct3==funct3_CSRRSI = Csrrsi rd zimm csr12
-      | opcode==opcode_SYSTEM, funct3==funct3_CSRRCI = Csrrci rd zimm csr12
-      | True = InvalidCSR
+      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_ECALL  = [Ecall ]
+      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_EBREAK = [Ebreak]
+      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_URET   = [Uret  ]
+      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_SRET   = [Sret  ]
+      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_MRET   = [Mret  ]
+      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_WFI    = [Wfi   ]
+      | opcode==opcode_SYSTEM, funct3==funct3_CSRRW  = [Csrrw rd rs1 csr12]
+      | opcode==opcode_SYSTEM, funct3==funct3_CSRRS  = [Csrrs rd rs1 csr12]
+      | opcode==opcode_SYSTEM, funct3==funct3_CSRRC  = [Csrrc rd rs1 csr12]
+      | opcode==opcode_SYSTEM, funct3==funct3_CSRRWI = [Csrrwi rd zimm csr12]
+      | opcode==opcode_SYSTEM, funct3==funct3_CSRRSI = [Csrrsi rd zimm csr12]
+      | opcode==opcode_SYSTEM, funct3==funct3_CSRRCI = [Csrrci rd zimm csr12]
+      | True = []
 
 -- ================================================================
