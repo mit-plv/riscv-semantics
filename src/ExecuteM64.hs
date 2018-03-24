@@ -38,4 +38,3 @@ execute (Remuw rd rs1 rs2) = do
         | otherwise = remu x y
     in setRegister rd (s32 r)
 -- end ast
-execute inst = error $ "dispatch bug: " ++ show inst
