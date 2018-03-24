@@ -51,4 +51,4 @@ execute (Remu rd rs1 rs2) = do
         | otherwise = remu x y
     in setRegister rd r
 -- end ast
-
+execute inst = error $ "dispatch bug: " ++ show inst

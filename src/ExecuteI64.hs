@@ -58,3 +58,4 @@ execute (Sraw rd rs1 rs2) = do
   y <- getRegister rs2
   setRegister rd (s32 (sra (s32 x) (regToShamt5 y)))
 -- end ast
+execute inst = error $ "dispatch bug: " ++ show inst
