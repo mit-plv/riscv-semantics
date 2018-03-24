@@ -511,6 +511,7 @@ decode iset inst = case results of
       | True = []
 
     decodeCSR
+      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, funct7==funct7_SFENCE_VM        = [Sfence_vm rs1 rs2]
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_ECALL  = [Ecall ]
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_EBREAK = [Ebreak]
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_URET   = [Uret  ]
