@@ -367,23 +367,27 @@ decode iset inst = case results of
 
   where
     results :: [Instruction]
-    results =
-      resultI ++
-      (if supportsM iset then resultM else []) ++
-      (if bitwidth iset == 64 then resultI64 else []) ++
-      (if bitwidth iset == 64 && supportsM iset then resultM64 else []) ++
-      resultCSR
+    results = resultI ++ resultM ++ resultI64 ++ resultM64 ++ resultCSR
 
-    resultI   | InvalidI <- decodeI     = []
-              | otherwise               = [IInstruction   decodeI  ]
-    resultM   | InvalidM <- decodeM     = []
-              | otherwise               = [MInstruction   decodeM  ]
-    resultI64 | InvalidI64 <- decodeI64 = []
-              | otherwise               = [I64Instruction decodeI64]
-    resultM64 | InvalidM64 <- decodeM64 = []
-              | otherwise               = [M64Instruction decodeM64]
-    resultCSR | InvalidCSR <- decodeCSR = []
-              | otherwise               = [CSRInstruction decodeCSR]
+    resultI = case decodeI of
+      InvalidI -> []
+      inst -> [IInstruction inst]
+
+    resultM = case decodeM of
+      InvalidM -> []
+      inst -> if supportsM iset then [MInstruction inst] else []
+
+    resultI64 = case decodeI64 of
+      InvalidI64 -> []
+      inst -> if bitwidth iset == 64 then [I64Instruction inst] else []
+
+    resultM64 = case decodeM64 of
+      InvalidM64 -> []
+      inst -> if bitwidth iset == 64 && supportsM iset then [M64Instruction inst] else []
+
+    resultCSR = case decodeCSR of
+      InvalidCSR -> []
+      inst -> [CSRInstruction inst]
 
     -- Symbolic names for notable bitfields in the 32b instruction 'inst'
     -- Note: 'bitSlice x i j' is, roughly, Verilog's 'x [j-1, i]'
