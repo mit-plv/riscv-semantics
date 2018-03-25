@@ -378,11 +378,11 @@ decode iset inst = case results of
     results :: [Instruction]
     results = resultI ++ resultM ++ resultI64 ++ resultM64 ++ resultCSR
 
-    resultI = if isValidI decodeI then [IInstruction inst] else []
-    resultM = if isValidM decodeM then [MInstruction inst] else []
-    resultI64 = if isValidI64 decodeI64 then [I64Instruction inst] else []
-    resultM64 = if isValidM64 decodeM64 then [M64Instruction inst] else []
-    resultCSR = if isValidCSR decodeCSR then [CSRInstruction inst] else []
+    resultI = if isValidI decodeI then [IInstruction decodeI] else []
+    resultM = if isValidM decodeM then [MInstruction decodeM] else []
+    resultI64 = if isValidI64 decodeI64 then [I64Instruction decodeI64] else []
+    resultM64 = if isValidM64 decodeM64 then [M64Instruction decodeM64] else []
+    resultCSR = if isValidCSR decodeCSR then [CSRInstruction decodeCSR] else []
 
     -- Symbolic names for notable bitfields in the 32b instruction 'inst'
     -- Note: 'bitSlice x i j' is, roughly, Verilog's 'x [j-1, i]'
