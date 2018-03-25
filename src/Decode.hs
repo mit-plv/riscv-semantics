@@ -357,6 +357,15 @@ funct3_CSRRCI :: MachineInt;    funct3_CSRRCI = 0b111
 -- TODO: sub-opcodes for MADD, MSUB, NMSUB, NMADD
 
 -- ================================================================
+-- Identification of valid instructions in extensions 
+
+isValidI inst = inst /= InvalidI
+isValidI64 inst = inst /= InvalidI64
+isValidM inst = inst /= InvalidM
+isValidM64 inst = inst /= InvalidM64
+isValidCSR inst = inst /= InvalidCSR
+
+-- ================================================================
 -- The main decoder function
 
 decode :: InstructionSet -> MachineInt -> Instruction
@@ -369,25 +378,11 @@ decode iset inst = case results of
     results :: [Instruction]
     results = resultI ++ resultM ++ resultI64 ++ resultM64 ++ resultCSR
 
-    resultI = case decodeI of
-      InvalidI -> []
-      inst -> [IInstruction inst]
-
-    resultM = case decodeM of
-      InvalidM -> []
-      inst -> if supportsM iset then [MInstruction inst] else []
-
-    resultI64 = case decodeI64 of
-      InvalidI64 -> []
-      inst -> if bitwidth iset == 64 then [I64Instruction inst] else []
-
-    resultM64 = case decodeM64 of
-      InvalidM64 -> []
-      inst -> if bitwidth iset == 64 && supportsM iset then [M64Instruction inst] else []
-
-    resultCSR = case decodeCSR of
-      InvalidCSR -> []
-      inst -> [CSRInstruction inst]
+    resultI = if isValidI decodeI then [IInstruction inst] else []
+    resultM = if isValidM decodeM then [MInstruction inst] else []
+    resultI64 = if isValidI64 decodeI64 then [I64Instruction inst] else []
+    resultM64 = if isValidM64 decodeM64 then [M64Instruction inst] else []
+    resultCSR = if isValidCSR decodeCSR then [CSRInstruction inst] else []
 
     -- Symbolic names for notable bitfields in the 32b instruction 'inst'
     -- Note: 'bitSlice x i j' is, roughly, Verilog's 'x [j-1, i]'
