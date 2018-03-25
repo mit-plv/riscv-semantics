@@ -182,3 +182,11 @@ instance MachineWidth Int64 where
 
 liftState :: (Monad m) => State a b -> StateT a m b
 liftState = mapStateT (return . runIdentity)
+
+signExtend :: Int -> MachineInt -> MachineInt
+signExtend l n = if testBit n (l-1)
+                 then n-2^l
+                 else n
+
+machineIntToShamt :: MachineInt -> Int
+machineIntToShamt = fromIntegral

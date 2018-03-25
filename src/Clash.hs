@@ -84,7 +84,7 @@ instance RiscvProgram MState Int32 where
   setCSRField field val = state $ \comp -> ((), comp)
   getPC = state $ \comp -> (pc comp, comp)
   setPC val = state $ \comp -> ((), comp { nextPC = fromIntegral val })
-  step = state $ \comp -> ((), comp { pc = nextPC comp })
+  commit = state $ \comp -> ((), comp { pc = nextPC comp })
 
 
 
@@ -96,9 +96,9 @@ oneStep i = do
     pc <- getPC
     setPC (pc + 4)
     execute (D.decode D.RV32I $ fromIntegral i)
-    step
+    commit 
   case result of
-    Nothing -> step >> (state $ \comp -> ((), comp{exception = True})) -- early return
+    Nothing -> commit >> (state $ \comp -> ((), comp{exception = True})) -- early return
     Just r -> return r
 
 wrap :: Int32 -> MMIOClash-> MMIOClash

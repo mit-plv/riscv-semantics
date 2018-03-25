@@ -357,14 +357,13 @@ funct3_CSRRCI :: MachineInt;    funct3_CSRRCI = 0b111
 -- TODO: sub-opcodes for MADD, MSUB, NMSUB, NMADD
 
 -- ================================================================
+-- Identification of valid instructions in extensions 
 
-signExtend :: Int -> MachineInt -> MachineInt
-signExtend l n = if testBit n (l-1)
-                 then n-2^l
-                 else n
-
-machineIntToShamt :: MachineInt -> Int
-machineIntToShamt = fromIntegral
+isValidI inst = inst /= InvalidI
+isValidI64 inst = inst /= InvalidI64
+isValidM inst = inst /= InvalidM
+isValidM64 inst = inst /= InvalidM64
+isValidCSR inst = inst /= InvalidCSR
 
 -- ================================================================
 -- The main decoder function
@@ -384,11 +383,11 @@ decode iset inst = case results of
       (if bitwidth iset == 64 && supportsM iset then resultM64 else []) ++
       resultCSR
 
-    resultI   = if decodeI   == InvalidI   then [] else [IInstruction   decodeI  ]
-    resultM   = if decodeM   == InvalidM   then [] else [MInstruction   decodeM  ]
-    resultI64 = if decodeI64 == InvalidI64 then [] else [I64Instruction decodeI64]
-    resultM64 = if decodeM64 == InvalidM64 then [] else [M64Instruction decodeM64]
-    resultCSR = if decodeCSR == InvalidCSR then [] else [CSRInstruction decodeCSR]
+    resultI = if isValidI decodeI then [IInstruction decodeI] else []
+    resultM = if isValidM decodeM then [MInstruction decodeM] else []
+    resultI64 = if isValidI64 decodeI64 then [I64Instruction decodeI64] else []
+    resultM64 = if isValidM64 decodeM64 then [M64Instruction decodeM64] else []
+    resultCSR = if isValidCSR decodeCSR then [CSRInstruction decodeCSR] else []
 
     -- Symbolic names for notable bitfields in the 32b instruction 'inst'
     -- Note: 'bitSlice x i j' is, roughly, Verilog's 'x [j-1, i]'
@@ -526,6 +525,7 @@ decode iset inst = case results of
       | True = InvalidM64
 
     decodeCSR
+      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, funct7==funct7_SFENCE_VM        = Sfence_vm rs1 rs2
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_ECALL  = Ecall
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_EBREAK = Ebreak
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_URET   = Uret
