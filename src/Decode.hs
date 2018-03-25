@@ -376,7 +376,12 @@ decode iset inst = case results of
 
   where
     results :: [Instruction]
-    results = resultI ++ resultM ++ resultI64 ++ resultM64 ++ resultCSR
+    results =
+      resultI ++
+      (if supportsM iset then resultM else []) ++
+      (if bitwidth iset == 64 then resultI64 else []) ++
+      (if bitwidth iset == 64 && supportsM iset then resultM64 else []) ++
+      resultCSR
 
     resultI = if isValidI decodeI then [IInstruction decodeI] else []
     resultM = if isValidM decodeM then [MInstruction decodeM] else []
