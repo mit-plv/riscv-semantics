@@ -1,12 +1,15 @@
-.PHONY: elf2hex test clean all
+.PHONY: elf2hex test riscv-tests clean all
 
-all: elf2hex test
+all: elf2hex test riscv-tests
 
 elf2hex:
 	$(MAKE) -C elf2hex
 
 test:
 	$(MAKE) -C test
+
+riscv-tests:
+	RISCV_PREFIX=riscv-none-embed- $(MAKE) -C riscv-tests/isa rv64ui
 
 clean:
 	rm -rf .stack-work/

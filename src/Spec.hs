@@ -37,8 +37,8 @@ stepHelper iset maybeToHostAddress checkInterrupt = do
     then do
       -- quit running
       if toHostValue == 1
-        then trace "PASSED" (return 0)
-        else trace ("FAILED " ++ (show $ quot toHostValue 2)) (return 1)
+        then return 0
+        else return 1
     else do
     result <- runMaybeT (runCycle iset preDecode preCommit)
     case result of

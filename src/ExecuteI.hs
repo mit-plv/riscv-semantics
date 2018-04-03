@@ -29,7 +29,7 @@ execute (Jal rd jimm20) = do
 execute (Jalr rd rs1 oimm12) = do
   x <- getRegister rs1
   pc <- getPC
-  let newPC = (x + fromImm oimm12) .&. (complement 1) 
+  let newPC = (x + fromImm oimm12) .&. (complement 1)
   if (mod newPC 4 /= 0)
     then raiseException 0 0
     else (do
@@ -196,6 +196,7 @@ execute (And rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
   setRegister rd (x .&. y)
+execute (Fence pred succ) = return () -- TODO
+execute Fence_i = return () -- TODO
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst
--- TODO: Fence/Fence.i?
