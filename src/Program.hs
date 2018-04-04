@@ -13,6 +13,15 @@ import Prelude
 -- Note that this is ordered: User < Supervisor < Machine
 data PrivMode = User | Supervisor | Machine deriving (Eq, Ord, Show)
 
+decodePrivMode 0 = User
+decodePrivMode 1 = Supervisor
+decodePrivMode 3 = Machine
+decodePrivMode _ = error "Invalid privilege mode"
+
+encodePrivMode User = 0
+encodePrivMode Supervisor = 1
+encodePrivMode Machine = 3
+
 class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   getRegister :: Register -> p t
   setRegister :: Register -> t -> p ()

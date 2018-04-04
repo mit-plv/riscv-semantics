@@ -42,14 +42,22 @@ execute (Csrrci rd zimm csr12) = do
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
   when (zimm /= 0) (setCSR (lookupCSR csr12) (val .&. (complement zimm)))
 execute Ecall = do
-  -- Later, we'll have to check the current privilege mode to determine the correct cause code.
-  raiseException 0 11
+  mode <- getPrivMode
+  case mode of
+        User -> raiseException 0 8
+        Supervisor -> raiseException 0 9
+        Machine -> raiseException 0 11
 execute Ebreak = do
   raiseException 0 3
 execute Mret = do
-  -- Currently, only machine mode is supported.
-  -- In the future we will need to deal with the privilege stack.
+  mpp <- getCSRField Field.MPP
+  setCSRField Field.MPP (encodePrivMode User)
+  setPrivMode (decodePrivMode mpp)
+  mpie <- getCSRField Field.MPIE
+  setCSRField Field.MPIE 1
+  setCSRField Field.MIE mpie
   mepc <- getCSRField Field.MEPC
   setPC ((fromIntegral:: MachineInt -> t) mepc)
+-- TODO: Sret, Uret
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst

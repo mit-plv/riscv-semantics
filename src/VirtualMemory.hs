@@ -83,11 +83,15 @@ translateHelper mode va pte level = vaSlice .|. shift ptePPN vaSplit
 calculateAddress :: (RiscvProgram p t) => AccessType -> MachineInt -> p MachineInt
 calculateAddress accessType va = do
   mode <- fmap getMode (getCSRField Field.MODE)
-  if mode == None
+  privMode <- getPrivMode
+  mprv <- getCSRField Field.MPRV
+  mpp <- getCSRField Field.MPP
+  let effectPriv = if mprv == 1 then decodePrivMode mpp else privMode
+  if mode == None || (privMode == Machine && accessType == Instruction) || (effectPriv == Machine)
     then return va
     else do
     ppn <- getCSRField Field.PPN
-    maybePTE <- findLeafEntry (mode,accessType, va, (shift ppn 12) )(pageTableLevels mode - 1)
+    maybePTE <- findLeafEntry (mode, accessType, va, (shift ppn 12)) (pageTableLevels mode - 1)
     case maybePTE of
       Nothing -> pageFault accessType
       Just (level, pte) -> do

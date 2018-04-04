@@ -66,4 +66,7 @@ instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (BufferState
   setCSRField f v = liftState (setCSRField f v)
   getPC = liftState getPC
   setPC v = liftState (setPC v)
+  getPrivMode = liftState getPrivMode
+  setPrivMode v = liftState (setPrivMode v)
   commit = liftState commit
+  endCycle = liftState endCycle
