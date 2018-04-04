@@ -14,7 +14,7 @@ import qualified Data.Map as S
 import Control.Monad.State
 
 data Minimal64 = Minimal64 { registers :: [Int64], csrs :: CSRFile, pc :: Int64,
-                             nextPC :: Int64, mem :: S.Map Int Word8 }
+                             nextPC :: Int64, privMode :: PrivMode, mem :: S.Map Int Word8 }
                deriving (Show)
 
 type MState = State Minimal64
@@ -51,6 +51,8 @@ instance RiscvProgram MState Int64 where
   getPC = state $ \comp -> (pc comp, comp)
   setPC :: forall s. (Integral s) => s -> MState ()
   setPC val = state $ \comp -> ((), comp { nextPC = (fromIntegral:: s -> Int64) val })
+  getPrivMode = state $ \comp -> (privMode comp, comp)
+  setPrivMode val = state $ \comp -> ((), comp { privMode = val })
   commit = do
     -- Post interrupt if mtime >= mtimecmp
     mtime <- getMTime

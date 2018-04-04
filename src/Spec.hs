@@ -15,14 +15,13 @@ runCycle :: (RiscvProgram p t) => InstructionSet -> (Int32 -> p Bool) -> p () ->
 runCycle iset preDecode preCommit = do
   vpc <- getPC
   pc <- translate Instruction 4 vpc
-  -- TODO: Translate PC lookup in supervisor mode.
   inst <- loadWord pc
   continue <- preDecode inst
   if continue
     then do
     setPC (pc + 4)
     size <- getXLEN
-    execute (decode iset $ (fromIntegral :: Int32 -> MachineInt) inst)
+    execute (decode iset ((fromIntegral :: Int32 -> MachineInt) inst))
     preCommit
     else
     return ()

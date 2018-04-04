@@ -139,3 +139,11 @@ Tuesday, March 20th
 * Add processor mode outside typeclass
 * Virtual memory when fetching instructions
 * Update Travis
+
+Tuesday, April 3rd
+* Add processor mode *inside* typeclass
+* Update calculateAddress to check current privilege mode, relevant CSRs
+* Add permission checks for page accesses
+* Update CSRSpec to deal with privileges
+* Update raiseException to modify mstatus priv. stack
+* Add Sret, Update Mret

@@ -10,6 +10,9 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Prelude
 
+-- Note that this is ordered: User < Supervisor < Machine
+data PrivMode = User | Supervisor | Machine deriving (Eq, Ord, Show)
+
 class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   getRegister :: Register -> p t
   setRegister :: Register -> t -> p ()
@@ -25,6 +28,8 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   setCSRField :: (Integral s) => CSRField -> s -> p ()
   getPC :: p t
   setPC :: t -> p ()
+  getPrivMode :: p PrivMode
+  setPrivMode :: PrivMode -> p ()
   commit :: p ()
   endCycle :: forall t. p t
 
@@ -50,6 +55,8 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   setCSRField f v = lift (setCSRField f v)
   getPC = lift getPC
   setPC v = lift (setPC v)
+  getPrivMode = lift getPrivMode
+  setPrivMode m = lift (setPrivMode m)
   commit = lift commit
   endCycle = MaybeT (return Nothing)
 

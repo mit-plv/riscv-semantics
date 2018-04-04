@@ -71,7 +71,7 @@ runFile :: String -> IO Int64
 runFile f = do
   (maybeToHostAddress, mem) <- readProgram f
   let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 64), pc = 0x80000000, nextPC = 0,
-                      mem = S.fromList mem } in
+                      privMode = Machine, mem = S.fromList mem } in
     fmap fst $ runProgram maybeToHostAddress c
 
 runFiles :: [String] -> IO Int64
