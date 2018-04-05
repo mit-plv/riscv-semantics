@@ -18,5 +18,9 @@ data CSRField = MXL | Extensions | -- misa
                 MEPC | -- mepc
                 MCauseInterrupt | MCauseCode | -- mcause
                 MTVal | -- mtval
-                MODE | ASID | PPN -- satp
+                -- Supervisor-level CSRs:
+                SEPC | -- sepc
+                MODE | ASID | PPN | -- satp
+                -- User-level CSRs:
+                UEPC -- uepc
   deriving (Ord, Eq, Show)

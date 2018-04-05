@@ -45,6 +45,10 @@ getCSR MCause = do
   interrupt <- getCSRField Field.MCauseInterrupt
   return (shift interrupt (xlen - 1) .|. code)
 
+-- Supervisor-level CSRs:
+
+getCSR SEPC = getCSRField Field.SEPC
+
 getCSR SATP = do
   xlen <- getXLEN
   mode <- getCSRField Field.MODE
@@ -54,6 +58,10 @@ getCSR SATP = do
     return (shift mode 31 .|. shift asid 22 .|. ppn)
     else do
     return (shift mode 60 .|. shift asid 44 .|. ppn)
+
+-- User-level CSRs:
+
+getCSR UEPC = getCSRField Field.UEPC
 
 -- Catch-all for other (possibly unimplemented) CSRs; hardwire to 0.
 getCSR _ = return 0
@@ -85,6 +93,10 @@ setCSR MCause val = do
   setCSRField Field.MCauseCode (bitSlice val 0 (xlen - 1))
   setCSRField Field.MCauseInterrupt (bitSlice val (xlen - 1) xlen)
 
+-- Supervisor-level CSRs:
+
+setCSR SEPC val = setCSRField Field.SEPC val
+
 setCSR SATP val = do
   xlen <- getXLEN
   mode <- getCSRField Field.MODE
@@ -99,5 +111,9 @@ setCSR SATP val = do
       setCSRField Field.MODE (bitSlice val 60 64)
       setCSRField Field.ASID (bitSlice val 44 60)
       setCSRField Field.PPN (bitSlice val 0 44)
+
+-- User-level CSRs:
+
+setCSR UEPC val = setCSRField Field.UEPC val
 
 setCSR _ _ = return ()
