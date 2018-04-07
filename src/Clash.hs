@@ -85,7 +85,9 @@ instance RiscvProgram MState Int32 where
   getPC = state $ \comp -> (pc comp, comp)
   setPC val = state $ \comp -> ((), comp { nextPC = fromIntegral val })
   commit = state $ \comp -> ((), comp { pc = nextPC comp })
-
+  getPrivMode = state $ \comp -> (Machine , comp) 
+  setPrivMode m = state $ \comp -> ((), comp)
+ 
 
 
 
@@ -96,10 +98,9 @@ oneStep i = do
     pc <- getPC
     setPC (pc + 4)
     execute (D.decode D.RV32I $ fromIntegral i)
-    commit 
   case result of
     Nothing -> commit >> (state $ \comp -> ((), comp{exception = True})) -- early return
-    Just r -> return r
+    Just r -> commit >> return r -- this is a ()
 
 wrap :: Int32 -> MMIOClash-> MMIOClash
 wrap i s = snd $ runState (oneStep i) s
