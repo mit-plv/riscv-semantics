@@ -69,13 +69,19 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   commit = lift commit
   endCycle = MaybeT (return Nothing)
 
-raiseException :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> p a
-raiseException isInterrupt exceptionCode = do
+raiseExceptionWithInfo :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> MachineInt -> p a
+raiseExceptionWithInfo isInterrupt exceptionCode info = do
   pc <- getPC
   addr <- getCSRField MTVecBase
+  mode <- getPrivMode
+  setCSRField MTVal info
+  setCSRField MPP (encodePrivMode mode)
   setCSRField MEPC pc
   setCSRField MCauseInterrupt isInterrupt
   setCSRField MCauseCode exceptionCode
   setPC ((fromIntegral:: MachineInt -> t) addr * 4)
   endCycle
+
+raiseException :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> p a
+raiseException isInterrupt exceptionCode = raiseExceptionWithInfo isInterrupt exceptionCode 0
 

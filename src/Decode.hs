@@ -135,7 +135,7 @@ data Instruction =
   I64Instruction { i64Instruction :: InstructionI64 } |
   M64Instruction { m64Instruction :: InstructionM64 } |
   CSRInstruction { csrInstruction :: InstructionCSR } |
-  InvalidInstruction
+  InvalidInstruction { inst :: MachineInt }
   deriving (Eq, Read, Show)
 
 -- ================================================================
@@ -371,7 +371,7 @@ isValidCSR inst = inst /= InvalidCSR
 decode :: InstructionSet -> MachineInt -> Instruction
 decode iset inst = case results of
     [singleResult] -> singleResult         -- this case is the "normal" case
-    [] -> InvalidInstruction               -- this case is also part of the spec
+    [] -> InvalidInstruction inst          -- this case is also part of the spec
     _ -> error "ambiguous decoding result" -- this case means there's a bug in the spec
 
   where

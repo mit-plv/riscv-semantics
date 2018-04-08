@@ -42,10 +42,10 @@ loadXLEN addr = do
 
 data AccessType = Instruction | Load | Store deriving (Eq, Show)
 
-pageFault :: forall a p t. (RiscvProgram p t) => AccessType -> p a
-pageFault Instruction = raiseException 0 12
-pageFault Load = raiseException 0 13
-pageFault Store = raiseException 0 15
+pageFault :: forall a p t. (RiscvProgram p t) => AccessType -> MachineInt -> p a
+pageFault Instruction va = raiseExceptionWithInfo 0 12 va
+pageFault Load va = raiseExceptionWithInfo 0 13 va
+pageFault Store va = raiseExceptionWithInfo 0 15 va
 
 -- Recursively traverse the page table to find the leaf entry for a given virtual address.
 findLeafEntry :: forall p t. (RiscvProgram p t) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
@@ -57,12 +57,12 @@ findLeafEntry (mode,accessType,va,addr) level = do
   let x = testBit pte 3
   -- TODO: PMA and PMP checks.
   if | not v || (r && w) -> do
-         pageFault accessType
+         pageFault accessType va
          return Nothing
      | r || x ->
          return (Just (level, pte))
      | level <= 0 -> do
-         pageFault accessType
+         pageFault accessType va
          return Nothing
      | level ==1 ->
          findLeafEntry (mode, accessType, va, (shift (shiftL pte 10) 12)) 0
@@ -93,15 +93,15 @@ calculateAddress accessType va = do
     ppn <- getCSRField Field.PPN
     maybePTE <- findLeafEntry (mode, accessType, va, (shift ppn 12)) (pageTableLevels mode - 1)
     case maybePTE of
-      Nothing -> pageFault accessType
+      Nothing -> pageFault accessType va
       Just (level, pte) -> do
         -- TODO: Raise page fault if the permissions are wrong. (Check r, w, x, u, mstatus.)
         let a = testBit pte 6
         let d = testBit pte 7
         if | level > 0 && bitSlice pte 10 (10 + level * ppnBits mode) /= 0 -> do
-               pageFault accessType
+               pageFault accessType va
            | not a || (accessType == Store && not d) -> do
-               pageFault accessType
+               pageFault accessType va
            | otherwise ->
                return (translateHelper mode va pte level)
 
@@ -109,6 +109,6 @@ translate :: forall p t. (RiscvProgram p t) => AccessType -> Int -> t -> p t
 translate accessType alignment va = do
   pa <- calculateAddress accessType ((fromIntegral :: t -> MachineInt) va)
   if mod pa ((fromIntegral:: Int -> MachineInt) alignment) /= 0  -- Check alignment.
-  then raiseException 0 4
+  then raiseExceptionWithInfo 0 4 pa -- TODO: Figure out if mtval should be set to pa or va here.
   else return ((fromIntegral :: MachineInt -> t) pa)
 
