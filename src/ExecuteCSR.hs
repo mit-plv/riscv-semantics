@@ -71,6 +71,8 @@ execute Mret = do
   mepc <- getCSRField Field.MEPC
   setPC ((fromIntegral:: MachineInt -> t) mepc)
 execute Sret = do
+  tsr <- getCSRField Field.TSR
+  when (tsr == 1) (raiseException 0 2)
   spp <- getCSRField Field.SPP
   setCSRField Field.SPP (encodePrivMode User)
   setPrivMode (decodePrivMode spp)
@@ -79,11 +81,9 @@ execute Sret = do
   setCSRField Field.SIE spie
   sepc <- getCSRField Field.SEPC
   setPC ((fromIntegral:: MachineInt -> t) sepc)
-execute Uret = do
-  -- UPP is implicitly 0.
-  setPrivMode User
-  -- TODO: Support for user-level interrupts?
-  uepc <- getCSRField Field.UEPC
-  setPC ((fromIntegral:: MachineInt -> t) uepc)
+execute Wfi = do
+  mode <- getPrivMode
+  tw <- getCSRField Field.TW
+  when (mode == Supervisor && tw == 1) (raiseException 0 2)
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst

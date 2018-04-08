@@ -5,7 +5,7 @@ import Prelude
 
 data CSRField = MXL | Extensions | -- misa
                 SXL | UXL | TSR | TW | TVM | MXR | SUM | MPRV | XS | FS | MPP |
-                SPP | MPIE | SPIE | UPIE | MIE | SIE | UIE | SD | -- mstatus
+                SPP | MPIE | SPIE | UPIE | MIE | SIE | UIE | SD | -- mstatus (and sstatus)
                 MTVecBase | MTVecMode | -- mtvec
                 MEDeleg | -- medeleg
                 MIDeleg | -- mideleg
@@ -19,8 +19,9 @@ data CSRField = MXL | Extensions | -- misa
                 MCauseInterrupt | MCauseCode | -- mcause
                 MTVal | -- mtval
                 -- Supervisor-level CSRs:
+                STVecBase | STVecMode | -- stvec
+                SScratch | -- sscratch
                 SEPC | -- sepc
-                MODE | ASID | PPN | -- satp
-                -- User-level CSRs:
-                UEPC -- uepc
+                STVal | -- stval
+                MODE | ASID | PPN -- satp
   deriving (Ord, Eq, Show)
