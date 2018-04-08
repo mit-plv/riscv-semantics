@@ -45,6 +45,8 @@ getCSR MCause = do
   interrupt <- getCSRField Field.MCauseInterrupt
   return (shift interrupt (xlen - 1) .|. code)
 
+getCSR MTVal = getCSRField Field.MTVal
+
 -- Supervisor-level CSRs:
 
 getCSR SEPC = getCSRField Field.SEPC
@@ -92,6 +94,8 @@ setCSR MCause val = do
   xlen <- getXLEN
   setCSRField Field.MCauseCode (bitSlice val 0 (xlen - 1))
   setCSRField Field.MCauseInterrupt (bitSlice val (xlen - 1) xlen)
+
+setCSR MTVal val = setCSRField Field.MTVal val
 
 -- Supervisor-level CSRs:
 

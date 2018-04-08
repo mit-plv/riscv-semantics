@@ -12,12 +12,12 @@ import Prelude
 execute :: (RiscvProgram p t) => Instruction -> p ()
 execute inst = do
   case inst of
-    IInstruction   i   -> I.execute   i
+    IInstruction   i     -> I.execute   i
 --    MInstruction   i   -> M.execute   i
 --    I64Instruction i   -> I64.execute i
 --    M64Instruction i   -> M64.execute i
-    CSRInstruction i   -> CSR.execute i
-    InvalidInstruction -> raiseException 0 2
+    CSRInstruction i     -> CSR.execute i
+    InvalidInstruction i -> raiseExceptionWithInfo 0 2 i
   cycles <- getCSRField Field.MCycle
   setCSRField Field.MCycle (cycles + 1)
   instret <- getCSRField Field.MInstRet
