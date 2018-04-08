@@ -7,6 +7,8 @@ import Data.Bits
 import Control.Monad
 import Prelude
 
+-- Permission checks are handled in ExecuteCSR.
+
 getCSR :: (RiscvProgram p t) => CSR -> p MachineInt
 
 getCSR MStatus = do

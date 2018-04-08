@@ -10,34 +10,46 @@ import Data.Bits
 import Control.Monad
 import Prelude
 
+checkPermissions isWrite csr = do
+  let readOnly = bitSlice csr 10 12 == 3
+  let minMode = decodePrivMode (bitSlice csr 8 10)
+  mode <- getPrivMode
+  when ((mode < minMode) || (readOnly && isWrite)) (raiseException 0 2)
+
 execute :: forall p t. (RiscvProgram p t) => InstructionCSR -> p ()
 -- begin ast
 execute (Csrrw rd rs1 csr12) = do
+  checkPermissions True csr12
   x <- getRegister rs1
   when (rd /= 0) (do
     y <- getCSR (lookupCSR csr12)
     setRegister rd ((fromIntegral:: MachineInt -> t) y))
   setCSR (lookupCSR csr12) x
 execute (Csrrs rd rs1 csr12) = do
+  checkPermissions (rs1 /= 0) csr12
   mask <- getRegister rs1
   val <- getCSR (lookupCSR csr12)
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
   when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .|. ((fromIntegral:: t -> MachineInt) mask)))
 execute (Csrrc rd rs1 csr12) = do
+  checkPermissions (rs1 /= 0) csr12
   mask <- getRegister rs1
   val <- getCSR (lookupCSR csr12)
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
   when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .&. ((fromIntegral:: t -> MachineInt) mask)))
 execute (Csrrwi rd zimm csr12) = do
+  checkPermissions True csr12
   when (rd /= 0) (do
     val <- getCSR (lookupCSR csr12)
     setRegister rd ((fromIntegral:: MachineInt -> t) val))
   setCSR (lookupCSR csr12) zimm
 execute (Csrrsi rd zimm csr12) = do
+  checkPermissions (zimm /= 0) csr12
   val <- getCSR (lookupCSR csr12)
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
   when (zimm /= 0) (setCSR (lookupCSR csr12) (val .|. zimm))
 execute (Csrrci rd zimm csr12) = do
+  checkPermissions (zimm /= 0) csr12
   val <- getCSR (lookupCSR csr12)
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
   when (zimm /= 0) (setCSR (lookupCSR csr12) (val .&. (complement zimm)))

@@ -74,6 +74,7 @@ raiseExceptionWithInfo isInterrupt exceptionCode info = do
   pc <- getPC
   addr <- getCSRField MTVecBase
   mode <- getPrivMode
+  setPrivMode Machine
   setCSRField MTVal info
   setCSRField MPP (encodePrivMode mode)
   setCSRField MEPC pc

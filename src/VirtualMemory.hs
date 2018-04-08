@@ -95,10 +95,23 @@ calculateAddress accessType va = do
     case maybePTE of
       Nothing -> pageFault accessType va
       Just (level, pte) -> do
-        -- TODO: Raise page fault if the permissions are wrong. (Check r, w, x, u, mstatus.)
+        let r = testBit pte 1
+        let w = testBit pte 2
+        let x = testBit pte 3
+        let u = testBit pte 4
         let a = testBit pte 6
         let d = testBit pte 7
-        if | level > 0 && bitSlice pte 10 (10 + level * ppnBits mode) /= 0 -> do
+        sum <- getCSRField Field.SUM
+        mxr <- getCSRField Field.MXR
+        -- Note that effectPriv must be either Supervisor or User at this point.
+        let validUserAccess = (u && (effectPriv == User || sum == 1))
+        let validSupervisorAccess = (not u && effectPriv == Supervisor)
+        let validRead = (accessType == Load && (r || (x && mxr == 1)))
+        let validExecute = (accessType == Instruction && x)
+        let validWrite = (accessType == Store && w)
+        if | (validUserAccess || validSupervisorAccess) && (validRead || validExecute || validWrite) -> do
+               pageFault accessType va
+           | level > 0 && bitSlice pte 10 (10 + level * ppnBits mode) /= 0 -> do
                pageFault accessType va
            | not a || (accessType == Store && not d) -> do
                pageFault accessType va
