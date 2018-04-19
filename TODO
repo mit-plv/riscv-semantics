@@ -147,3 +147,8 @@ Tuesday, April 3rd
 * Update CSRSpec to deal with privileges
 * Update raiseException to modify mstatus priv. stack
 * Add Sret, Update Mret
+
+Tuesday, April 17th
+* Debug rv64mi-* tests.
+* Debug rv64ui-v-* tests.
+* Get some level of tandem debugging with Spike working.

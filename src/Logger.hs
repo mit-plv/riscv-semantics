@@ -1,10 +1,18 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
 module Logger where
-import Control.Monad.Writer
+import Control.Monad.Writer hiding (tell)
 import Numeric
 import Program
+import Debug.Trace
+import Data.Word
 
-instance (RiscvProgram p t u) => RiscvProgram (WriterT String p) t u where
+-- Workaround so that logs can print before the program has terminated. This
+-- pretty well defeats the purpose of involving WriterT, so we should eventually
+-- either sort out the laziness issues to make WriterT useful for this, or
+-- just abandon it.
+tell s = trace (take (length s - 1) s) (return ())
+
+instance (RiscvProgram p t) => RiscvProgram (WriterT String p) t where
   getRegister r = do
     tell ("getRegister " ++ (show (fromIntegral r)) ++ "\n")
     lift (getRegister r)
@@ -45,8 +53,17 @@ instance (RiscvProgram p t u) => RiscvProgram (WriterT String p) t u where
     tell "getPC\n"
     lift getPC
   setPC v = do
-    tell ("setPC 0x" ++ (showHex (fromIntegral v) "\n"))
+    tell ("setPC 0x" ++ (showHex (fromIntegral v :: Word64) "\n"))
     lift (setPC v)
+  getPrivMode = do
+    tell "getPrivMode\n"
+    lift getPrivMode
+  setPrivMode v = do
+    tell ("setPrivMode 0x" ++ (show v) ++  "\n")
+    lift (setPrivMode v)
   commit = do
     tell "commit\n"
     lift commit
+  endCycle = do
+    tell "endCycle\n"
+    lift endCycle

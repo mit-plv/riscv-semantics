@@ -92,6 +92,10 @@ getCSR SATP = do
 
 -- User-level CSRs:
 
+-- It's unclear whether these are allowed to raise an exception in machine mode.
+-- It's problematic if Time isn't, since that brings some extra platform
+-- dependent information (specifically, the MTime memory-mapped address) up into
+-- the CSR specification.
 getCSR InstRet = raiseException 0 2
 getCSR Cycle = raiseException 0 2
 getCSR Time = raiseException 0 2
