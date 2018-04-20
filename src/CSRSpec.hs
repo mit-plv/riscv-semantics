@@ -11,6 +11,13 @@ import Prelude
 
 getCSR :: (RiscvProgram p t) => CSR -> p MachineInt
 
+-- Currently ignores writes.
+getCSR MISA = do
+  xlen <- getXLEN
+  mxl <- getCSRField Field.MXL
+  ext <- getCSRField Field.Extensions
+  return (shift mxl (xlen - 2) .|. ext)
+
 getCSR MStatus = do
   tsr <- getCSRField Field.TSR
   tw <- getCSRField Field.TW
@@ -20,8 +27,15 @@ getCSR MStatus = do
   mpie <- getCSRField Field.MPIE
   mie <- getCSRField Field.MIE
   sstatus <- getCSR SStatus
-  return (shift tsr 22 .|. shift tw 21 .|. shift tvm 20 .|. shift mprv 17 .|.
-          shift mpp 11 .|. shift mpie 7 .|. shift mie 3 .|. sstatus)
+  let base = (shift tsr 22 .|. shift tw 21 .|. shift tvm 20 .|. shift mprv 17 .|.
+              shift mpp 11 .|. shift mpie 7 .|. shift mie 3 .|. sstatus)
+  xlen <- getXLEN
+  if xlen > 32
+    then do
+    -- SXL and UXL are currently hardwired to MXL.
+    mxl <- getCSRField Field.MXL
+    return (shift mxl 32 .|. shift mxl 34 .|. base)
+    else return base
 
 getCSR MIP = do
   meip <- getCSRField Field.MEIP
@@ -161,16 +175,16 @@ setCSR SATP val = do
   tvm <- getCSRField Field.TVM
   when (tvm == 1) (raiseException 0 2)
   xlen <- getXLEN
-  mode <- getCSRField Field.MODE
+  let mode = if xlen == 32 then bitSlice val 31 32 else bitSlice val 60 64
   -- If the mode is unsupported, the write has no effect.
   when (mode `elem` [1, 8, 9]) $ do
     if xlen == 32
       then do
-      setCSRField Field.MODE (bitSlice val 31 32)
+      setCSRField Field.MODE mode
       setCSRField Field.ASID (bitSlice val 22 31)
       setCSRField Field.PPN (bitSlice val 0 22)
       else do
-      setCSRField Field.MODE (bitSlice val 60 64)
+      setCSRField Field.MODE mode
       setCSRField Field.ASID (bitSlice val 44 60)
       setCSRField Field.PPN (bitSlice val 0 44)
 

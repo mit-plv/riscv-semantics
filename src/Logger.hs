@@ -3,6 +3,7 @@ module Logger where
 import Control.Monad.Writer hiding (tell)
 import Numeric
 import Program
+import Utility
 import Debug.Trace
 import Data.Word
 
@@ -10,7 +11,11 @@ import Data.Word
 -- pretty well defeats the purpose of involving WriterT, so we should eventually
 -- either sort out the laziness issues to make WriterT useful for this, or
 -- just abandon it.
-tell s = trace (take (length s - 1) s) (return ())
+tell s = do
+  pc <- lift getPC
+  let c = showHex (fromIntegral pc :: Word64) ": "
+  trace (c ++ (take (length s - 1) s)) (return ())
+
 
 instance (RiscvProgram p t) => RiscvProgram (WriterT String p) t where
   getRegister r = do

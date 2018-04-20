@@ -36,7 +36,7 @@ execute (Csrrc rd rs1 csr12) = do
   mask <- getRegister rs1
   val <- getCSR (lookupCSR csr12)
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
-  when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .&. ((fromIntegral:: t -> MachineInt) mask)))
+  when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .&. (complement ((fromIntegral:: t -> MachineInt) mask))))
 execute (Csrrwi rd zimm csr12) = do
   checkPermissions True csr12
   when (rd /= 0) (do

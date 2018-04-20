@@ -122,6 +122,12 @@ translate :: forall p t. (RiscvProgram p t) => AccessType -> Int -> t -> p t
 translate accessType alignment va = do
   pa <- calculateAddress accessType ((fromIntegral :: t -> MachineInt) va)
   if mod pa ((fromIntegral:: Int -> MachineInt) alignment) /= 0  -- Check alignment.
-  then raiseExceptionWithInfo 0 4 pa -- TODO: Figure out if mtval should be set to pa or va here.
-  else return ((fromIntegral :: MachineInt -> t) pa)
+    -- TODO: Figure out if mtval should be set to pa or va here.
+    then raiseExceptionWithInfo 0 misalignCode pa
+    else return ((fromIntegral :: MachineInt -> t) pa)
+  where misalignCode =
+          case accessType of
+            Instruction -> 0
+            Load -> 4
+            Store -> 6
 
