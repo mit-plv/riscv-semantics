@@ -22,6 +22,7 @@ data CSRField = MXL | Extensions | -- misa
                 STVecBase | STVecMode | -- stvec
                 SScratch | -- sscratch
                 SEPC | -- sepc
+                SCauseInterrupt | SCauseCode | -- scause
                 STVal | -- stval
                 MODE | ASID | PPN -- satp
   deriving (Ord, Eq, Show)

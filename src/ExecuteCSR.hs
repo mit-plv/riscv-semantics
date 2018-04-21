@@ -62,6 +62,7 @@ execute Ecall = do
 execute Ebreak = do
   raiseException 0 3
 execute Mret = do
+  -- TODO Check privilege level.
   mpp <- getCSRField Field.MPP
   setCSRField Field.MPP (encodePrivMode User)
   setPrivMode (decodePrivMode mpp)
@@ -71,6 +72,7 @@ execute Mret = do
   mepc <- getCSRField Field.MEPC
   setPC ((fromIntegral:: MachineInt -> t) mepc)
 execute Sret = do
+  -- TODO Check privilege level.
   tsr <- getCSRField Field.TSR
   when (tsr == 1) (raiseException 0 2)
   spp <- getCSRField Field.SPP
@@ -85,5 +87,9 @@ execute Wfi = do
   mode <- getPrivMode
   tw <- getCSRField Field.TW
   when (mode == Supervisor && tw == 1) (raiseException 0 2)
+execute (Sfence_vma vaddr asid) = do
+  priv <- getPrivMode
+  tvm <- getCSRField Field.TVM
+  when (priv == Supervisor && tvm == 1) (raiseException 0 2)
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst

@@ -118,7 +118,7 @@ data InstructionCSR =
   Sret |
   Mret |
   Wfi |
-  Sfence_vm { rs1 :: Register, rs2 :: Register } |
+  Sfence_vma { rs1 :: Register, rs2 :: Register } |
   Csrrw { rd :: Register, rs1 :: Register, csr12 :: MachineInt } |
   Csrrs { rd :: Register, rs1 :: Register, csr12 :: MachineInt } |
   Csrrc { rd :: Register, rs1 :: Register, csr12 :: MachineInt } |
@@ -343,7 +343,7 @@ funct12_SRET     :: MachineInt;    funct12_SRET   = 0b000100000010
 funct12_MRET     :: MachineInt;    funct12_MRET   = 0b001100000010
 funct12_WFI      :: MachineInt;    funct12_WFI    = 0b000100000101
 
-funct7_SFENCE_VM :: MachineInt;    funct7_SFENCE_VM = 0b0001001
+funct7_SFENCE_VMA :: MachineInt;    funct7_SFENCE_VMA = 0b0001001
 
 funct3_CSRRW  :: MachineInt;    funct3_CSRRW  = 0b001
 funct3_CSRRS  :: MachineInt;    funct3_CSRRS  = 0b010
@@ -357,7 +357,7 @@ funct3_CSRRCI :: MachineInt;    funct3_CSRRCI = 0b111
 -- TODO: sub-opcodes for MADD, MSUB, NMSUB, NMADD
 
 -- ================================================================
--- Identification of valid instructions in extensions 
+-- Identification of valid instructions in extensions
 
 isValidI inst = inst /= InvalidI
 isValidI64 inst = inst /= InvalidI64
@@ -525,7 +525,7 @@ decode iset inst = case results of
       | True = InvalidM64
 
     decodeCSR
-      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, funct7==funct7_SFENCE_VM        = Sfence_vm rs1 rs2
+      | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, funct7==funct7_SFENCE_VMA        = Sfence_vma rs1 rs2
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_ECALL  = Ecall
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_EBREAK = Ebreak
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, rs1==0, funct12==funct12_URET   = Uret

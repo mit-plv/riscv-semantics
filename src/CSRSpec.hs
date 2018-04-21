@@ -27,15 +27,12 @@ getCSR MStatus = do
   mpie <- getCSRField Field.MPIE
   mie <- getCSRField Field.MIE
   sstatus <- getCSR SStatus
-  let base = (shift tsr 22 .|. shift tw 21 .|. shift tvm 20 .|. shift mprv 17 .|.
-              shift mpp 11 .|. shift mpie 7 .|. shift mie 3 .|. sstatus)
-  xlen <- getXLEN
-  if xlen > 32
-    then do
-    -- SXL and UXL are currently hardwired to MXL.
-    mxl <- getCSRField Field.MXL
-    return (shift mxl 32 .|. shift mxl 34 .|. base)
-    else return base
+  return (shift tsr 22 .|. shift tw 21 .|. shift tvm 20 .|. shift mprv 17 .|.
+          shift mpp 11 .|. shift mpie 7 .|. shift mie 3 .|. sstatus)
+
+getCSR MEDeleg = getCSRField Field.MEDeleg
+
+getCSR MIDeleg = getCSRField Field.MIDeleg
 
 getCSR MIP = do
   meip <- getCSRField Field.MEIP
@@ -78,8 +75,15 @@ getCSR SStatus = do
   spp <- getCSRField Field.SPP
   spie <- getCSRField Field.SPIE
   sie <- getCSRField Field.SIE
-  return (shift mxr 19 .|. shift sum 18 .|. shift spp 8 .|.
-          shift spie 5 .|. shift sie 1)
+  let base = (shift mxr 19 .|. shift sum 18 .|. shift spp 8 .|.
+              shift spie 5 .|. shift sie 1)
+  xlen <- getXLEN
+  if xlen > 32
+    then do
+    -- SXL and UXL are currently hardwired to MXL.
+    mxl <- getCSRField Field.MXL
+    return (shift mxl 32 .|. shift mxl 34 .|. base)
+    else return base
 
 getCSR STVec = do
   base <- getCSRField Field.STVecBase
@@ -89,6 +93,12 @@ getCSR STVec = do
 getCSR SEPC = getCSRField Field.SEPC
 
 getCSR SScratch = getCSRField Field.SScratch
+
+getCSR SCause = do
+  xlen <- getXLEN
+  code <- getCSRField Field.SCauseCode
+  interrupt <- getCSRField Field.SCauseInterrupt
+  return (shift interrupt (xlen - 1) .|. code)
 
 getCSR STVal = getCSRField Field.STVal
 
@@ -128,6 +138,10 @@ setCSR MStatus val = do
   setCSRField Field.MPP (bitSlice val 11 13)
   setCSRField Field.MPIE (bitSlice val 7 8)
   setCSRField Field.MIE (bitSlice val 3 4)
+
+setCSR MEDeleg val = setCSRField Field.MEDeleg (val .&. complement (shift 1 11))
+
+setCSR MIDeleg val = setCSRField Field.MIDeleg val
 
 setCSR MIP val = do
   setCSRField Field.MTIP (bitSlice val 7 8)
@@ -169,11 +183,17 @@ setCSR SEPC val = setCSRField Field.SEPC val
 
 setCSR SScratch val = setCSRField Field.SScratch val
 
+setCSR SCause val = do
+  xlen <- getXLEN
+  setCSRField Field.SCauseCode (bitSlice val 0 (xlen - 1))
+  setCSRField Field.SCauseInterrupt (bitSlice val (xlen - 1) xlen)
+
 setCSR STVal val = setCSRField Field.STVal val
 
 setCSR SATP val = do
+  priv <- getPrivMode
   tvm <- getCSRField Field.TVM
-  when (tvm == 1) (raiseException 0 2)
+  when (priv == Supervisor && tvm == 1) (raiseException 0 2)
   xlen <- getXLEN
   let mode = if xlen == 32 then bitSlice val 31 32 else bitSlice val 60 64
   -- If the mode is unsupported, the write has no effect.

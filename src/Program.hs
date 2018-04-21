@@ -72,15 +72,35 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
 raiseExceptionWithInfo :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> MachineInt -> p a
 raiseExceptionWithInfo isInterrupt exceptionCode info = do
   pc <- getPC
-  addr <- getCSRField MTVecBase
   mode <- getPrivMode
-  setPrivMode Machine
-  setCSRField MTVal info
-  setCSRField MPP (encodePrivMode mode)
-  setCSRField MEPC pc
-  setCSRField MCauseInterrupt isInterrupt
-  setCSRField MCauseCode exceptionCode
-  setPC ((fromIntegral:: MachineInt -> t) addr * 4)
+  medeleg <- getCSRField MEDeleg
+  mideleg <- getCSRField MIDeleg
+  let delegatedException = isInterrupt == 0 && (testBit medeleg ((fromIntegral:: MachineInt -> Int) exceptionCode))
+  let delegatedInterrupt = isInterrupt /= 0 && (testBit mideleg ((fromIntegral ::MachineInt -> Int) exceptionCode))
+  if (mode < Machine) && (delegatedException || delegatedInterrupt)
+    then do
+    -- Delegate to S-mode.
+    addr <- getCSRField STVecBase
+    setPrivMode Supervisor
+    setCSRField STVal info
+    setCSRField SPP (encodePrivMode mode)
+    setCSRField SEPC pc
+    setCSRField SCauseInterrupt isInterrupt
+    setCSRField SCauseCode exceptionCode
+    sie <- getCSRField SIE
+    setCSRField SPIE sie
+    setCSRField SIE 0
+    setPC ((fromIntegral:: MachineInt -> t) addr * 4)
+    else do
+    -- Handle in M-mode.
+    addr <- getCSRField MTVecBase
+    setPrivMode Machine
+    setCSRField MTVal info
+    setCSRField MPP (encodePrivMode mode)
+    setCSRField MEPC pc
+    setCSRField MCauseInterrupt isInterrupt
+    setCSRField MCauseCode exceptionCode
+    setPC ((fromIntegral:: MachineInt -> t) addr * 4)
   endCycle
 
 raiseException :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> p a
