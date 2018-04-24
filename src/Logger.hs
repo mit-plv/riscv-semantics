@@ -14,61 +14,56 @@ import Data.Word
 tell s = do
   pc <- lift getPC
   let c = showHex (fromIntegral pc :: Word64) ": "
-  trace (c ++ (take (length s - 1) s)) (return ())
+  trace (c ++ s) (return ())
 
+liftTell s op = do
+  tell s
+  lift op
+
+liftTellShow s op = do
+  m <- lift op
+  tell (s ++ " = " ++ (show m))
+  return m
+
+liftTellInt s op = do
+  m <- lift op
+  tell (s ++ " = " ++ (show (fromIntegral m)))
+  return m
 
 instance (RiscvProgram p t) => RiscvProgram (WriterT String p) t where
   getRegister r = do
-    tell ("getRegister " ++ (show (fromIntegral r)) ++ "\n")
-    lift (getRegister r)
+    liftTellInt ("getRegister " ++ (show (fromIntegral r))) (getRegister r)
   setRegister r v = do
-    tell ("setRegister " ++ (show (fromIntegral r, fromIntegral v)) ++ "\n")
-    lift (setRegister r v)
+    liftTell ("setRegister " ++ (show (fromIntegral r, fromIntegral v))) (setRegister r v)
   loadByte a = do
-    tell ("loadByte " ++ (show (fromIntegral a)) ++ "\n")
-    lift (loadByte a)
+    liftTellInt ("loadByte " ++ (show (fromIntegral a))) (loadByte a)
   loadHalf a = do
-    tell ("loadHalf " ++ (show (fromIntegral a)) ++ "\n")
-    lift (loadHalf a)
+    liftTellInt ("loadHalf " ++ (show (fromIntegral a))) (loadHalf a)
   loadWord a = do
-    tell ("loadWord " ++ (show (fromIntegral a)) ++ "\n")
-    lift (loadWord a)
+    liftTellInt ("loadWord " ++ (show (fromIntegral a))) (loadWord a)
   loadDouble a = do
-    tell ("loadDouble " ++ (show (fromIntegral a)) ++ "\n")
-    lift (loadDouble a)
+    liftTellInt ("loadDouble " ++ (show (fromIntegral a))) (loadDouble a)
   storeByte a v = do
-    tell ("storeByte " ++ (show (fromIntegral a, fromIntegral v)) ++ "\n")
-    lift (storeByte a v)
+    liftTell ("storeByte " ++ (show (fromIntegral a, fromIntegral v))) (storeByte a v)
   storeHalf a v = do
-    tell ("storeHalf " ++ (show (fromIntegral a, fromIntegral v)) ++ "\n")
-    lift (storeHalf a v)
+    liftTell ("storeHalf " ++ (show (fromIntegral a, fromIntegral v))) (storeHalf a v)
   storeWord a v = do
-    tell ("storeWord " ++ (show (fromIntegral a, fromIntegral v)) ++ "\n")
-    lift (storeWord a v)
+    liftTell ("storeWord " ++ (show (fromIntegral a, fromIntegral v))) (storeWord a v)
   storeDouble a v = do
-    tell ("storeDouble " ++ (show (fromIntegral a, fromIntegral v)) ++ "\n")
-    lift (storeDouble a v)
+    liftTell ("storeDouble " ++ (show (fromIntegral a, fromIntegral v))) (storeDouble a v)
   getCSRField f = do
-    tell ("getCSRField " ++ (show f) ++ "\n")
-    lift (getCSRField f)
+    liftTellInt ("getCSRField " ++ (show f)) (getCSRField f)
   setCSRField f v = do
-    tell ("setCSRField " ++ (show (f, fromIntegral v)) ++ "\n")
-    lift (setCSRField f v)
+    liftTell ("setCSRField " ++ (show (f, fromIntegral v))) (setCSRField f v)
   getPC = do
-    tell "getPC\n"
-    lift getPC
+    liftTellInt "getPC" getPC
   setPC v = do
-    tell ("setPC 0x" ++ (showHex (fromIntegral v :: Word64) "\n"))
-    lift (setPC v)
+    liftTell ("setPC 0x" ++ (showHex (fromIntegral v :: Word64) "")) (setPC v)
   getPrivMode = do
-    tell "getPrivMode\n"
-    lift getPrivMode
+    liftTellShow "getPrivMode" getPrivMode
   setPrivMode v = do
-    tell ("setPrivMode 0x" ++ (show v) ++  "\n")
-    lift (setPrivMode v)
+    liftTell ("setPrivMode 0x" ++ (show v)) (setPrivMode v)
   commit = do
-    tell "commit\n"
-    lift commit
+    liftTell "commit" commit
   endCycle = do
-    tell "endCycle\n"
-    lift endCycle
+    liftTell "endCycle" endCycle

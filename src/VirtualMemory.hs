@@ -31,7 +31,7 @@ ppnBits Sv32 = 10
 ppnBits Sv39 = 9
 ppnBits Sv48 = 9
 
-getVPN mode va i = bitSlice va 12 (12 + (i + 1) * ppnBits mode)
+getVPN mode va i = bitSlice va (12 + i * ppnBits mode) (12 + (i + 1) * ppnBits mode)
 
 loadXLEN :: (RiscvProgram p t) => t -> p MachineInt
 loadXLEN addr = do
@@ -39,6 +39,13 @@ loadXLEN addr = do
   if xlen == 32
     then fmap (fromIntegral:: Int32 -> MachineInt) (loadWord addr)
     else fmap (fromIntegral:: Int64 -> MachineInt) (loadDouble addr)
+
+storeXLEN :: (RiscvProgram p t) => t -> MachineInt -> p ()
+storeXLEN addr val = do
+  xlen <- getXLEN
+  if xlen == 32
+    then storeWord addr ((fromIntegral:: MachineInt -> Int32) val)
+    else storeDouble addr ((fromIntegral:: MachineInt -> Int64) val)
 
 data AccessType = Instruction | Load | Store deriving (Eq, Show)
 
@@ -48,19 +55,20 @@ pageFault Load va = raiseExceptionWithInfo 0 13 va
 pageFault Store va = raiseExceptionWithInfo 0 15 va
 
 -- Recursively traverse the page table to find the leaf entry for a given virtual address.
-findLeafEntry :: forall p t. (RiscvProgram p t) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt))
+findLeafEntry :: forall p t. (RiscvProgram p t) => (VirtualMemoryMode, AccessType, MachineInt, MachineInt) -> Int -> p (Maybe (Int, MachineInt, MachineInt))
 findLeafEntry (mode,accessType,va,addr) level = do
-  pte <- loadXLEN ((fromIntegral:: MachineInt -> t) (addr + (getVPN mode va level * pteSize mode)))
+  let pteAddr = addr + (getVPN mode va level * pteSize mode)
+  pte <- loadXLEN ((fromIntegral:: MachineInt -> t) pteAddr)
   let v = testBit pte 0
   let r = testBit pte 1
   let w = testBit pte 2
   let x = testBit pte 3
   -- TODO: PMA and PMP checks.
-  if | not v || (r && w) -> do
+  if | not v || (not r && w) -> do
          pageFault accessType va
          return Nothing
      | r || x ->
-         return (Just (level, pte))
+         return (Just (level, pte, pteAddr))
      | level <= 0 -> do
          pageFault accessType va
          return Nothing
@@ -78,7 +86,7 @@ translateHelper :: VirtualMemoryMode -> MachineInt -> MachineInt -> Int -> Machi
 translateHelper mode va pte level = vaSlice .|. shift ptePPN vaSplit
   where vaSplit = 12 + level * (ppnBits mode)
         vaSlice = bitSlice va 0 vaSplit
-        ptePPN = shiftL pte (10 + level * (ppnBits mode))
+        ptePPN = shiftR pte (10 + level * (ppnBits mode))
 
 calculateAddress :: (RiscvProgram p t) => AccessType -> MachineInt -> p MachineInt
 calculateAddress accessType va = do
@@ -94,7 +102,7 @@ calculateAddress accessType va = do
     maybePTE <- findLeafEntry (mode, accessType, va, (shift ppn 12)) (pageTableLevels mode - 1)
     case maybePTE of
       Nothing -> pageFault accessType va
-      Just (level, pte) -> do
+      Just (level, pte, addr) -> do
         let r = testBit pte 1
         let w = testBit pte 2
         let x = testBit pte 3
@@ -109,13 +117,21 @@ calculateAddress accessType va = do
         let validRead = (accessType == Load && (r || (x && mxr == 1)))
         let validExecute = (accessType == Instruction && x)
         let validWrite = (accessType == Store && w)
-        if | (validUserAccess || validSupervisorAccess) && (validRead || validExecute || validWrite) -> do
+        if | not ((validUserAccess || validSupervisorAccess) && (validRead || validExecute || validWrite)) -> do
+               -- Bad permissions.
                pageFault accessType va
            | level > 0 && bitSlice pte 10 (10 + level * ppnBits mode) /= 0 -> do
+               -- Misaligned superpage.
                pageFault accessType va
            | not a || (accessType == Store && not d) -> do
+               -- Set dirty/access bits in hardware:
+               -- let newPTE = (pte .|. (bit 6) .|. (if accessType == Store then bit 7 else 0))
+               -- storeXLEN (fromIntegral addr) newPTE
+               -- return (translateHelper mode va newPTE level)
+               -- Set dirty/access bits in software:
                pageFault accessType va
            | otherwise ->
+               -- Successful translations.
                return (translateHelper mode va pte level)
 
 translate :: forall p t. (RiscvProgram p t) => AccessType -> Int -> t -> p t
