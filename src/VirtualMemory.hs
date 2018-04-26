@@ -73,13 +73,13 @@ findLeafEntry (mode,accessType,va,addr) level = do
          pageFault accessType va
          return Nothing
      | level ==1 ->
-         findLeafEntry (mode, accessType, va, (shift (shiftL pte 10) 12)) 0
+         findLeafEntry (mode, accessType, va, (shift (bitSlice pte 10 54) 12)) 0
      | level ==2 ->
-         findLeafEntry (mode, accessType, va, (shift (shiftL pte 10) 12)) 1
+         findLeafEntry (mode, accessType, va, (shift (bitSlice pte 10 54) 12)) 1
      | level ==3 ->
-         findLeafEntry (mode, accessType, va, (shift (shiftL pte 10) 12)) 2
+         findLeafEntry (mode, accessType, va, (shift (bitSlice pte 10 54) 12)) 2
      | level ==4 ->
-         findLeafEntry (mode, accessType, va, (shift (shiftL pte 10) 12)) 3
+         findLeafEntry (mode, accessType, va, (shift (shiftR pte 10) 12)) 3
      | otherwise -> return Nothing
 
 translateHelper :: VirtualMemoryMode -> MachineInt -> MachineInt -> Int -> MachineInt
@@ -130,7 +130,7 @@ calculateAddress accessType va = do
                -- return (translateHelper mode va newPTE level)
                -- Set dirty/access bits in software:
                pageFault accessType va
-           | otherwise ->
+           | otherwise -> do
                -- Successful translations.
                return (translateHelper mode va pte level)
 
