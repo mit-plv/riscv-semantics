@@ -62,7 +62,8 @@ execute Ecall = do
 execute Ebreak = do
   raiseException 0 3
 execute Mret = do
-  -- TODO Check privilege level.
+  priv <- getPrivMode
+  when (priv < Machine) (raiseException 0 2)
   mpp <- getCSRField Field.MPP
   setCSRField Field.MPP (encodePrivMode User)
   setPrivMode (decodePrivMode mpp)
@@ -72,7 +73,8 @@ execute Mret = do
   mepc <- getCSRField Field.MEPC
   setPC ((fromIntegral:: MachineInt -> t) mepc)
 execute Sret = do
-  -- TODO Check privilege level.
+  priv <- getPrivMode
+  when (priv < Supervisor) (raiseException 0 2)
   tsr <- getCSRField Field.TSR
   when (tsr == 1) (raiseException 0 2)
   spp <- getCSRField Field.SPP

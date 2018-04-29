@@ -31,6 +31,11 @@ ppnBits Sv32 = 10
 ppnBits Sv39 = 9
 ppnBits Sv48 = 9
 
+-- Return the total length of all PPN fields for a given mode.
+ppnLength Sv32 = 22
+ppnLength Sv39 = 44
+ppnLength Sv48 = 44
+
 getVPN mode va i = bitSlice va (12 + i * ppnBits mode) (12 + (i + 1) * ppnBits mode)
 
 loadXLEN :: (RiscvProgram p t) => t -> p MachineInt
@@ -72,14 +77,15 @@ findLeafEntry (mode,accessType,va,addr) level = do
      | level <= 0 -> do
          pageFault accessType va
          return Nothing
-     | level ==1 ->
-         findLeafEntry (mode, accessType, va, (shift (bitSlice pte 10 54) 12)) 0
-     | level ==2 ->
-         findLeafEntry (mode, accessType, va, (shift (bitSlice pte 10 54) 12)) 1
-     | level ==3 ->
-         findLeafEntry (mode, accessType, va, (shift (bitSlice pte 10 54) 12)) 2
-     | level ==4 ->
-         findLeafEntry (mode, accessType, va, (shift (shiftR pte 10) 12)) 3
+     -- This is duplicated for clash's sake.
+     | level == 1 ->
+         findLeafEntry (mode, accessType, va, (shift (bitSlice pte 10 (10 + ppnLength mode)) 12)) 0
+     | level == 2 ->
+         findLeafEntry (mode, accessType, va, (shift (bitSlice pte 10 (10 + ppnLength mode)) 12)) 1
+     | level == 3 ->
+         findLeafEntry (mode, accessType, va, (shift (bitSlice pte 10 (10 + ppnLength mode)) 12)) 2
+     | level == 4 ->
+         findLeafEntry (mode, accessType, va, (shift (bitSlice pte 10 (10 + ppnLength mode)) 12)) 3
      | otherwise -> return Nothing
 
 translateHelper :: VirtualMemoryMode -> MachineInt -> MachineInt -> Int -> MachineInt
@@ -131,7 +137,7 @@ calculateAddress accessType va = do
                -- Set dirty/access bits in software:
                pageFault accessType va
            | otherwise -> do
-               -- Successful translations.
+               -- Successful translation.
                return (translateHelper mode va pte level)
 
 translate :: forall p t. (RiscvProgram p t) => AccessType -> Int -> t -> p t
