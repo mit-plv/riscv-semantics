@@ -6,7 +6,8 @@ import Data.Maybe
 import Data.Word
 import Data.Bits
 import qualified Data.Map as S
-
+import Clash.Prelude
+import Data.List as L
 readM :: (S.Map Int Word8) -> Int -> Word8
 readM mem addr = fromMaybe 0 (S.lookup addr mem)
 
@@ -19,7 +20,7 @@ helpLoad mem addr numBytes =
 
 helpStore :: (S.Map Int Word8) -> Int -> [Word8] -> (S.Map Int Word8)
 helpStore mem addr bytes =
-  foldr (\(b,a) m -> writeM m a b) mem $ zip bytes [addr + i | i <- [0..]]
+  L.foldr (\(b,a) m -> writeM m a b) mem $ L.zip bytes [addr + i | i <- [0..]]
 
 instance Memory (S.Map Int Word8) Int where
   loadByte mem addr = readM mem addr
