@@ -6,7 +6,7 @@ import Data.Maybe
 import Data.Word
 import Data.Bits
 import qualified Data.Map as S
-import Clash.Prelude
+import Prelude
 import Data.List as L
 readM :: (S.Map Int Word8) -> Int -> Word8
 readM mem addr = fromMaybe 0 (S.lookup addr mem)
