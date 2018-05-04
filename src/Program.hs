@@ -41,6 +41,18 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   setPrivMode :: PrivMode -> p ()
   commit :: p ()
   endCycle :: forall t. p t
+  inTLB :: MachineInt -> p (Maybe MachineInt) 
+  addTLB :: MachineInt -> MachineInt -> p () 
+  
+cacheAccess :: forall p t. (RiscvProgram p t) => MachineInt -> p MachineInt -> p MachineInt 
+cacheAccess addr getPA = do
+      a <- inTLB addr 
+      case a of
+        Nothing -> do
+                 pa <- getPA
+                 addTLB addr pa
+                 return pa
+        Just a -> return a  
 
 getXLEN :: forall p t s. (RiscvProgram p t, Integral s) => p s
 getXLEN = do
@@ -67,7 +79,9 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   getPrivMode = lift getPrivMode
   setPrivMode m = lift (setPrivMode m)
   commit = lift commit
-  endCycle = MaybeT (return Nothing)
+  endCycle = MaybeT (return Nothing) -- b is of type (MaybeT p) a 
+  addTLB a b = lift (addTLB a b)
+  inTLB a = lift (inTLB a)
 
 raiseExceptionWithInfo :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> MachineInt -> p a
 raiseExceptionWithInfo isInterrupt exceptionCode info = do

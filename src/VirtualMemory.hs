@@ -103,7 +103,9 @@ calculateAddress accessType va = do
   let effectPriv = if mprv == 1 then decodePrivMode mpp else privMode
   if mode == None || (privMode == Machine && accessType == Instruction) || (effectPriv == Machine)
     then return va
-    else do
+    else -- First the translation may be in a cache, possibly stalled, cacheAccess use the typeclass defined "TLB"
+      cacheAccess va $ 
+       do
     ppn <- getCSRField Field.PPN
     maybePTE <- findLeafEntry (mode, accessType, va, (shift ppn 12)) (pageTableLevels mode - 1)
     case maybePTE of
@@ -141,12 +143,12 @@ calculateAddress accessType va = do
                return (translateHelper mode va pte level)
 
 translate :: forall p t. (RiscvProgram p t) => AccessType -> Int -> t -> p t
-translate accessType alignment va = do
+translate accessType alignment va =  do
   pa <- calculateAddress accessType ((fromIntegral :: t -> MachineInt) va)
   if mod pa ((fromIntegral:: Int -> MachineInt) alignment) /= 0  -- Check alignment.
-    -- TODO: Figure out if mtval should be set to pa or va here.
-    then raiseExceptionWithInfo 0 misalignCode pa
-    else return ((fromIntegral :: MachineInt -> t) pa)
+      -- TODO: Figure out if mtval should be set to pa or va here.
+      then raiseExceptionWithInfo 0 misalignCode pa
+      else return ((fromIntegral :: MachineInt -> t) pa)
   where misalignCode =
           case accessType of
             Instruction -> 0
