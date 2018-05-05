@@ -108,11 +108,11 @@ wrap i s = snd $ runState (oneStep i) s
 
 
 {-# ANN topEntity 
- (defTop {t_name="rvspec",
-          t_inputs=[PortField "" 
+ (Synthesize {t_name="rvspec",
+          t_inputs=[PortProduct "" 
                       [ PortName "in_registers", PortName "in_instr",
                         PortName "in_pc", PortName "in_loadData"]],
-          t_output=PortField "" [PortName "out_registers",
+          t_output=PortProduct "" [PortName "out_registers",
                                 PortName "out_nextPC",
                                 PortName "out_storeAddress", PortName "out_storeData",
                                 PortName "out_storeEnable",

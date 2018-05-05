@@ -94,7 +94,7 @@ translateHelper mode va pte level = vaSlice .|. shift ptePPN vaSplit
         vaSlice = bitSlice va 0 vaSplit
         ptePPN = shiftR pte (10 + level * (ppnBits mode))
 
-calculateAddress :: (RiscvProgram p t) => AccessType -> MachineInt -> p MachineInt
+calculateAddress :: (RiscvProgram p t) => AccessType -> MachineInt -> p (MachineInt)
 calculateAddress accessType va = do
   mode <- fmap getMode (getCSRField Field.MODE)
   privMode <- getPrivMode
@@ -140,18 +140,18 @@ calculateAddress accessType va = do
                pageFault accessType va
            | otherwise -> do
                -- Successful translation.
-               return (translateHelper mode va pte level)
+               return (translateHelper mode va pte level, level)
 
 translate :: forall p t. (RiscvProgram p t) => AccessType -> Int -> t -> p t
-translate accessType alignment va =  do
-  pa <- calculateAddress accessType ((fromIntegral :: t -> MachineInt) va)
-  if mod pa ((fromIntegral:: Int -> MachineInt) alignment) /= 0  -- Check alignment.
-      -- TODO: Figure out if mtval should be set to pa or va here.
-      then raiseExceptionWithInfo 0 misalignCode pa
-      else return ((fromIntegral :: MachineInt -> t) pa)
-  where misalignCode =
-          case accessType of
-            Instruction -> 0
-            Load -> 4
-            Store -> 6
-
+translate accessType alignment va = do
+   pa <- calculateAddress accessType ((fromIntegral :: t -> MachineInt) va)
+   if mod pa ((fromIntegral:: Int -> MachineInt) alignment) /= 0  -- Check alignment.
+       -- TODO: Figure out if mtval should be set to pa or va here.
+       then raiseExceptionWithInfo 0 misalignCode pa
+       else return ((fromIntegral :: MachineInt -> t) pa)
+   where misalignCode =
+           case accessType of
+             Instruction -> 0
+             Load -> 4
+             Store -> 6
+ 
