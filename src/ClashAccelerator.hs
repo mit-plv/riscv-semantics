@@ -15,7 +15,6 @@ import Control.Monad
 import Control.Monad.State
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
-import System.IO.Error
 import qualified Data.Map as S
 import ExecuteClash
 import qualified Decode as D
@@ -24,7 +23,7 @@ import qualified Memory as M
 import MapMemory()
 import GcdExpr
 
-data MMIOClash = MMIOClash { instruction :: Word32, registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 , store:: Maybe (Int32,Int32,(Bool,Bool,Bool,Bool)), gcdI1 :: Int32, gcdI2 :: Int32 , exception :: Bool, program :: S.Map Int Word8 }
+data MMIOClash = MMIOClash {  registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 , store:: Maybe (Int32,Int32,(Bool,Bool,Bool,Bool)), gcdI1 :: Int32, gcdI2 :: Int32 , exception :: Bool }
               deriving (Show) -- Beurk, I need to use Word32 instead of Int32 for the addresses.
 
 type MState = State MMIOClash
@@ -35,11 +34,11 @@ instance RiscvProgram MState Int32 where
   setRegister reg val = state $ \comp ->((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
 -- Fake load and stores
   loadWord a = state $ \comp -> (
---                        if (a == 0x4000) 
---                         then gcdI1 comp
---                         else if (a == 0x4004)
---                           then gcdI2 comp
-                         --  else 
+                        if (a == 0x4000) 
+                         then gcdI1 comp
+                         else if (a == 0x4004)
+                           then gcdI2 comp
+                           else 
                             0                   
      ,comp)
   storeWord a v = state $ \comp -> ((), comp{store = Just (fromIntegral a, fromIntegral v,(True,True,True,True))})
@@ -57,7 +56,8 @@ oneStep i = do
   result <- runMaybeT $ do
     pc <- getPC
     setPC (pc + 4)
-    execute (D.decode D.RV32I $ fromIntegral i)
+    let a = D.decode D.RV32I $ fromIntegral i
+    execute a
   case result of
     Nothing -> commit >> (state $ \comp -> ((), comp{exception = True})) -- early return
     Just r -> commit >> return r -- this is a ()
@@ -65,24 +65,28 @@ oneStep i = do
 wrap :: Int32 -> MMIOClash-> MMIOClash
 wrap i s = snd $ runState (oneStep i) s
 
-topEntity:: Clock System Source -> Reset System Asynchronous ->  Signal System Int -> Signal System Int 
-topEntity = exposeClockReset $ mealy 
-     (\(iregister::Int,pc::Int) 
-                     (gcd1::Int) ->
-                      ((iregister,pc), gcd1)) (0,0)
---                      let newstate = wrap i  MMIOClash{registers = reverse iregister,
---                                                      store = Nothing,
---                                                      pc = pc,
---                                                      gcdI1 = gcd1,
---                                                      gcdI2 = gcd2,
---                                                      exception = False
---                                                     }
---                      in
---                        let storeNext = store newstate
---                            npc = nextPC newstate
---                        in
---                          ((reverse $ registers newstate, npc ), (npc,
---                           (\(x,y,z)->x) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
---                           (\(x,y,z)->y) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
---                           (\(x,y,z)->z) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
---                           exception newstate)))
+topEntity:: Clock System Source -> Reset System Asynchronous ->
+    Signal System (Int32,Int32) -> Signal System (Int32,Int32) 
+topEntity = exposeClockReset machine
+machine = mealy 
+     (\(iregister::Vec 31 Int32,pc::Int32) 
+                     (gcd1::Int32, gcd2::Int32) ->
+                      let i = gcdState pc 
+                      in 
+                      let newstate = wrap i MMIOClash{registers = reverse iregister,
+                                                      store = Nothing,
+                                                      pc = pc,
+                                                      gcdI1 = gcd1,
+                                                      gcdI2 = gcd2,
+                                                      exception = False
+                                                     }
+                      in
+                        let storeNext = store newstate
+                            npc = nextPC newstate
+                        in
+                          ((reverse $ registers newstate, npc ), (
+
+--                          ((iregister, pc ), (
+                           (\(x,y,z)->x) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
+                           (\(x,y,z)->y) $ fromMaybe (0,0,(False,False,False,False)) storeNext
+                           ))) (replicate (SNat :: SNat 31) 0, 0)
