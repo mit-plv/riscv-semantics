@@ -43,6 +43,9 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
+- ansi-wl-pprint-0.6.8.2
+- parsers-0.12.8
+- prettyprinter-1.2.0.1
 - ghc-tcplugins-extra-0.2.1
 - ghc-typelits-extra-0.2.3
 - ghc-typelits-knownnat-0.3
