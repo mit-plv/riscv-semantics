@@ -62,3 +62,4 @@ instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (IOState s) 
   endCycle = liftState endCycle
   inTLB a = liftState (inTLB a)-- noTLB
   addTLB a b c= liftState (addTLB a b c) 
+  flushTLB = liftState flushTLB

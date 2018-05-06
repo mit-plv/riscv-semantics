@@ -93,5 +93,6 @@ execute (Sfence_vma vaddr asid) = do
   priv <- getPrivMode
   tvm <- getCSRField Field.TVM
   when (priv == Supervisor && tvm == 1) (raiseException 0 2)
+  flushTLB
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst

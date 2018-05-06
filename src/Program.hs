@@ -43,6 +43,7 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   endCycle :: forall t. p t
   inTLB :: MachineInt -> p (Maybe MachineInt) 
   addTLB :: MachineInt -> MachineInt -> Int -> p () 
+  flushTLB :: p ()
   
 cacheAccess :: forall p t. (RiscvProgram p t) => MachineInt -> p (MachineInt, MachineInt,  Int) -> p MachineInt 
 cacheAccess addr getPA = do
@@ -82,6 +83,7 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   endCycle = MaybeT (return Nothing) -- b is of type (MaybeT p) a 
   addTLB a b c = lift (addTLB a b c)
   inTLB a = lift (inTLB a)
+  flushTLB = lift flushTLB
 
 raiseExceptionWithInfo :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> MachineInt -> p a
 raiseExceptionWithInfo isInterrupt exceptionCode info = do

@@ -72,4 +72,4 @@ instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (BufferState
   endCycle = liftState endCycle
   inTLB a = liftState (inTLB a) -- noTLB
   addTLB a b c = liftState (addTLB a b c)
-  
+  flushTLB = liftState flushTLB

@@ -104,3 +104,4 @@ instance RiscvProgram MState Int64 where
   setCSRField field val = state $ \comp -> ((), comp { csrs = setField field ((fromIntegral:: s -> MachineInt) val) (csrs comp) })
   inTLB a = return Nothing -- noTLB
   addTLB a b c= return ()
+  flushTLB = return ()

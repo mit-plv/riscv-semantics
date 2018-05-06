@@ -105,3 +105,4 @@ instance RiscvProgram MState Int32 where
   storeDouble _ _ = return ()
   inTLB a = return Nothing -- noTLB
   addTLB a b c= return ()
+  flushTLB = return ()
