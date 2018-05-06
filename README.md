@@ -37,6 +37,11 @@ This should produce the output
 
     01101001100101101001011001101001100101100110100101101001100101101001011001101001011010011001011001101001100101101001011001101001
 
+4. Run riscv-tests
+
+To run the default 64 executable simulator on riscv-tests:
+
+   $ stack exec riscv-semantics-tests
 
 ### Generation of verilog (work in progress)
 
