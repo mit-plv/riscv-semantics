@@ -70,6 +70,6 @@ instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (BufferState
   setPrivMode v = liftState (setPrivMode v)
   commit = liftState commit
   endCycle = liftState endCycle
-  inTLB a = liftState (inTLB a) -- noTLB
+  inTLB a b = liftState (inTLB a b) -- noTLB
   addTLB a b c = liftState (addTLB a b c)
   flushTLB = liftState flushTLB

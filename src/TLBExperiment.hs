@@ -17,6 +17,7 @@ import Control.Monad.State
 import VirtualMemory
 import Program
 import Utility
+import Debug.Trace
 
 -- Simple State monad to simulate IO. The first string represents input, the
 -- second represents output.
@@ -52,13 +53,19 @@ instance (RiscvProgram (s) t, MachineWidth t) => RiscvProgram (TlbState   s  ) t
   setPrivMode v = lift (setPrivMode v)
   commit = lift commit
   endCycle = lift endCycle
-  inTLB a = do
-           tlbLevels <- get
+  inTLB accessType a = do
            mode <- fmap getMode (getCSRField Field.MODE)
+           tlbLevels <- get
            let founds = imap (\idx tlbLevel->Map.lookup (getVPN mode a (idx+1)) tlbLevel) tlbLevels 
-           return . listToMaybe . catMaybes $ fmap (\found -> case found of 
-                          Just (pte,level) -> Just $ translateHelper mode a pte level
-                          Nothing -> Nothing) founds 
+           return . listToMaybe . catMaybes $ imap (\idx found -> case found of 
+                          Just (pte,level) ->  
+                               let abit = testBit pte 6
+                                   d = testBit pte 7
+                               in 
+                               if (not abit || (accessType == Store && not d)) 
+                                 then Nothing 
+                                 else Just $ translateHelper mode a pte level
+                          Nothing ->  Nothing) founds 
                            
   addTLB addr pte level = do
       mode <- fmap getMode (getCSRField Field.MODE)
@@ -68,4 +75,4 @@ instance (RiscvProgram (s) t, MachineWidth t) => RiscvProgram (TlbState   s  ) t
                      then Map.insert (getVPN mode addr level) (pte, level) tlbLevel 
                      else tlbLevel
                   ) $ tlbLevels
-  
+  flushTLB = put [Map.empty,Map.empty, Map.empty, Map.empty] 

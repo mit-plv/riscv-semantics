@@ -1,4 +1,4 @@
-import qualified Test as Test
+import qualified TestTLB as Test
 
 
 main = Test.main

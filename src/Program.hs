@@ -9,9 +9,11 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Prelude
+import Debug.Trace
 
 -- Note that this is ordered: User < Supervisor < Machine
 data PrivMode = User | Supervisor | Machine deriving (Eq, Ord, Show)
+data AccessType = Instruction | Load | Store deriving (Eq, Show)
 
 decodePrivMode 0 = User
 decodePrivMode 1 = Supervisor
@@ -41,19 +43,20 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   setPrivMode :: PrivMode -> p ()
   commit :: p ()
   endCycle :: forall t. p t
-  inTLB :: MachineInt -> p (Maybe MachineInt) 
+  inTLB :: AccessType -> MachineInt -> p (Maybe MachineInt) 
   addTLB :: MachineInt -> MachineInt -> Int -> p () 
   flushTLB :: p ()
   
-cacheAccess :: forall p t. (RiscvProgram p t) => MachineInt -> p (MachineInt, MachineInt,  Int) -> p MachineInt 
-cacheAccess addr getPA = do
-      a <- inTLB addr 
+cacheAccess :: forall p t. (RiscvProgram p t) =>AccessType -> MachineInt -> p (MachineInt, MachineInt,  Int) -> p MachineInt 
+cacheAccess accessType addr getPA = do
+      a <-  inTLB accessType addr 
       case a of
         Nothing -> do
                  (pa, pte, level) <- getPA
                  addTLB addr pte level
-                 return pa
-        Just a -> return a  
+                 return $ pa
+        Just a ->
+                 return $ a  
 
 getXLEN :: forall p t s. (RiscvProgram p t, Integral s) => p s
 getXLEN = do
@@ -82,11 +85,11 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   commit = lift commit
   endCycle = MaybeT (return Nothing) -- b is of type (MaybeT p) a 
   addTLB a b c = lift (addTLB a b c)
-  inTLB a = lift (inTLB a)
+  inTLB a b = lift (inTLB a b)
   flushTLB = lift flushTLB
 
 raiseExceptionWithInfo :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> MachineInt -> p a
-raiseExceptionWithInfo isInterrupt exceptionCode info = do
+raiseExceptionWithInfo isInterrupt exceptionCode info =  do
   pc <- getPC
   mode <- getPrivMode
   medeleg <- getCSRField MEDeleg
