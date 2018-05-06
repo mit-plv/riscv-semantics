@@ -76,5 +76,5 @@ main = do
     putStrLn "All tests passed!"
     exitWith ExitSuccess
     else do
-    putStrLn $ (show (sum (map fromEnum results))) ++ "/" ++ (show $ length tests) ++ " tests passed."
+    putStrLn $ (show (sum (map fromEnum results))) ++ "/" ++ (show $ length allTests) ++ " tests passed."
     exitWith (ExitFailure 1)

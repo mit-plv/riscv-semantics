@@ -44,13 +44,13 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   inTLB :: MachineInt -> p (Maybe MachineInt) 
   addTLB :: MachineInt -> MachineInt -> Int -> p () 
   
-cacheAccess :: forall p t. (RiscvProgram p t) => MachineInt -> p (MachineInt,Int) -> p MachineInt 
+cacheAccess :: forall p t. (RiscvProgram p t) => MachineInt -> p (MachineInt, MachineInt,  Int) -> p MachineInt 
 cacheAccess addr getPA = do
       a <- inTLB addr 
       case a of
         Nothing -> do
-                 (pa,level) <- getPA
-                 addTLB addr pa level
+                 (pa, pte, level) <- getPA
+                 addTLB addr pte level
                  return pa
         Just a -> return a  
 

@@ -1,3 +1,4 @@
-import qualified Test
+import qualified Test as Test
+
 
 main = Test.main

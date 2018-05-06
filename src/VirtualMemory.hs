@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiWayIf, ScopedTypeVariables #-}
 
-module VirtualMemory (AccessType(..), translate) where
+module VirtualMemory (AccessType(..), translate, getVPN, getMode, translateHelper) where
 import Program
 import Utility
 import qualified CSRField as Field
@@ -133,14 +133,14 @@ calculateAddress accessType va = do
                pageFault accessType va
            | not a || (accessType == Store && not d) -> do
                -- Set dirty/access bits in hardware:
-               -- let newPTE = (pte .|. (bit 6) .|. (if accessType == Store then bit 7 else 0))
-               -- storeXLEN (fromIntegral addr) newPTE
-               -- return (translateHelper mode va newPTE level)
-               -- Set dirty/access bits in software:
+              -- let newPTE = (pte .|. (bit 6) .|. (if accessType == Store then bit 7 else 0))
+              -- storeXLEN (fromIntegral addr) newPTE
+              -- return (translateHelper mode va newPTE level, newPTE, level)
+               --Set dirty/access bits in software:
                pageFault accessType va
            | otherwise -> do
                -- Successful translation.
-               return (translateHelper mode va pte level, level)
+               return (translateHelper mode va pte level, pte, level)
 
 translate :: forall p t. (RiscvProgram p t) => AccessType -> Int -> t -> p t
 translate accessType alignment va = do

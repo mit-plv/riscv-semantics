@@ -1,4 +1,4 @@
-module Test where
+module TestTLB where
 import Data.Int
 import Data.List
 import qualified Data.Map as S
@@ -13,6 +13,7 @@ import Decode
 import Execute
 import Run (readProgram)
 import TLBExperiment
+import BufferMMIO
 import CSRFile
 import Program
 import Spec
@@ -54,9 +55,22 @@ getRiscvTests = do
         isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-p-" f || isPrefixOf "rv64ui-v-" f) &&
                       not (isSuffixOf ".dump" f)
 
+
+--test iset maybeToHostAddress comp input =
+--  runStateT (
+--   runStateT 
+--   (stepHelper iset maybeToHostAddress (return False) :: BufferState (TlbState MState Int64) Int64) comp)
+--   input
+--   [S.empty, S.empty, S.empty, S.empty]
+
+
 runProgram :: InstructionSet -> Maybe Int64 -> Minimal64 -> String -> (Int64, String)
-runProgram iset maybeToHostAddress comp input = (returnValue, "")
-  where ((returnValue, _)) = runTlb (runStateT (stepHelper iset maybeToHostAddress (return False) :: TlbState Minimal64 Int64) comp) [S.empty, S.empty, S.empty, S.empty]
+runProgram iset maybeToHostAddress comp input = (fst .fst . fst $final, snd final)
+  where final = runBufferIO (runStateT (runStateT (stepHelper iset maybeToHostAddress (return False) :: TlbState (BufferState Minimal64) Int64) [S.empty, S.empty, S.empty,S.empty]) comp) input 
+
+
+
+-- runState (runStateT (stepHelper iset maybeToHostAddress (return False) :: TlbState MState Int64) [S.empty, S.empty, S.empty, S.empty]) comp
 
 runFile :: InstructionSet -> String -> String -> IO (Int64, String)
 runFile iset f input = do
@@ -76,5 +90,5 @@ main = do
     putStrLn "All tests passed!"
     exitWith ExitSuccess
     else do
-    putStrLn $ (show (sum (map fromEnum results))) ++ "/" ++ (show $ length tests) ++ " tests passed."
+    putStrLn $ (show (sum (map fromEnum results))) ++ "/" ++ (show $ length allTests) ++ " tests passed."
     exitWith (ExitFailure 1)
