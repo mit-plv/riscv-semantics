@@ -24,15 +24,6 @@ import Debug.Trace
 type Tlb = ([Map.Map MachineInt (MachineInt,Int)])
 type TlbState s = StateT Tlb s 
 
---getTlbs :: Tlb ([Map.Map MachineInt (MachineInt,Int)])
---getTlbs = state $ \l -> (l,l)
---putTlbs :: [Map.Map MachineInt (MachineInt,Int)] -> Tlb ()
---putTlbs new = state $ \l -> ((),new)
---runTlb :: Tlb a -> [Map.Map MachineInt (MachineInt,Int)] -> a
---runTlb m input = fst $ runState m input
---
-
-
 
 instance (RiscvProgram (s) t, MachineWidth t) => RiscvProgram (TlbState   s  ) t where
   getRegister r = lift (getRegister r)
