@@ -60,5 +60,5 @@ instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (IOState s) 
   setPrivMode v = liftState (setPrivMode v)
   commit = liftState commit
   endCycle = liftState endCycle
-  inTLB a = return Nothing -- noTLB
-  addTLB a b= return ()
+  inTLB a = liftState (inTLB a)-- noTLB
+  addTLB a b c= liftState (addTLB a b c) 

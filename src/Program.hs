@@ -42,7 +42,7 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   commit :: p ()
   endCycle :: forall t. p t
   inTLB :: MachineInt -> p (Maybe MachineInt) 
-  addTLB :: MachineInt -> MachineInt -> p () 
+  addTLB :: MachineInt -> MachineInt -> Int -> p () 
   
 cacheAccess :: forall p t. (RiscvProgram p t) => MachineInt -> p (MachineInt,Int) -> p MachineInt 
 cacheAccess addr getPA = do
@@ -50,7 +50,7 @@ cacheAccess addr getPA = do
       case a of
         Nothing -> do
                  (pa,level) <- getPA
-                 addTLB addr pa
+                 addTLB addr pa level
                  return pa
         Just a -> return a  
 
@@ -80,7 +80,7 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   setPrivMode m = lift (setPrivMode m)
   commit = lift commit
   endCycle = MaybeT (return Nothing) -- b is of type (MaybeT p) a 
-  addTLB a b = lift (addTLB a b)
+  addTLB a b c = lift (addTLB a b c)
   inTLB a = lift (inTLB a)
 
 raiseExceptionWithInfo :: forall a p t. (RiscvProgram p t) => MachineInt -> MachineInt -> MachineInt -> p a
