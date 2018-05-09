@@ -15,8 +15,10 @@ execute inst = do
   case inst of
     IInstruction   i     -> I.execute   i
     MInstruction   i     -> M.execute   i
+    AInstruction   i     -> raiseExceptionWithInfo 0 2 i -- TODO
     I64Instruction i     -> I64.execute i
     M64Instruction i     -> M64.execute i
+    A64Instruction i     -> raiseExceptionWithInfo 0 2 i -- TODO
     CSRInstruction i     -> CSR.execute i
     InvalidInstruction i -> raiseExceptionWithInfo 0 2 i
   cycles <- getCSRField Field.MCycle

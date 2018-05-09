@@ -80,6 +80,24 @@ data InstructionM =
   deriving (Eq, Read, Show)
 
 
+data InstructionA =
+  Lr_w { rd :: Register, rs1 :: Register, aqrl :: MachineInt } |
+  Sc_w { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+
+  Amoswap_w { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amoadd_w { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amoand_w { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amoor_w { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amoxor_w { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amomax_w { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amomaxu_w { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amomin_w { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amominu_w { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+
+  InvalidA
+  deriving (Eq, Read, Show)
+
+
 data InstructionI64 =
   Ld { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
   Lwu { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
@@ -111,6 +129,24 @@ data InstructionM64 =
   deriving (Eq, Read, Show)
 
 
+data InstructionA64 =
+  Lr_d { rd :: Register, rs1 :: Register, aqrl :: MachineInt } |
+  Sc_d { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+
+  Amoswap_d { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amoadd_d { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amoand_d { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amoor_d { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amoxor_d { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amomax_d { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amomaxu_d { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amomin_d { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+  Amominu_d { rd :: Register, rs1 :: Register, rs2 :: Register, aqrl :: MachineInt } |
+
+  InvalidA64
+  deriving (Eq, Read, Show)
+
+
 data InstructionCSR =
   Ecall |
   Ebreak |
@@ -132,8 +168,10 @@ data InstructionCSR =
 data Instruction =
   IInstruction   { iInstruction   :: InstructionI   } |
   MInstruction   { mInstruction   :: InstructionM   } |
+  AInstruction   { aInstruction   :: InstructionA   } |
   I64Instruction { i64Instruction :: InstructionI64 } |
   M64Instruction { m64Instruction :: InstructionM64 } |
+  A64Instruction { a64Instruction :: InstructionA64 } |
   CSRInstruction { csrInstruction :: InstructionCSR } |
   InvalidInstruction { inst :: MachineInt }
   deriving (Eq, Read, Show)
@@ -352,8 +390,23 @@ funct3_CSRRWI :: MachineInt;    funct3_CSRRWI = 0b101
 funct3_CSRRSI :: MachineInt;    funct3_CSRRSI = 0b110
 funct3_CSRRCI :: MachineInt;    funct3_CSRRCI = 0b111
 
+-- AMO sub-opcodes, A standard extension
+funct3_AMOW :: MachineInt;    funct3_AMOW = 0b010
+funct3_AMOD :: MachineInt;    funct3_AMOD = 0b011
+
+funct5_LR      :: MachineInt;    funct5_LR      = 0b00010
+funct5_SC      :: MachineInt;    funct5_SC      = 0b00011
+funct5_AMOSWAP :: MachineInt;    funct5_AMOSWAP = 0b00001
+funct5_AMOADD  :: MachineInt;    funct5_AMOADD  = 0b00000
+funct5_AMOXOR  :: MachineInt;    funct5_AMOXOR  = 0b00100
+funct5_AMOAND  :: MachineInt;    funct5_AMOAND  = 0b01100
+funct5_AMOOR   :: MachineInt;    funct5_AMOOR   = 0b01000
+funct5_AMOMIN  :: MachineInt;    funct5_AMOMIN  = 0b10000
+funct5_AMOMAX  :: MachineInt;    funct5_AMOMAX  = 0b10100
+funct5_AMOMINU :: MachineInt;    funct5_AMOMINU = 0b11000
+funct5_AMOMAXU :: MachineInt;    funct5_AMOMAXU = 0b11100
+
 -- TODO: sub-opcodes for LOAD_FP, STORE_FP, OP_FP
--- TODO: sub-opcodes for AMO
 -- TODO: sub-opcodes for MADD, MSUB, NMSUB, NMADD
 
 -- ================================================================
@@ -363,6 +416,8 @@ isValidI inst = inst /= InvalidI
 isValidI64 inst = inst /= InvalidI64
 isValidM inst = inst /= InvalidM
 isValidM64 inst = inst /= InvalidM64
+isValidA inst = inst /= InvalidA
+isValidA64 inst = inst /= InvalidA64
 isValidCSR inst = inst /= InvalidCSR
 
 -- ================================================================
@@ -385,8 +440,10 @@ decode iset inst = case results of
 
     resultI = if isValidI decodeI then [IInstruction decodeI] else []
     resultM = if isValidM decodeM then [MInstruction decodeM] else []
+    resultA = if isValidA decodeA then [AInstruction decodeA] else []
     resultI64 = if isValidI64 decodeI64 then [I64Instruction decodeI64] else []
     resultM64 = if isValidM64 decodeM64 then [M64Instruction decodeM64] else []
+    resultA64 = if isValidA64 decodeA64 then [A64Instruction decodeA64] else []
     resultCSR = if isValidCSR decodeCSR then [CSRInstruction decodeCSR] else []
 
     -- Symbolic names for notable bitfields in the 32b instruction 'inst'
@@ -433,6 +490,9 @@ decode iset inst = case results of
     shamtHiTest = shamtHi == 0 || bitwidth iset == 64
 
     zimm    = bitSlice inst 15 20    -- for CSRRxI
+
+    funct5  = bitSlice inst 27 32    -- for A extension
+    aqrl    = bitSlice inst 25 27    -- for A extension
 
     decodeI
       | opcode==opcode_LOAD, funct3==funct3_LB  = Lb  rd rs1 oimm12
@@ -497,6 +557,22 @@ decode iset inst = case results of
       | opcode==opcode_OP, funct3==funct3_REMU,   funct7==funct7_REMU   = Remu   rd rs1 rs2
       | True = InvalidM
 
+    decodeA
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_LR, rs2==0 = Lr_w      rd rs1 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_SC         = Sc_w      rd rs1 rs2 aqrl
+
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_AMOSWAP    = Amoswap_w rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_AMOADD     = Amoadd_w  rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_AMOXOR     = Amoxor_w  rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_AMOAND     = Amoand_w  rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_AMOOR      = Amoor_w   rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_AMOMIN     = Amomin_w  rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_AMOMAX     = Amomax_w  rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_AMOMINU    = Amominu_w rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOW, funct5==funct5_AMOMAXU    = Amomaxu_w rd rs1 rs2 aqrl
+
+      | True = InvalidA
+
     decodeI64
       | opcode==opcode_LOAD, funct3==funct3_LD  = Ld  rd rs1 oimm12
       | opcode==opcode_LOAD, funct3==funct3_LWU = Lwu rd rs1 oimm12
@@ -523,6 +599,22 @@ decode iset inst = case results of
       | opcode==opcode_OP_32, funct3==funct3_REMW,  funct7==funct7_REMW  = Remw  rd rs1 rs2
       | opcode==opcode_OP_32, funct3==funct3_REMUW, funct7==funct7_REMUW = Remuw rd rs1 rs2
       | True = InvalidM64
+
+    decodeA64
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_LR, rs2==0 = Lr_d      rd rs1 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_SC         = Sc_d      rd rs1 rs2 aqrl
+
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_AMOSWAP    = Amoswap_d rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_AMOADD     = Amoadd_d  rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_AMOXOR     = Amoxor_d  rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_AMOAND     = Amoand_d  rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_AMOOR      = Amoor_d   rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_AMOMIN     = Amomin_d  rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_AMOMAX     = Amomax_d  rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_AMOMINU    = Amominu_d rd rs1 rs2 aqrl
+      | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_AMOMAXU    = Amomaxu_d rd rs1 rs2 aqrl
+
+      | True = InvalidA64
 
     decodeCSR
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, funct7==funct7_SFENCE_VMA        = Sfence_vma rs1 rs2
