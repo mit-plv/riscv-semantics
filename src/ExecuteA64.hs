@@ -5,9 +5,8 @@ import Program
 import Utility
 import VirtualMemory
 import Control.Monad
+import Data.Bits
 import Prelude
-
--- TODO!
 
 execute :: forall p t. (RiscvProgram p t) => InstructionA64 -> p ()
 -- begin ast
@@ -27,14 +26,69 @@ execute (Sc_d rd rs1 rs2 aqrl) = do
     storeDouble addr (regToInt64 x)
     setRegister rd 0
     else setRegister rd 1
-execute (Amoswap_d rd rs1 rs2 aqrl) = raiseException 0 2
-execute (Amoadd_d rd rs1 rs2 aqrl) = raiseException 0 2
-execute (Amoand_d rd rs1 rs2 aqrl) = raiseException 0 2
-execute (Amoor_d rd rs1 rs2 aqrl) = raiseException 0 2
-execute (Amoxor_d rd rs1 rs2 aqrl) = raiseException 0 2
-execute (Amomax_d rd rs1 rs2 aqrl) = raiseException 0 2
-execute (Amomaxu_d rd rs1 rs2 aqrl) = raiseException 0 2
-execute (Amomin_d rd rs1 rs2 aqrl) = raiseException 0 2
-execute (Amominu_d rd rs1 rs2 aqrl) = raiseException 0 2
+-- TODO: Eventually stop cheating.
+execute (Amoswap_d rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  x <- loadDouble addr
+  setRegister rd (int64ToReg x)
+  y <- getRegister rs2
+  storeDouble addr (regToInt64 y)
+execute (Amoadd_d rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  x <- loadDouble addr
+  setRegister rd (int64ToReg x)
+  y <- getRegister rs2
+  storeDouble addr (regToInt64 (int64ToReg x + y))
+execute (Amoand_d rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  x <- loadDouble addr
+  setRegister rd (int64ToReg x)
+  y <- getRegister rs2
+  storeDouble addr (regToInt64 (int64ToReg x .&. y))
+execute (Amoor_d rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  x <- loadDouble addr
+  setRegister rd (int64ToReg x)
+  y <- getRegister rs2
+  storeDouble addr (regToInt64 (int64ToReg x .|. y))
+execute (Amoxor_d rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  x <- loadDouble addr
+  setRegister rd (int64ToReg x)
+  y <- getRegister rs2
+  storeDouble addr (regToInt64 (xor (int64ToReg x) y))
+execute (Amomax_d rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  x <- loadDouble addr
+  setRegister rd (int64ToReg x)
+  y <- getRegister rs2
+  storeDouble addr (regToInt64 (if x > (regToInt64 y) then x else regToInt64 y))
+execute (Amomaxu_d rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  x <- loadDouble addr
+  setRegister rd (int64ToReg x)
+  y <- getRegister rs2
+  storeDouble addr (regToInt64 (if ltu (regToInt64 y) x then x else regToInt64 y))
+execute (Amomin_d rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  x <- loadDouble addr
+  setRegister rd (int64ToReg x)
+  y <- getRegister rs2
+  storeDouble addr (regToInt64 (if x < (regToInt64 y) then x else (regToInt64 y)))
+execute (Amominu_d rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  x <- loadDouble addr
+  setRegister rd (int64ToReg x)
+  y <- getRegister rs2
+  storeDouble addr (regToInt64 (if ltu x (regToInt64 y) then x else (regToInt64 y)))
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst

@@ -52,7 +52,7 @@ getRiscvTests = do
   ls <- getDirectoryContents "riscv-tests/isa"
   return (map makeTest (sort (filter isEnabled ls)))
   where makeTest f = Test ("../../riscv-tests/isa/" ++ f) RV64IMA "" 0 ""
-        isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-p-" f || isPrefixOf "rv64ui-v-" f || f `elem` ["rv64ua-p-lrsc", "rv64ua-v-lrsc", "rv64ua-p-amoadd_w", "rv64ua-v-amoadd_w"]) &&
+        isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-p-" f || isPrefixOf "rv64ui-v-" f || isPrefixOf "rv64ua-" f) &&
                       not (isSuffixOf ".dump" f)
 
 runProgram :: InstructionSet -> Maybe Int64 -> Minimal64 -> String -> (Int64, String)

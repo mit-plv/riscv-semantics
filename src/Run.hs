@@ -21,7 +21,6 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.State
-import Logger
 import Control.Monad.Trans.Writer
 import qualified Data.Map as S
 import Debug.Trace
@@ -58,8 +57,7 @@ checkInterrupt = do
 
 runProgram :: Maybe Int64 -> Minimal64 -> IO (Int64, Minimal64)
 
--- runProgram maybeToHostAddress = runStateT (stepHelper RV64IMA maybeToHostAddress (liftIO checkInterrupt) :: IOState Minimal64 Int64)
-runProgram maybeToHostAddress = runStateT $ runWriterT (stepHelper RV64IMA maybeToHostAddress (liftIO checkInterrupt) :: WriterT String (IOState Minimal64) Int64) >>= (\(a, b) -> return a)
+runProgram maybeToHostAddress = runStateT (stepHelper RV64IMA maybeToHostAddress (liftIO checkInterrupt) :: IOState Minimal64 Int64)
 
 readProgram :: String -> IO (Maybe Int64, [(Int, Word8)])
 readProgram f = do
