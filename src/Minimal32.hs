@@ -6,7 +6,7 @@ import Utility
 import CSRFile
 import qualified CSRField as Field
 import qualified Memory as M
-import MapMemory()
+import MapMemory
 import Data.Bits
 import Data.Int
 import Data.Word
@@ -14,7 +14,7 @@ import qualified Data.Map as S
 import Control.Monad.State
 
 data Minimal32 = Minimal32 { registers :: [Int32], csrs :: CSRFile, pc :: Int32,
-                             nextPC :: Int32, privMode :: PrivMode, mem :: S.Map Int Word8 }
+                             nextPC :: Int32, privMode :: PrivMode, mem :: MapMemory Int }
                deriving (Show)
 
 type MState = State Minimal32
@@ -39,9 +39,9 @@ memMapTable :: S.Map MachineInt (LoadFunc, StoreFunc)
 memMapTable = S.fromList [(0x200bff8, (getMTime, setMTime))]
 mtimecmp_addr = 0x2004000
 
-wrapLoad :: forall a' r r'. (Integral a', Integral r, Integral r') => (S.Map Int Word8 -> Int -> r) -> (a' -> MState r')
+wrapLoad :: forall a' r r' m. (Integral a', Integral r, Integral r') => (MapMemory Int -> Int -> r) -> (a' -> MState r')
 wrapLoad loadFunc addr = state $ \comp -> ((fromIntegral:: r -> r') $ loadFunc (mem comp) ((fromIntegral:: Word32 -> Int) ((fromIntegral:: a' -> Word32) addr)), comp)
-wrapStore :: forall a' v v'. (Integral a', Integral v, Integral v') => (S.Map Int Word8 -> Int -> v -> S.Map Int Word8) -> (a' -> v' -> MState ())
+wrapStore :: forall a' v v' m. (Integral a', Integral v, Integral v') => (MapMemory Int -> Int -> v -> MapMemory Int) -> (a' -> v' -> MState ())
 wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) ((fromIntegral:: Word32 -> Int) ((fromIntegral:: a' -> Word32) addr)) ((fromIntegral:: v' -> v) val) })
 
 instance RiscvProgram MState Int32 where
@@ -96,6 +96,9 @@ instance RiscvProgram MState Int32 where
     case S.lookup ((fromIntegral:: s -> MachineInt) addr) memMapTable of
       Just (_, setFunc) -> setFunc val
       Nothing -> wrapStore M.storeWord addr val
+  makeReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word32 -> Int) ((fromIntegral :: Int32 -> Word32) addr)) })
+  checkReservation addr = state $ \comp -> (M.checkReservation (mem comp) ((fromIntegral :: Word32 -> Int) ((fromIntegral :: Int32 -> Word32) addr)), comp)
+  clearReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word32 -> Int) ((fromIntegral :: Int32 -> Word32) addr)) })
   -- CSRs:
   getCSRField field = state $ \comp -> (getField field (csrs comp), comp)
   setCSRField :: forall s. (Integral s) => Field.CSRField -> s -> MState ()
@@ -104,4 +107,4 @@ instance RiscvProgram MState Int32 where
   loadDouble _ = return 0
   storeDouble _ _ = return ()
   inTLB a = return Nothing -- noTLB
-  addTLB a b= return ()
+  addTLB a b = return ()

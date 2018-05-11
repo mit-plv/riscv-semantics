@@ -62,6 +62,9 @@ instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (BufferState
       Just (_, setFunc) -> setFunc (fromIntegral val)
       Nothing -> liftState (storeWord addr val)
   storeDouble a v = liftState (storeDouble a v)
+  makeReservation a = liftState (makeReservation a)
+  checkReservation a = liftState (checkReservation a)
+  clearReservation a = liftState (clearReservation a)
   getCSRField f = liftState (getCSRField f)
   setCSRField f v = liftState (setCSRField f v)
   getPC = liftState getPC
@@ -71,5 +74,5 @@ instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (BufferState
   commit = liftState commit
   endCycle = liftState endCycle
   inTLB a = return Nothing -- noTLB
-  addTLB a b= return ()
-  
+  addTLB a b = return ()
+

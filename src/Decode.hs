@@ -178,19 +178,35 @@ data Instruction =
 
 -- ================================================================
 
-data InstructionSet = RV32I | RV32IM | RV64I | RV64IM deriving (Eq, Show)
+-- TODO: Switch to a representation that doesn't involve enumerating all the
+-- combinatoric possibilities; possibily the one used by the MISA CSR.
+data InstructionSet = RV32I | RV32IM | RV32IA | RV32IMA |
+                      RV64I | RV64IM | RV64IA | RV64IMA
+  deriving (Eq, Show)
 
 bitwidth :: InstructionSet -> Int
 bitwidth RV32I = 32
 bitwidth RV32IM = 32
+bitwidth RV32IA = 32
+bitwidth RV32IMA = 32
 bitwidth RV64I = 64
 bitwidth RV64IM = 64
+bitwidth RV64IA = 64
+bitwidth RV64IMA = 64
 
 supportsM :: InstructionSet -> Bool
-supportsM RV32I = False
 supportsM RV32IM = True
-supportsM RV64I = False
+supportsM RV32IMA = True
 supportsM RV64IM = True
+supportsM RV64IMA = True
+supportsM _ = False
+
+supportsA :: InstructionSet -> Bool
+supportsA RV32IA = True
+supportsA RV32IMA = True
+supportsA RV64IA = True
+supportsA RV64IMA = True
+supportsA _ = False
 
 -- ================================================================
 
@@ -434,8 +450,10 @@ decode iset inst = case results of
     results =
       resultI ++
       (if supportsM iset then resultM else []) ++
+      (if supportsA iset then resultA else []) ++
       (if bitwidth iset == 64 then resultI64 else []) ++
       (if bitwidth iset == 64 && supportsM iset then resultM64 else []) ++
+      (if bitwidth iset == 64 && supportsA iset then resultA64 else []) ++
       resultCSR
 
     resultI = if isValidI decodeI then [IInstruction decodeI] else []

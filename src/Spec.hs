@@ -6,7 +6,6 @@ import Decode
 import Utility
 import qualified CSRField as Field
 import Data.Int
-import Debug.Trace
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe

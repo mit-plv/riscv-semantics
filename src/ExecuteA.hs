@@ -3,17 +3,37 @@ module ExecuteA where
 import Decode
 import Program
 import Utility
+import VirtualMemory
 import Control.Monad
 import Prelude
 
--- TODO!
-
 execute :: forall p t. (RiscvProgram p t) => InstructionA -> p ()
 -- begin ast
-execute (Lr_w rd rs1 aqrl) = raiseException 0 2
-execute (Sc_w rd rs1 rs2 aqrl) = raiseException 0 2
+execute (Lr_w rd rs1 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Load 4 a
+  makeReservation addr
+  x <- loadWord addr
+  setRegister rd (int32ToReg x)
+execute (Sc_w rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  valid <- checkReservation addr
+  if valid
+    then do
+    x <- getRegister rs2
+    storeWord addr (regToInt32 x)
+    setRegister rd 0
+    else setRegister rd 1
+-- TODO: Finish implementing the rest, and eventually stop cheating.
 execute (Amoswap_w rd rs1 rs2 aqrl) = raiseException 0 2
-execute (Amoadd_w rd rs1 rs2 aqrl) = raiseException 0 2
+execute (Amoadd_w rd rs1 rs2 aqrl) = do
+  a <- getRegister rs1
+  addr <- translate Store 4 a
+  x <- loadWord addr
+  setRegister rd (int32ToReg x)
+  y <- getRegister rs2
+  storeWord addr (regToInt32 (int32ToReg x + y))
 execute (Amoand_w rd rs1 rs2 aqrl) = raiseException 0 2
 execute (Amoor_w rd rs1 rs2 aqrl) = raiseException 0 2
 execute (Amoxor_w rd rs1 rs2 aqrl) = raiseException 0 2

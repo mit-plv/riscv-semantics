@@ -16,10 +16,13 @@ import Decode
 import Execute
 import VirtualMemory
 import Spec
+import MapMemory
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.State
+import Logger
+import Control.Monad.Trans.Writer
 import qualified Data.Map as S
 import Debug.Trace
 import Numeric (showHex, readHex)
@@ -54,7 +57,9 @@ checkInterrupt = do
   else return False
 
 runProgram :: Maybe Int64 -> Minimal64 -> IO (Int64, Minimal64)
-runProgram maybeToHostAddress = runStateT (stepHelper RV64IM maybeToHostAddress (liftIO checkInterrupt) :: IOState Minimal64 Int64)
+
+-- runProgram maybeToHostAddress = runStateT (stepHelper RV64IMA maybeToHostAddress (liftIO checkInterrupt) :: IOState Minimal64 Int64)
+runProgram maybeToHostAddress = runStateT $ runWriterT (stepHelper RV64IMA maybeToHostAddress (liftIO checkInterrupt) :: WriterT String (IOState Minimal64) Int64) >>= (\(a, b) -> return a)
 
 readProgram :: String -> IO (Maybe Int64, [(Int, Word8)])
 readProgram f = do
@@ -70,8 +75,12 @@ readProgram f = do
 runFile :: String -> IO Int64
 runFile f = do
   (maybeToHostAddress, mem) <- readProgram f
-  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 64), pc = 0x80000000, nextPC = 0,
-                      privMode = Machine, mem = S.fromList mem } in
+  let c = Minimal64 { registers = (take 31 $ repeat 0),
+                      csrs = (resetCSRFile 64),
+                      pc = 0x80000000,
+                      nextPC = 0,
+                      privMode = Machine,
+                      mem = MapMemory { bytes = S.fromList mem, reservation = Nothing } } in
     fmap fst $ runProgram maybeToHostAddress c
 
 runFiles :: [String] -> IO Int64
