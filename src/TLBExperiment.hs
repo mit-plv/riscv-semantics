@@ -22,7 +22,7 @@ import Debug.Trace
 -- Simple State monad to simulate IO. The first string represents input, the
 -- second represents output.
 type Tlb = ([Map.Map MachineInt (MachineInt,Int)])
-type TlbState s = StateT Tlb s 
+type TlbState s = StateT Tlb s
 
 
 instance (RiscvProgram (s) t, MachineWidth t) => RiscvProgram (TlbState   s  ) t where
@@ -47,23 +47,23 @@ instance (RiscvProgram (s) t, MachineWidth t) => RiscvProgram (TlbState   s  ) t
   inTLB accessType a = do
            mode <- fmap getMode (getCSRField Field.MODE)
            tlbLevels <- get
-           let founds = imap (\idx tlbLevel->Map.lookup (getVPN mode a (idx+1)) tlbLevel) tlbLevels 
-           return . listToMaybe . catMaybes $ imap (\idx found -> case found of 
-                          Just (pte,level) ->  
+           let founds = imap (\idx tlbLevel -> Map.lookup (getVPN mode a (idx+1)) tlbLevel) tlbLevels
+           return . listToMaybe . catMaybes $ imap (\idx found -> case found of
+                          Just (pte,level) ->
                                let abit = testBit pte 6
-                                   d = testBit pte 7
-                               in 
-                               if (not abit || (accessType == Store && not d)) 
-                                 then Nothing 
+                                   dbit = testBit pte 7
+                               in
+                               if (not abit || (accessType == Store && not dbit))
+                                 then Nothing
                                  else Just $ translateHelper mode a pte level
-                          Nothing ->  Nothing) founds 
-                           
+                          Nothing ->  Nothing) founds
+
   addTLB addr pte level = do
       mode <- fmap getMode (getCSRField Field.MODE)
       tlbLevels <- get
-      put . imap (\idx tlbLevel -> 
-                   if (idx == level -1) 
-                     then Map.insert (getVPN mode addr level) (pte, level) tlbLevel 
+      put . imap (\idx tlbLevel ->
+                   if (idx == level -1)
+                     then Map.insert (getVPN mode addr level) (pte, level) tlbLevel
                      else tlbLevel
                   ) $ tlbLevels
-  flushTLB = put [Map.empty,Map.empty, Map.empty, Map.empty] 
+  flushTLB = put [Map.empty,Map.empty, Map.empty, Map.empty]
