@@ -33,6 +33,9 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   storeHalf :: t -> Int16 -> p ()
   storeWord :: t -> Int32 -> p ()
   storeDouble :: t -> Int64 -> p ()
+  makeReservation :: t -> p ()
+  checkReservation :: t -> p Bool
+  clearReservation :: t -> p ()
   getCSRField :: CSRField -> p MachineInt
   setCSRField :: (Integral s) => CSRField -> s -> p ()
   getPC :: p t
@@ -46,13 +49,13 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   
 cacheAccess :: forall p t. (RiscvProgram p t) => MachineInt -> p (MachineInt,Int) -> p MachineInt 
 cacheAccess addr getPA = do
-      a <- inTLB addr 
+      a <- inTLB addr
       case a of
         Nothing -> do
                  (pa,level) <- getPA
                  addTLB addr pa
                  return pa
-        Just a -> return a  
+        Just a -> return a
 
 getXLEN :: forall p t s. (RiscvProgram p t, Integral s) => p s
 getXLEN = do
@@ -72,6 +75,9 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   storeHalf a v = lift (storeHalf a v)
   storeWord a v = lift (storeWord a v)
   storeDouble a v = lift (storeDouble a v)
+  makeReservation a = lift (makeReservation a)
+  checkReservation a = lift (checkReservation a)
+  clearReservation a = lift (clearReservation a)
   getCSRField f = lift (getCSRField f)
   setCSRField f v = lift (setCSRField f v)
   getPC = lift getPC

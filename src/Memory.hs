@@ -11,3 +11,6 @@ class Memory m a where
   storeHalf :: m -> a -> Word16 -> m
   storeWord :: m -> a -> Word32 -> m
   storeDouble :: m -> a -> Word64 -> m
+  makeReservation :: m -> a -> m
+  checkReservation :: m -> a -> Bool
+  clearReservation :: m -> a -> m

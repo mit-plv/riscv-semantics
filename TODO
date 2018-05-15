@@ -152,3 +152,8 @@ Tuesday, April 17th
 * Debug rv64mi-* tests.
 * Debug rv64ui-v-* tests.
 * Get some level of tandem debugging with Spike working.
+
+Tuesday, May 1st
+* Implement "A" extension using GADTs
+* Implement "F" extension?
+* Attempt to boot Linux!

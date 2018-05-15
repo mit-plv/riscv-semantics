@@ -30,6 +30,11 @@ liftTellInt s op = do
   tell (s ++ " = " ++ (show (fromIntegral m)))
   return m
 
+liftTellBool s op = do
+  m <- lift op
+  tell (s ++ " = " ++ (show m))
+  return m
+
 instance (RiscvProgram p t) => RiscvProgram (WriterT String p) t where
   getRegister r = do
     liftTellInt ("getRegister " ++ (show (fromIntegral r))) (getRegister r)
@@ -51,6 +56,12 @@ instance (RiscvProgram p t) => RiscvProgram (WriterT String p) t where
     liftTell ("storeWord " ++ (show (fromIntegral a, fromIntegral v))) (storeWord a v)
   storeDouble a v = do
     liftTell ("storeDouble " ++ (show (fromIntegral a, fromIntegral v))) (storeDouble a v)
+  makeReservation a = do
+    liftTell ("makeReservation 0x" ++ (showHex (fromIntegral a :: Word64) "")) (makeReservation a)
+  checkReservation a = do
+    liftTellBool ("checkReservation 0x" ++ (showHex (fromIntegral a :: Word64) "")) (checkReservation a)
+  clearReservation a = do
+    liftTell ("clearReservation 0x" ++ (showHex (fromIntegral a :: Word64) "")) (clearReservation a)
   getCSRField f = do
     liftTellInt ("getCSRField " ++ (show f)) (getCSRField f)
   setCSRField f v = do
@@ -67,3 +78,7 @@ instance (RiscvProgram p t) => RiscvProgram (WriterT String p) t where
     liftTell "commit" commit
   endCycle = do
     liftTell "endCycle" endCycle
+  inTLB a = do
+    liftTell ("inTLB 0x" ++ (showHex (fromIntegral a :: Word64) "")) (inTLB a)
+  addTLB a b = do
+    liftTell ("addTLB 0x" ++ (showHex (fromIntegral a :: Word64) "") ++ " 0x" ++ (showHex (fromIntegral b :: Word64) "")) (addTLB a b)

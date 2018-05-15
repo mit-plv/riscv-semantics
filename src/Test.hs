@@ -18,6 +18,7 @@ import Program
 import Spec
 import Utility
 import VirtualMemory
+import MapMemory
 
 data Test = Test { name :: String, instructionSet :: InstructionSet, input :: String, returnValue :: Int64, output :: String }
 
@@ -50,8 +51,8 @@ getRiscvTests :: IO [Test]
 getRiscvTests = do
   ls <- getDirectoryContents "riscv-tests/isa"
   return (map makeTest (sort (filter isEnabled ls)))
-  where makeTest f = Test ("../../riscv-tests/isa/" ++ f) RV64IM "" 0 ""
-        isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-p-" f || isPrefixOf "rv64ui-v-" f) &&
+  where makeTest f = Test ("../../riscv-tests/isa/" ++ f) RV64IMA "" 0 ""
+        isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-p-" f || isPrefixOf "rv64ui-v-" f || isPrefixOf "rv64ua-" f) &&
                       not (isSuffixOf ".dump" f)
 
 runProgram :: InstructionSet -> Maybe Int64 -> Minimal64 -> String -> (Int64, String)
@@ -61,8 +62,12 @@ runProgram iset maybeToHostAddress comp input = (returnValue, output)
 runFile :: InstructionSet -> String -> String -> IO (Int64, String)
 runFile iset f input = do
   (maybeToHostAddress, mem) <- readProgram f
-  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 64), pc = 0x80000000, nextPC = 0,
-                      privMode = Machine, mem = S.fromList mem } in
+  let c = Minimal64 { registers = (take 31 $ repeat 0),
+                      csrs = (resetCSRFile 64),
+                      pc = 0x80000000,
+                      nextPC = 0,
+                      privMode = Machine,
+                      mem = MapMemory { bytes = S.fromList mem, reservation = Nothing } } in
     return $ runProgram iset maybeToHostAddress c input
 
 main :: IO ()

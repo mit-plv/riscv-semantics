@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, ScopedTypeVariables, InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, ScopedTypeVariables, InstanceSigs, AllowAmbiguousTypes #-}
 module Minimal64 where
 import Program
 import Decode
@@ -6,7 +6,7 @@ import Utility
 import CSRFile
 import qualified CSRField as Field
 import qualified Memory as M
-import MapMemory()
+import MapMemory
 import Data.Bits
 import Data.Int
 import Data.Word
@@ -14,7 +14,7 @@ import qualified Data.Map as S
 import Control.Monad.State
 
 data Minimal64 = Minimal64 { registers :: [Int64], csrs :: CSRFile, pc :: Int64,
-                             nextPC :: Int64, privMode :: PrivMode, mem :: S.Map Int Word8 }
+                             nextPC :: Int64, privMode :: PrivMode, mem :: MapMemory Int }
                deriving (Show)
 
 type MState = State Minimal64
@@ -39,9 +39,9 @@ memMapTable :: S.Map MachineInt (LoadFunc, StoreFunc)
 memMapTable = S.fromList [(0x200bff8, (getMTime, setMTime))]
 mtimecmp_addr = 0x2004000
 
-wrapLoad :: forall a' r r'. (Integral a', Integral r, Integral r') => (S.Map Int Word8 -> Int -> r) -> (a' -> MState r')
+wrapLoad :: forall a' r r' m. (Integral a', Integral r, Integral r') => (MapMemory Int -> Int -> r) -> (a' -> MState r')
 wrapLoad loadFunc addr = state $ \comp -> ((fromIntegral:: r -> r') $ loadFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)), comp)
-wrapStore :: forall a' v v'. (Integral a', Integral v, Integral v') => (S.Map Int Word8 -> Int -> v -> S.Map Int Word8) -> (a' -> v' -> MState ())
+wrapStore :: forall a' v v' m. (Integral a', Integral v, Integral v') => (MapMemory Int -> Int -> v -> MapMemory Int) -> (a' -> v' -> MState ())
 wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)) ((fromIntegral:: v' -> v) val) })
 
 instance RiscvProgram MState Int64 where
@@ -98,6 +98,10 @@ instance RiscvProgram MState Int64 where
       Just (_, setFunc) -> setFunc val
       Nothing -> wrapStore M.storeWord addr val
   storeDouble = wrapStore M.storeDouble
+  makeReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)) })
+  checkReservation addr = state $ \comp -> (M.checkReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)), comp)
+  clearReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)) })
+
   -- CSRs:
   getCSRField field = state $ \comp -> (getField field (csrs comp), comp)
   setCSRField :: forall s. (Integral s) => Field.CSRField -> s -> MState ()
