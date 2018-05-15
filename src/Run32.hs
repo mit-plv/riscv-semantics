@@ -100,12 +100,8 @@ readProgram f = do
 runFile :: String -> IO Int32
 runFile f = do
   (maybeToHostAddress, mem) <- readProgram f
-  let c = Minimal32 { registers = (take 31 $ repeat 0),
-                      csrs = (resetCSRFile 32),
-                      pc = (fromIntegral:: Word32 -> Int32) (0x80000000 :: Word32),
-                      nextPC = 0,
-                      privMode = Machine,
-                      mem = MapMemory { bytes = S.fromList mem, reservation = Nothing } } in
+  let c = Minimal32 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 32), pc = (fromIntegral:: Word32 -> Int32) (0x80000000 :: Word32), nextPC = 0,
+  privMode = Machine, mem = S.fromList mem } in
     fmap fst $ runProgram maybeToHostAddress c
 
 runFiles :: [String] -> IO Int32

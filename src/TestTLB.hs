@@ -1,4 +1,4 @@
-module Test where
+module TestTLB where
 import Data.Int
 import Data.List
 import qualified Data.Map as S
@@ -12,13 +12,13 @@ import Minimal64
 import Decode
 import Execute
 import Run (readProgram)
+import TLBExperiment
 import BufferMMIO
 import CSRFile
 import Program
 import Spec
 import Utility
 import VirtualMemory
-import MapMemory
 
 data Test = Test { name :: String, instructionSet :: InstructionSet, input :: String, returnValue :: Int64, output :: String }
 
@@ -51,23 +51,32 @@ getRiscvTests :: IO [Test]
 getRiscvTests = do
   ls <- getDirectoryContents "riscv-tests/isa"
   return (map makeTest (sort (filter isEnabled ls)))
-  where makeTest f = Test ("../../riscv-tests/isa/" ++ f) RV64IMA "" 0 ""
-        isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-p-" f || isPrefixOf "rv64ui-v-" f || isPrefixOf "rv64ua-" f) &&
+  where makeTest f = Test ("../../riscv-tests/isa/" ++ f) RV64IM "" 0 ""
+        isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-p-" f || isPrefixOf "rv64ui-v-" f) &&
                       not (isSuffixOf ".dump" f)
 
+
+--test iset maybeToHostAddress comp input =
+--  runStateT (
+--   runStateT 
+--   (stepHelper iset maybeToHostAddress (return False) :: BufferState (TlbState MState Int64) Int64) comp)
+--   input
+--   [S.empty, S.empty, S.empty, S.empty]
+
+
 runProgram :: InstructionSet -> Maybe Int64 -> Minimal64 -> String -> (Int64, String)
-runProgram iset maybeToHostAddress comp input = (returnValue, output)
-  where ((returnValue, _), output) = runBufferIO (runStateT (stepHelper iset maybeToHostAddress (return False) :: BufferState Minimal64 Int64) comp) input
+runProgram iset maybeToHostAddress comp input = (fst .fst . fst $final, snd final)
+  where final = runBufferIO (runStateT (runStateT (stepHelper iset maybeToHostAddress (return False) :: TlbState (BufferState Minimal64) Int64) [S.empty, S.empty, S.empty,S.empty]) comp) input 
+
+
+
+-- runState (runStateT (stepHelper iset maybeToHostAddress (return False) :: TlbState MState Int64) [S.empty, S.empty, S.empty, S.empty]) comp
 
 runFile :: InstructionSet -> String -> String -> IO (Int64, String)
 runFile iset f input = do
   (maybeToHostAddress, mem) <- readProgram f
-  let c = Minimal64 { registers = (take 31 $ repeat 0),
-                      csrs = (resetCSRFile 64),
-                      pc = 0x80000000,
-                      nextPC = 0,
-                      privMode = Machine,
-                      mem = MapMemory { bytes = S.fromList mem, reservation = Nothing } } in
+  let c = Minimal64 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 64), pc = 0x80000000, nextPC = 0,
+                      privMode = Machine, mem = S.fromList mem } in
     return $ runProgram iset maybeToHostAddress c input
 
 main :: IO ()

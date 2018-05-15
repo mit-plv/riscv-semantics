@@ -53,6 +53,8 @@ extra-deps:
 - uu-interleaved-0.2.0.0
 - uu-parsinglib-2.9.1.1
 - elf-0.28
+- ilist-0.3.1.0
+- nondeterminism-1.4
 # Override default flag values for local packages and extra-deps
 flags: {}
 

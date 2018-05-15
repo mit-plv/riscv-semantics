@@ -106,5 +106,6 @@ instance RiscvProgram MState Int32 where
   -- Unimplemented:
   loadDouble _ = return 0
   storeDouble _ _ = return ()
-  inTLB a = return Nothing -- noTLB
-  addTLB a b = return ()
+  inTLB a b = return Nothing -- noTLB
+  addTLB a b c= return ()
+  flushTLB = return ()
