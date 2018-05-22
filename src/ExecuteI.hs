@@ -21,7 +21,7 @@ execute (Auipc rd oimm20) = do
 execute (Jal rd jimm20) = do
   pc <- getPC
   let newPC = pc + (fromImm jimm20)
-  if (mod newPC 4 /= 0)
+  if (remu newPC 4 /= 0)
     then raiseException 0 0
     else (do
       setRegister rd (pc + 4)
@@ -30,7 +30,7 @@ execute (Jalr rd rs1 oimm12) = do
   x <- getRegister rs1
   pc <- getPC
   let newPC = (x + fromImm oimm12) .&. (complement 1)
-  if (mod newPC 4 /= 0)
+  if (remu newPC 4 /= 0)
     then raiseException 0 0
     else (do
       setRegister rd (pc + 4)
@@ -41,7 +41,7 @@ execute (Beq rs1 rs2 sbimm12) = do
   pc <- getPC
   when (x == y) (do
     let newPC = (pc + fromImm sbimm12)
-    if (mod newPC 4 /= 0)
+    if (remu newPC 4 /= 0)
       then raiseException 0 0
       else setPC newPC)
 execute (Bne rs1 rs2 sbimm12) = do
@@ -50,7 +50,7 @@ execute (Bne rs1 rs2 sbimm12) = do
   pc <- getPC
   when (x /= y) (do
     let addr = (pc + fromImm sbimm12)
-    if (mod addr 4 /= 0)
+    if (remu addr 4 /= 0)
       then raiseException 0 0
       else setPC addr)
 execute (Blt rs1 rs2 sbimm12) = do
@@ -59,7 +59,7 @@ execute (Blt rs1 rs2 sbimm12) = do
   pc <- getPC
   when (x < y) (do
     let addr = (pc + fromImm sbimm12)
-    if (mod addr 4 /= 0)
+    if (remu addr 4 /= 0)
       then raiseException 0 0
       else setPC addr)
 execute (Bge rs1 rs2 sbimm12) = do
@@ -68,7 +68,7 @@ execute (Bge rs1 rs2 sbimm12) = do
   pc <- getPC
   when (x >= y) (do
     let addr = (pc + fromImm sbimm12)
-    if (mod addr 4 /= 0)
+    if (remu addr 4 /= 0)
       then raiseException 0 0
       else setPC addr)
 execute (Bltu rs1 rs2 sbimm12) = do
@@ -77,7 +77,7 @@ execute (Bltu rs1 rs2 sbimm12) = do
   pc <- getPC
   when ((ltu x y)) (do
     let addr = (pc + fromImm sbimm12)
-    if (mod addr 4 /= 0)
+    if (remu addr 4 /= 0)
       then raiseException 0 0
       else setPC addr)
 execute (Bgeu rs1 rs2 sbimm12) = do
@@ -86,7 +86,7 @@ execute (Bgeu rs1 rs2 sbimm12) = do
   pc <- getPC
   when (not (ltu x y)) (do
     let addr = (pc + fromImm sbimm12)
-    if (mod addr 4 /= 0)
+    if (remu addr 4 /= 0)
       then raiseException 0 0
       else setPC addr)
 execute (Lb rd rs1 oimm12) = do
