@@ -90,6 +90,9 @@ instance RiscvProgram MState Int32 where
   commit = state $ \comp -> ((), comp { pc = nextPC comp })
   getPrivMode = state $ \comp -> (Machine , comp) 
   setPrivMode m = state $ \comp -> ((), comp)
+  inTLB a b = return Nothing -- noTLB
+  addTLB a b c= return ()
+  flushTLB = return ()
 
 
 oneStep :: Int32 -> MState ()
