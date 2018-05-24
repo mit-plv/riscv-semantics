@@ -93,6 +93,10 @@ instance RiscvProgram MState Int32 where
   inTLB a b = return Nothing -- noTLB
   addTLB a b c= return ()
   flushTLB = return ()
+  makeReservation x = return ()
+  checkReservation x = return True 
+  clearReservation y = return ()
+
 
 
 oneStep :: Int32 -> MState ()
