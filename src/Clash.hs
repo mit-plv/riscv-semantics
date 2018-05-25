@@ -94,7 +94,7 @@ instance RiscvProgram MState Int32 where
   addTLB a b c= return ()
   flushTLB = return ()
   makeReservation x = return ()
-  checkReservation x = return True 
+  checkReservation x = return False 
   clearReservation y = return ()
 
 
