@@ -95,16 +95,16 @@ translateHelper mode va pte level = vaSlice .|. shift ptePPN vaSplit
 
 calculateAddress :: (RiscvProgram p t) => AccessType -> MachineInt -> p (MachineInt)
 calculateAddress accessType va = do
-  mode <- fmap getMode (getCSRField Field.MODE)
+  nmode <- (getCSRField Field.MODE)
+  let mode = getMode nmode
   privMode <- getPrivMode
   mprv <- getCSRField Field.MPRV
   mpp <- getCSRField Field.MPP
   let effectPriv = if mprv == 1 then decodePrivMode mpp else privMode
-  if mode == None || (privMode == Machine && accessType == Instruction) || (effectPriv == Machine)
+  if mode == None || (effectPriv == Machine) || (privMode == Machine && accessType == Instruction) 
     then return va
     else -- First the translation may be in a cache, possibly stalled, cacheAccess use the typeclass defined "TLB"
-      cacheAccess accessType va $ 
-       do
+      cacheAccess accessType va $  do
     ppn <- getCSRField Field.PPN
     maybePTE <- findLeafEntry (mode, accessType, va, (shift ppn 12)) (pageTableLevels mode - 1)
     case maybePTE of
