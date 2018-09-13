@@ -6,7 +6,8 @@ import Data.Maybe
 import Data.Word
 import Data.Bits
 import qualified Data.Map as S
-
+import Prelude
+import Data.List as L
 readM :: (S.Map Int Word8) -> Int -> Word8
 readM mem addr = fromMaybe 0 (S.lookup addr mem)
 
@@ -19,14 +20,20 @@ helpLoad mem addr numBytes =
 
 helpStore :: (S.Map Int Word8) -> Int -> [Word8] -> (S.Map Int Word8)
 helpStore mem addr bytes =
-  foldr (\(b,a) m -> writeM m a b) mem $ zip bytes [addr + i | i <- [0..]]
+  L.foldr (\(b,a) m -> writeM m a b) mem $ L.zip bytes [addr + i | i <- [0..]]
 
-instance Memory (S.Map Int Word8) Int where
-  loadByte mem addr = readM mem addr
-  loadHalf mem addr = helpLoad mem addr 2
-  loadWord mem addr = helpLoad mem addr 4
-  loadDouble mem addr = helpLoad mem addr 8
-  storeByte mem addr val = writeM mem addr val
-  storeHalf mem addr val = helpStore mem addr (splitHalf val)
-  storeWord mem addr val = helpStore mem addr (splitWord val)
-  storeDouble mem addr val = helpStore mem addr (splitDouble val)
+data MapMemory a = MapMemory { bytes :: S.Map a Word8, reservation :: Maybe a }
+  deriving (Eq, Show)
+
+instance Memory (MapMemory Int) Int where
+  loadByte mem addr = readM (bytes mem) addr
+  loadHalf mem addr = helpLoad (bytes mem) addr 2
+  loadWord mem addr = helpLoad (bytes mem) addr 4
+  loadDouble mem addr = helpLoad (bytes mem) addr 8
+  storeByte mem addr val = mem { bytes = writeM (bytes mem) addr val }
+  storeHalf mem addr val = mem { bytes = helpStore (bytes mem) addr (splitHalf val) }
+  storeWord mem addr val = mem { bytes = helpStore (bytes mem) addr (splitWord val) }
+  storeDouble mem addr val = mem { bytes = helpStore (bytes mem) addr (splitDouble val) }
+  makeReservation mem addr = mem { reservation = Just addr }
+  checkReservation mem addr = (reservation mem) == Just addr
+  clearReservation mem addr = mem { reservation = Nothing }

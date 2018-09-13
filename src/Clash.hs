@@ -22,8 +22,12 @@ import qualified Decode as D
 import Clash.Prelude
 
 
-data MMIOClash = MMIOClash { registers :: Vec 31 Int32, pc :: Int32, nextPC :: Int32 , store:: Maybe (Int32,Int32,(Bool,Bool,Bool,Bool)), load :: Int32, loadAddress :: Maybe (Int32,(Bool,Bool,Bool,Bool)), exception :: Bool }
-              deriving (Show) -- Beurk, I need to use Word32 instead of Int32 for the addresses.
+data MMIOClash = MMIOClash { registers :: Vec 31 Int32,
+                             pc :: Int32, nextPC :: Int32,
+                             store:: Maybe (Int32,Int32,(Bool,Bool,Bool,Bool)),
+                             load :: Int32, loadAddress :: Maybe (Int32,(Bool,Bool,Bool,Bool)),
+                             exception :: Bool }
+              deriving (Show)
 
 type MState = State MMIOClash
 type MMState = MaybeT MState
@@ -45,8 +49,7 @@ embed byteen store  -- quot get rid of the bits on the right fromIntegral, those
 
 instance RiscvProgram MState Int32 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
-  setRegister reg val = state $ \comp ->((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
--- Fake load and stores
+  setRegister reg val = state $ \comp -> ((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
   loadByte ina = state $ \comp -> let a = ina .&. (complement 3) 
                                       offset = mod ina 4 
                                       byteen | offset == 3 = (True,False,False,False)
@@ -87,13 +90,17 @@ instance RiscvProgram MState Int32 where
   commit = state $ \comp -> ((), comp { pc = nextPC comp })
   getPrivMode = state $ \comp -> (Machine , comp) 
   setPrivMode m = state $ \comp -> ((), comp)
- 
-
+  inTLB a b = return Nothing -- noTLB
+  addTLB a b c= return ()
+  flushTLB = return ()
+  makeReservation x = return ()
+  checkReservation x = return False 
+  clearReservation y = return ()
 
 
 
 oneStep :: Int32 -> MState ()
-oneStep i = do 
+oneStep i = do
   result <- runMaybeT $ do
     pc <- getPC
     setPC (pc + 4)
@@ -102,28 +109,29 @@ oneStep i = do
     Nothing -> commit >> (state $ \comp -> ((), comp{exception = True})) -- early return
     Just r -> commit >> return r -- this is a ()
 
-wrap :: Int32 -> MMIOClash-> MMIOClash
+wrap :: Int32 -> MMIOClash -> MMIOClash
 wrap i s = snd $ runState (oneStep i) s
 
 
 
-{-# ANN topEntity 
- (defTop {t_name="rvspec",
-          t_inputs=[PortField "" 
+{-# ANN topEntity
+ (Synthesize {t_name="rvspec",
+          t_inputs=[PortProduct ""
                       [ PortName "in_registers", PortName "in_instr",
                         PortName "in_pc", PortName "in_loadData"]],
-          t_output=PortField "" [PortName "out_registers",
+          t_output=PortProduct "" [PortName "out_registers",
                                 PortName "out_nextPC",
                                 PortName "out_storeAddress", PortName "out_storeData",
                                 PortName "out_storeEnable",
                                 PortName "out_loadAddress",
 				PortName "out_loadEnable",
                                 PortName "out_exception"]})#-}
-topEntity :: (Vec 31 Int32,Int32, Int32, Int32)
+topEntity :: (Vec 31 Int32, Int32, Int32, Int32)
   -> (Vec 31 Int32, Int32, Int32, Int32, (Bool,Bool,Bool,Bool), Int32, (Bool,Bool,Bool,Bool), Bool)
 topEntity =       (\(
-                    iregister, i, ipc, 
+                    iregister, i, ipc,
                     loadData) ->
+                     -- compute newstate using the spec with instruction i
                      let newstate = wrap i MMIOClash{registers = reverse iregister,
                                                      pc = ipc,
                                                      nextPC= ipc,
@@ -136,11 +144,14 @@ topEntity =       (\(
                        let storeNext = store newstate
                            loadNext = loadAddress newstate
                        in
-                         (reverse $ registers newstate,pc newstate,
+                         (reverse $ registers newstate,
+                          pc newstate,
+                          -- Load and Stores Wires:
                           (\(x,y,z)->x) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
                           (\(x,y,z)->y) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
                           (\(x,y,z)->z) $ fromMaybe (0,0,(False,False,False,False)) storeNext,
                           (\(x,y)-> x) $ fromMaybe (0,(False,False,False,False)) loadNext,
                           (\(x,y)-> y) $ fromMaybe (0,(False,False,False,False)) loadNext,
+                          -- Did we get an exception in the process?
                           exception newstate))
 

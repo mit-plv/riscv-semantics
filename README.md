@@ -15,36 +15,33 @@ To install stack, follow the directions found here https://docs.haskellstack.org
 2. Compile the Project
 
 There is a makefile with recipes to compile the project, the elf2hex utility, and all the tests.
-Building the tests requires a recent version of `riscv32-unknown-elf-gcc` in your path.
+Building the tests requires a recent version of `riscv-none-embed-gcc` in your path.
 To build everything, run:
 
     $ ./install.sh
     $ make
 
-If you do not have the compiler in your path, this command will fail saying
+If you do not have the compiler in your path, this command will fail. To install the compiler and add it to your path:
 
-    make[1]: riscv32-unknown-elf-gcc: Command not found
+    $ ./install_riscv_gcc.sh
+    $ . setup.sh
 
-This repo has a pre-compiled test `thuemorse.hex` if you don't have the RISC-V compiler.
 
 3. Simulating an Example Program
 
 To simulate an example program, run the command
 
-    $ stack exec riscv-semantics test/tests/thuemorse.hex
+    $ stack exec riscv-semantics test/build/thuemorse64
 
 This should produce the output
 
     01101001100101101001011001101001100101100110100101101001100101101001011001101001011010011001011001101001100101101001011001101001
 
+4. Run riscv-tests
 
-4. Building the parser (work in progress) to JSON:
+To run the default 64 executable simulator on riscv-tests:
 
-   $ stack install aeson; stack install generic-aeson; stack install happy; cd src/; happy ParseToJson.y 
-
-   $ cat ExecuteI.hs | stack runhaskell ParseToJson.hs
-
-It's failing on some of the entries but I think it means that we will just simplify the corresponding entries.
+   $ stack exec riscv-semantics-tests
 
 ### Generation of verilog (work in progress)
 
@@ -53,5 +50,5 @@ It's failing on some of the entries but I think it means that we will just simpl
 
 The output will be in src/verilog/...
 
-To get red of intermediate files create in the src folder:
+To get rid of intermediate files create in the src folder:
 	$ ./clean-circuit.sh

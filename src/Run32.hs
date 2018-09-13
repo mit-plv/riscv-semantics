@@ -14,6 +14,7 @@ import qualified CSRField as Field
 import CSRFile
 import Decode
 import Execute
+import MapMemory
 import Control.Monad.Trans
 import Control.Monad.Trans.State
 import qualified Data.Map as S
@@ -99,8 +100,12 @@ readProgram f = do
 runFile :: String -> IO Int32
 runFile f = do
   (maybeToHostAddress, mem) <- readProgram f
-  let c = Minimal32 { registers = (take 31 $ repeat 0), csrs = (resetCSRFile 32), pc = (fromIntegral:: Word32 -> Int32) (0x80000000 :: Word32), nextPC = 0,
-                      mem = S.fromList mem } in
+  let c = Minimal32 { registers = (take 31 $ repeat 0),
+                      csrs = (resetCSRFile 32),
+                      pc = (fromIntegral:: Word32 -> Int32) (0x80000000 :: Word32),
+                      nextPC = 0,
+                      privMode = Machine,
+                      mem = MapMemory { bytes = S.fromList mem, reservation = Nothing } } in
     fmap fst $ runProgram maybeToHostAddress c
 
 runFiles :: [String] -> IO Int32

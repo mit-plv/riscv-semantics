@@ -6,6 +6,8 @@ import ExecuteI as I
 import ExecuteI64 as I64
 import ExecuteM as M
 import ExecuteM64 as M64
+import ExecuteA as A
+import ExecuteA64 as A64
 import ExecuteCSR as CSR
 
 
@@ -15,8 +17,10 @@ execute inst = do
   case inst of
     IInstruction   i     -> I.execute   i
     MInstruction   i     -> M.execute   i
+    AInstruction   i     -> A.execute   i
     I64Instruction i     -> I64.execute i
     M64Instruction i     -> M64.execute i
+    A64Instruction i     -> A64.execute i
     CSRInstruction i     -> CSR.execute i
     InvalidInstruction i -> raiseExceptionWithInfo 0 2 i
   cycles <- getCSRField Field.MCycle

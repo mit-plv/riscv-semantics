@@ -110,7 +110,7 @@ class (Integral t, Bits t) => MachineWidth t where
   regToZ_signed = fromIntegral
 
   regToZ_unsigned :: t -> Integer
-  
+
   sll :: t -> Int -> t
 
   srl :: t -> Int -> t
