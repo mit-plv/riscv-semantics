@@ -134,10 +134,12 @@ execute (Addi rd rs1 imm12) = do
   setRegister rd (x + fromImm imm12)
 execute (Slti rd rs1 imm12) = do
   x <- getRegister rs1
-  setRegister rd (if x < (fromImm imm12) then 1 else 0)
+  let val = (if x < (fromImm imm12) then 1 else 0)
+  setRegister rd val
 execute (Sltiu rd rs1 imm12) = do
   x <- getRegister rs1
-  setRegister rd (if (ltu x (fromImm imm12)) then 1 else 0)
+  let val = (if (ltu x (fromImm imm12)) then 1 else 0)
+  setRegister rd val
 execute (Xori rd rs1 imm12) = do
   x <- getRegister rs1
   setRegister rd (xor x (fromImm imm12))
@@ -171,11 +173,13 @@ execute (Sll rd rs1 rs2) = do
 execute (Slt rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (if x < y then 1 else 0)
+  let val = if x < y then 1 else 0
+  setRegister rd val
 execute (Sltu rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
-  setRegister rd (if (ltu x y) then 1 else 0)
+  let val = if ltu x y then 1 else 0
+  setRegister rd val
 execute (Xor rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
