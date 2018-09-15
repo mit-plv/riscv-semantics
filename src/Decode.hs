@@ -440,12 +440,17 @@ head_default :: [ a ] -> a -> a
 head_default [] v = v
 head_default (h:_) _ = h
 
+isAmbiguous :: [ a ] -> Bool
+isAmbiguous [] = False
+isAmbiguous [h] = False
+isAmbiguous _ = True
+
 -- ================================================================
 -- The main decoder function
 
 decode :: InstructionSet -> MachineInt -> Instruction
 decode iset inst =
- if length results > 1
+ if isAmbiguous results
   then error "ambiguous decoding result"
   else head_default results (InvalidInstruction inst)
   where
