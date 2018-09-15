@@ -440,11 +440,12 @@ isValidCSR inst = inst /= InvalidCSR
 -- The main decoder function
 
 decode :: InstructionSet -> MachineInt -> Instruction
-decode iset inst = case results of
-    [singleResult] -> singleResult         -- this case is the "normal" case
-    [] -> InvalidInstruction inst          -- this case is also part of the spec
-    _ -> error "ambiguous decoding result" -- this case means there's a bug in the spec
-
+decode iset inst =
+ if length results == 0
+ then InvalidInstruction inst
+ else if length results == 1
+      then head results
+      else error "ambiguous decoding result"
   where
     results :: [Instruction]
     results =
