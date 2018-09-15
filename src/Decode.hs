@@ -436,16 +436,18 @@ isValidA inst = inst /= InvalidA
 isValidA64 inst = inst /= InvalidA64
 isValidCSR inst = inst /= InvalidCSR
 
+head_default :: [ a ] -> a -> a
+head_default [] v = v
+head_default (h:_) _ = h
+
 -- ================================================================
 -- The main decoder function
 
 decode :: InstructionSet -> MachineInt -> Instruction
 decode iset inst =
- if length results == 0
- then InvalidInstruction inst
- else if length results == 1
-      then head results
-      else error "ambiguous decoding result"
+ if length results > 1
+  then error "ambiguous decoding result"
+  else head_default results (InvalidInstruction inst)
   where
     results :: [Instruction]
     results =
