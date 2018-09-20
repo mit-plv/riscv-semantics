@@ -13,9 +13,14 @@ import Data.Word
 import qualified Data.Map as S
 import Control.Monad.State
 
-data Minimal64 = Minimal64 { registers :: [Int64], csrs :: CSRFile, pc :: Int64,
-                             nextPC :: Int64, privMode :: PrivMode, mem :: MapMemory Int }
-               deriving (Show)
+data Minimal64 = Minimal64 { registers :: [Int64],
+                             fpregisters :: [Float],
+                             csrs :: CSRFile,
+                             pc :: Int64,
+                             nextPC :: Int64,
+                             privMode :: PrivMode,
+                             mem :: MapMemory Int
+                           } deriving (Show)
 
 type MState = State Minimal64
 

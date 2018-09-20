@@ -27,6 +27,8 @@ encodePrivMode Machine = 3
 class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   getRegister :: Register -> p t
   setRegister :: Register -> t -> p ()
+  getFPRegister :: FPRegister -> p Float
+  setFPRegister :: FPRegister -> Float -> p ()
   loadByte :: t -> p Int8
   loadHalf :: t -> p Int16
   loadWord :: t -> p Int32
@@ -71,6 +73,8 @@ getXLEN = do
 instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   getRegister r = lift (getRegister r)
   setRegister r v = lift (setRegister r v)
+  getFPRegister r = lift (getFPRegister r)
+  setFPRegister r v = lift (setFPRegister r v)
   loadByte a = lift (loadByte a)
   loadHalf a = lift (loadHalf a)
   loadWord a = lift (loadWord a)

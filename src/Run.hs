@@ -74,6 +74,7 @@ runFile :: String -> IO Int64
 runFile f = do
   (maybeToHostAddress, mem) <- readProgram f
   let c = Minimal64 { registers = (take 31 $ repeat 0),
+                      fpregisters = (take 32 $ repeat (0 :: Float)),
                       csrs = (resetCSRFile 64),
                       pc = 0x80000000,
                       nextPC = 0,

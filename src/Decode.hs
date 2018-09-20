@@ -98,6 +98,37 @@ data InstructionA =
   deriving (Eq, Read, Show)
 
 
+data InstructionF =
+  Flw { rd :: FPRegister, rs1 :: Register, oimm12 :: MachineInt } |
+  Fsw { rs1 :: Register, rs2 :: FPRegister, simm12 :: MachineInt } |
+  Fmadd_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, r3 :: FPRegister, rm :: RoundMode } |
+  Fmsub_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, r3 :: FPRegister, rm :: RoundMode } |
+  Fnmsub_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, r3 :: FPRegister, rm :: RoundMode } |
+  Fnmadd_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, r3 :: FPRegister, rm :: RoundMode } |
+  Fadd_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rm :: RoundMode } |
+  Fsub_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rm :: RoundMode } |
+  Fmul_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rm :: RoundMode } |
+  Fdiv_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rm :: RoundMode } |
+  Fsqrt_s { rd :: FPRegister, rs1 :: FPRegister, rm :: RoundMode } |
+  Fsgnj_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister } |
+  Fsgnjn_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister } |
+  Fsgnjx_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister } |
+  Fmin_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister } |
+  Fmax_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister } |
+  Fcvt_w_s { rd :: Register, rs1 :: FPRegister, rm :: RoundMode } |
+  Fcvt_wu_s { rd :: Register, rs1 :: FPRegister, rm :: RoundMode } |
+  Fmv_x_w { rd :: Register, rs1 :: FPRegister } |
+  Feq_s { rd :: Register, rs1 :: FPRegister, rs2 :: FPRegister } |
+  Flt_s { rd :: Register, rs1 :: FPRegister, rs2 :: FPRegister } |
+  Fle_s { rd :: Register, rs1 :: FPRegister, rs2 :: FPRegister } |
+  Fclass_s { rd :: Register, rs1 :: FPRegister } |
+  Fcvt_s_w { rd :: FPRegister, rs1 :: Register, rm :: RoundMode } |
+  Fcvt_s_wu { rd :: FPRegister, rs1 :: Register, rm :: RoundMode } |
+  Fmv_w_x { rd :: FPRegister, rs1 :: Register } |
+  InvalidF
+  deriving (Eq, Read, Show)
+
+
 data InstructionI64 =
   Ld { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
   Lwu { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
@@ -147,6 +178,15 @@ data InstructionA64 =
   deriving (Eq, Read, Show)
 
 
+data InstructionF64 =
+  Fcvt_l_s { rd :: Register, rs1 :: FPRegister, rm :: RoundMode } |
+  Fcvt_lu_s { rd :: Register, rs1 :: FPRegister, rm :: RoundMode } |
+  Fcvt_s_l { rd :: FPRegister, rs1 :: Register, rm :: RoundMode } |
+  Fcvt_s_lu { rd :: FPRegister, rs1 :: Register, rm :: RoundMode } |
+  InvalidF64
+  deriving (Eq, Read, Show)
+
+
 data InstructionCSR =
   Ecall |
   Ebreak |
@@ -169,9 +209,11 @@ data Instruction =
   IInstruction   { iInstruction   :: InstructionI   } |
   MInstruction   { mInstruction   :: InstructionM   } |
   AInstruction   { aInstruction   :: InstructionA   } |
+  FInstruction   { fInstruction   :: InstructionF   } |
   I64Instruction { i64Instruction :: InstructionI64 } |
   M64Instruction { m64Instruction :: InstructionM64 } |
   A64Instruction { a64Instruction :: InstructionA64 } |
+  F64Instruction { f64Instruction :: InstructionF64 } |
   CSRInstruction { csrInstruction :: InstructionCSR } |
   InvalidInstruction { inst :: MachineInt }
   deriving (Eq, Read, Show)
@@ -180,8 +222,8 @@ data Instruction =
 
 -- TODO: Switch to a representation that doesn't involve enumerating all the
 -- combinatoric possibilities; possibily the one used by the MISA CSR.
-data InstructionSet = RV32I | RV32IM | RV32IA | RV32IMA |
-                      RV64I | RV64IM | RV64IA | RV64IMA
+data InstructionSet = RV32I | RV32IM | RV32IA | RV32IMA | RV32IF | RV32IMF | RV32IAF | RV32IMAF |
+                      RV64I | RV64IM | RV64IA | RV64IMA | RV64IF | RV64IMF | RV64IAF | RV64IMAF
   deriving (Eq, Show)
 
 bitwidth :: InstructionSet -> Int
@@ -189,28 +231,57 @@ bitwidth RV32I = 32
 bitwidth RV32IM = 32
 bitwidth RV32IA = 32
 bitwidth RV32IMA = 32
+bitwidth RV32IF = 32
+bitwidth RV32IMF = 32
+bitwidth RV32IAF = 32
+bitwidth RV32IMAF = 32
 bitwidth RV64I = 64
 bitwidth RV64IM = 64
 bitwidth RV64IA = 64
 bitwidth RV64IMA = 64
+bitwidth RV64IF = 64
+bitwidth RV64IMF = 64
+bitwidth RV64IAF = 64
+bitwidth RV64IMAF = 64
 
 supportsM :: InstructionSet -> Bool
 supportsM RV32IM = True
 supportsM RV32IMA = True
+supportsM RV32IMF = True
+supportsM RV32IMAF = True
 supportsM RV64IM = True
 supportsM RV64IMA = True
+supportsM RV64IMF = True
+supportsM RV64IMAF = True
 supportsM _ = False
 
 supportsA :: InstructionSet -> Bool
 supportsA RV32IA = True
 supportsA RV32IMA = True
+supportsA RV32IAF = True
+supportsA RV32IMAF = True
 supportsA RV64IA = True
 supportsA RV64IMA = True
+supportsA RV64IAF = True
+supportsA RV64IMAF = True
 supportsA _ = False
+
+supportsF :: InstructionSet -> Bool
+supportsF RV32IF = True
+supportsF RV32IMF = True
+supportsF RV32IAF = True
+supportsF RV32IMAF = True
+supportsF RV64IF = True
+supportsF RV64IMF = True
+supportsF RV64IAF = True
+supportsF RV64IMAF = True
+supportsF _ = False
 
 -- ================================================================
 
 type Register = MachineInt
+type FPRegister = MachineInt
+type RoundMode = MachineInt
 
 -- ================================================================
 -- Instruction bit fields
@@ -422,8 +493,45 @@ funct5_AMOMAX  :: MachineInt;    funct5_AMOMAX  = 0b10100
 funct5_AMOMINU :: MachineInt;    funct5_AMOMINU = 0b11000
 funct5_AMOMAXU :: MachineInt;    funct5_AMOMAXU = 0b11100
 
--- TODO: sub-opcodes for LOAD_FP, STORE_FP, OP_FP
--- TODO: sub-opcodes for MADD, MSUB, NMSUB, NMADD
+-- LOAD_FP sub-opcodes, F standard extension
+funct3_FLW = 0b010 :: MachineInt
+
+-- STORE_FP sub-opcodes, F standard extension
+funct3_FSW = 0b010 :: MachineInt
+
+-- OP_FP sub-opcodes, F standard extension
+funct7_FADD_S = 0b0000000 :: MachineInt
+funct7_FSUB_S = 0b0000100 :: MachineInt
+funct7_FMUL_S = 0b0001000 :: MachineInt
+funct7_FDIV_S = 0b0001100 :: MachineInt
+funct7_FSQRT_S = 0b0101100 :: MachineInt
+funct7_FSGNJ_S = 0b0010000 :: MachineInt
+funct7_FMIN_S = 0b0010100 :: MachineInt
+funct7_FCVT_W_S = 0b1100000 :: MachineInt
+funct7_FMV_X_W = 0b1110000 :: MachineInt
+funct7_FEQ_S = 0b1010000 :: MachineInt
+funct7_FCLASS_S = 0b1110000 :: MachineInt
+funct7_FCVT_S_W = 0b1101000 :: MachineInt
+funct7_FMV_W_X = 0b1111000 :: MachineInt
+
+funct3_FSGNJ_S = 0b000 :: MachineInt
+funct3_FSGNJN_S = 0b001 :: MachineInt
+funct3_FSGNJX_S = 0b010 :: MachineInt
+funct3_FMIN_S = 0b000 :: MachineInt
+funct3_FMAX_S = 0b001 :: MachineInt
+funct3_FMV_X_W = 0b000 :: MachineInt
+funct3_FEQ_S = 0b010 :: MachineInt
+funct3_FLT_S = 0b001 :: MachineInt
+funct3_FLE_S = 0b000 :: MachineInt
+funct3_FCLASS_S = 0b001 :: MachineInt
+
+rs2_FCVT_W_S = 0b00000 :: MachineInt
+rs2_FCVT_WU_S = 0b00001 :: MachineInt
+rs2_FCVT_L_S = 0b00010 :: MachineInt
+rs2_FCVT_LU_S = 0b00011 :: MachineInt
+
+-- MADD, MSUB, NMSUB, NMADD sub-opcodes, F standard extension
+funct2_FMADD_S = 0b00
 
 -- ================================================================
 -- Identification of valid instructions in extensions
@@ -434,6 +542,8 @@ isValidM inst = inst /= InvalidM
 isValidM64 inst = inst /= InvalidM64
 isValidA inst = inst /= InvalidA
 isValidA64 inst = inst /= InvalidA64
+isValidF inst = inst /= InvalidF
+isValidF64 inst = inst /= InvalidF64
 isValidCSR inst = inst /= InvalidCSR
 
 head_default :: [ a ] -> a -> a
@@ -459,17 +569,21 @@ decode iset inst =
       resultI ++
       (if supportsM iset then resultM else []) ++
       (if supportsA iset then resultA else []) ++
+      (if supportsF iset then resultF else []) ++
       (if bitwidth iset == 64 then resultI64 else []) ++
       (if bitwidth iset == 64 && supportsM iset then resultM64 else []) ++
       (if bitwidth iset == 64 && supportsA iset then resultA64 else []) ++
+      (if bitwidth iset == 64 && supportsF iset then resultF64 else []) ++
       resultCSR
 
     resultI = if isValidI decodeI then [IInstruction decodeI] else []
     resultM = if isValidM decodeM then [MInstruction decodeM] else []
     resultA = if isValidA decodeA then [AInstruction decodeA] else []
+    resultF = if isValidF decodeF then [FInstruction decodeF] else []
     resultI64 = if isValidI64 decodeI64 then [I64Instruction decodeI64] else []
     resultM64 = if isValidM64 decodeM64 then [M64Instruction decodeM64] else []
     resultA64 = if isValidA64 decodeA64 then [A64Instruction decodeA64] else []
+    resultF64 = if isValidF64 decodeF64 then [F64Instruction decodeF64] else []
     resultCSR = if isValidCSR decodeCSR then [CSRInstruction decodeCSR] else []
 
     -- Symbolic names for notable bitfields in the 32b instruction 'inst'
@@ -484,6 +598,8 @@ decode iset inst =
     rs1     = bitSlice inst 15 20
     rs2     = bitSlice inst 20 25
     rs3     = bitSlice inst 27 32    -- for FMADD, FMSUB, FNMSUB
+    funct2  = bitSlice inst 25 27    -- for FMADD, FMSUB, FNMSUB
+    rm      = funct3                 -- for FMADD, FMSUB, FNMSUB, and many OP_FPs.
 
     succ    = bitSlice inst 20 24    -- for FENCE
     pred    = bitSlice inst 24 28    -- for FENCE
@@ -599,6 +715,36 @@ decode iset inst =
 
       | True = InvalidA
 
+    decodeF
+      | opcode==opcode_LOAD_FP, funct3==funct3_FLW = Flw rd rs1 oimm12
+      | opcode==opcode_STORE_FP, funct3==funct3_FSW = Fsw rs1 rs2 simm12
+      | opcode==opcode_MADD, funct2==funct2_FMADD_S = Fmadd_s rd rs1 rs2 rs3 rm
+      | opcode==opcode_MSUB, funct2==funct2_FMADD_S = Fmsub_s rd rs1 rs2 rs3 rm
+      | opcode==opcode_NMSUB, funct2==funct2_FMADD_S = Fnmsub_s rd rs1 rs2 rs3 rm
+      | opcode==opcode_NMADD, funct2==funct2_FMADD_S = Fnmadd_s rd rs1 rs2 rs3 rm
+
+      | opcode==opcode_OP_FP, funct7==funct7_FADD_S = Fadd_s rd rs1 rs2 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FSUB_S = Fsub_s rd rs1 rs2 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FMUL_S = Fmul_s rd rs1 rs2 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FDIV_S = Fdiv_s rd rs1 rs2 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FSQRT_S, rs2==0 = Fsqrt_s rd rs1 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FSGNJ_S, funct3==funct3_FSGNJ_S = Fsgnj_s rd rs1 rs2
+      | opcode==opcode_OP_FP, funct7==funct7_FSGNJ_S, funct3==funct3_FSGNJN_S = Fsgnjn_s rd rs1 rs2
+      | opcode==opcode_OP_FP, funct7==funct7_FSGNJ_S, funct3==funct3_FSGNJX_S = Fsgnjx_s rd rs1 rs2
+      | opcode==opcode_OP_FP, funct7==funct7_FMIN_S, funct3==funct3_FMIN_S = Fmin_s rd rs1 rs2
+      | opcode==opcode_OP_FP, funct7==funct7_FMIN_S, funct3==funct3_FMAX_S = Fmax_s rd rs1 rs2
+      | opcode==opcode_OP_FP, funct7==funct7_FCVT_W_S, rs2==rs2_FCVT_W_S = Fcvt_w_s rd rs1 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FCVT_W_S, rs2==rs2_FCVT_WU_S = Fcvt_wu_s rd rs1 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FMV_X_W, rs2==0, funct3==0 = Fmv_x_w rd rs1
+      | opcode==opcode_OP_FP, funct7==funct7_FEQ_S, funct3==funct3_FEQ_S = Feq_s rd rs1 rs2
+      | opcode==opcode_OP_FP, funct7==funct7_FEQ_S, funct3==funct3_FLT_S = Flt_s rd rs1 rs2
+      | opcode==opcode_OP_FP, funct7==funct7_FEQ_S, funct3==funct3_FLE_S = Fle_s rd rs1 rs2
+      | opcode==opcode_OP_FP, funct7==funct7_FCLASS_S, rs2==0, funct3==funct3_FCLASS_S = Fclass_s rd rs1
+      | opcode==opcode_OP_FP, funct7==funct7_FCVT_S_W, rs2==rs2_FCVT_W_S = Fcvt_s_w rd rs1 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FCVT_S_W, rs2==rs2_FCVT_WU_S = Fcvt_s_wu rd rs1 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FMV_W_X, rs2==0, funct3==0 = Fmv_w_x rd rs1
+      | True = InvalidF
+
     decodeI64
       | opcode==opcode_LOAD, funct3==funct3_LD  = Ld  rd rs1 oimm12
       | opcode==opcode_LOAD, funct3==funct3_LWU = Lwu rd rs1 oimm12
@@ -641,6 +787,13 @@ decode iset inst =
       | opcode==opcode_AMO, funct3==funct3_AMOD, funct5==funct5_AMOMAXU    = Amomaxu_d rd rs1 rs2 aqrl
 
       | True = InvalidA64
+
+    decodeF64
+      | opcode==opcode_OP_FP, funct7==funct7_FCVT_W_S, rs2==rs2_FCVT_L_S = Fcvt_l_s rd rs1 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FCVT_W_S, rs2==rs2_FCVT_LU_S = Fcvt_lu_s rd rs1 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FCVT_S_W, rs2==rs2_FCVT_L_S = Fcvt_s_l rd rs1 rm
+      | opcode==opcode_OP_FP, funct7==funct7_FCVT_S_W, rs2==rs2_FCVT_LU_S = Fcvt_s_lu rd rs1 rm
+      | True = InvalidF64
 
     decodeCSR
       | opcode==opcode_SYSTEM, rd==0, funct3==funct3_PRIV, funct7==funct7_SFENCE_VMA        = Sfence_vma rs1 rs2
