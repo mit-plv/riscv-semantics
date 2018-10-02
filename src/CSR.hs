@@ -55,9 +55,6 @@ csrTable = [(0x300, MStatus),
             (0x042, UCause),
             (0x043, UTVal),
             (0x044, UIP),
-            (0x001, FFlags),
-            (0x002, FRM),
-            (0x003, FCSR),
             (0xC00, Cycle),
             (0xC01, Time),
             (0xC02, InstRet)]
@@ -104,9 +101,6 @@ lookupCSR 0x041 = UEPC
 lookupCSR 0x042 = UCause
 lookupCSR 0x043 = UTVal
 lookupCSR 0x044 = UIP
-lookupCSR 0x001 = FFlags
-lookupCSR 0x002 = FRM
-lookupCSR 0x003 = FCSR
 lookupCSR 0xC00 = Cycle
 lookupCSR 0xC01 = Time
 lookupCSR 0xC02 = InstRet

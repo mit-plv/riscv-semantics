@@ -121,8 +121,8 @@ getCSR FFlags = getCSRField Field.FFlags
 getCSR FRM = getCSRField Field.FRM
 
 getCSR FCSR = do
-  fflags <- getCSR FFlags
-  frm <- getCSR FRM
+  fflags <- getCSRField Field.FFlags
+  frm <- getCSRField Field.FRM
   return (shift frm 5 .|. fflags)
 
 -- It's unclear whether these are allowed to raise an exception in machine mode.
@@ -224,7 +224,7 @@ setCSR FFlags val = setCSRField Field.FFlags (bitSlice val 0 5)
 setCSR FRM val = setCSRField Field.FRM (bitSlice val 0 3)
 
 setCSR FCSR val = do
-  setCSR FFlags val
-  setCSR FRM (shift val (-5))
+  setCSRField Field.FFlags (bitSlice val 0 5)
+  setCSRField Field.FRM (bitSlice val 5 8)
 
 setCSR _ _ = return ()

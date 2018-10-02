@@ -37,7 +37,7 @@ resolver: nightly-2017-10-26
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-- 'softfloat-hs'
+- softfloat-hs
 # - clash/clash-ghc
 # - clash/clash-lib
 # - clash/clash-prelude
