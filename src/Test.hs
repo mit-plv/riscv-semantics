@@ -51,8 +51,8 @@ getRiscvTests :: IO [Test]
 getRiscvTests = do
   ls <- getDirectoryContents "riscv-tests/isa"
   return (map makeTest (sort (filter isEnabled ls)))
-  where makeTest f = Test ("../../riscv-tests/isa/" ++ f) RV64IMA "" 0 ""
-        isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-p-" f || isPrefixOf "rv64ui-v-" f || isPrefixOf "rv64ua-" f) &&
+  where makeTest f = Test ("../../riscv-tests/isa/" ++ f) RV64IMAF "" 0 ""
+        isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-" f || isPrefixOf "rv64ua-" f || isPrefixOf "rv64uf-" f) &&
                       not (isSuffixOf ".dump" f)
 
 runProgram :: InstructionSet -> Maybe Int64 -> Minimal64 -> String -> (Int64, String)
@@ -63,6 +63,7 @@ runFile :: InstructionSet -> String -> String -> IO (Int64, String)
 runFile iset f input = do
   (maybeToHostAddress, mem) <- readProgram f
   let c = Minimal64 { registers = (take 31 $ repeat 0),
+                      fpregisters = (take 31 $ repeat 0),
                       csrs = (resetCSRFile 64),
                       pc = 0x80000000,
                       nextPC = 0,

@@ -4,6 +4,7 @@ import CSRField
 import Decode
 import Utility
 import Data.Int
+import Data.Word
 import Data.Bits
 import Control.Monad
 import Control.Monad.Trans
@@ -27,8 +28,9 @@ encodePrivMode Machine = 3
 class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   getRegister :: Register -> p t
   setRegister :: Register -> t -> p ()
-  getFPRegister :: FPRegister -> p Float
-  setFPRegister :: FPRegister -> Float -> p ()
+  -- TODO: Another typeclass parameter for floating-point width?
+  getFPRegister :: FPRegister -> p Int32
+  setFPRegister :: FPRegister -> Int32 -> p ()
   loadByte :: t -> p Int8
   loadHalf :: t -> p Int16
   loadWord :: t -> p Int32
@@ -48,20 +50,20 @@ class (Monad p, MachineWidth t) => RiscvProgram p t | p -> t where
   setPrivMode :: PrivMode -> p ()
   commit :: p ()
   endCycle :: forall t. p t
-  inTLB :: AccessType -> MachineInt -> p (Maybe MachineInt) 
-  addTLB :: MachineInt -> MachineInt -> Int -> p () 
+  inTLB :: AccessType -> MachineInt -> p (Maybe MachineInt)
+  addTLB :: MachineInt -> MachineInt -> Int -> p ()
   flushTLB :: p ()
-  
-cacheAccess :: forall p t. (RiscvProgram p t) =>AccessType -> MachineInt -> p (MachineInt, MachineInt,  Int) -> p MachineInt 
+
+cacheAccess :: forall p t. (RiscvProgram p t) => AccessType -> MachineInt -> p (MachineInt, MachineInt,  Int) -> p MachineInt
 cacheAccess accessType addr getPA = do
-      a <-  inTLB accessType addr 
+      a <-  inTLB accessType addr
       case a of
         Nothing -> do
                  (pa, pte, level) <- getPA
                  addTLB addr pte level
                  return $ pa
         Just a ->
-                 return $ a  
+                 return $ a
 
 getXLEN :: forall p t s. (RiscvProgram p t, Integral s) => p s
 getXLEN = do
@@ -93,7 +95,7 @@ instance (RiscvProgram p t) => RiscvProgram (MaybeT p) t where
   getPrivMode = lift getPrivMode
   setPrivMode m = lift (setPrivMode m)
   commit = lift commit
-  endCycle = MaybeT (return Nothing) -- b is of type (MaybeT p) a 
+  endCycle = MaybeT (return Nothing) -- b is of type (MaybeT p) a
   addTLB a b c = lift (addTLB a b c)
   inTLB a b = lift (inTLB a b)
   flushTLB = lift flushTLB

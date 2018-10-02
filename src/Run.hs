@@ -57,7 +57,7 @@ checkInterrupt = do
 
 runProgram :: Maybe Int64 -> Minimal64 -> IO (Int64, Minimal64)
 
-runProgram maybeToHostAddress = runStateT (stepHelper RV64IMA maybeToHostAddress (liftIO checkInterrupt) :: IOState Minimal64 Int64)
+runProgram maybeToHostAddress = runStateT (stepHelper RV64IMAF maybeToHostAddress (liftIO checkInterrupt) :: IOState Minimal64 Int64)
 
 readProgram :: String -> IO (Maybe Int64, [(Int, Word8)])
 readProgram f = do
@@ -74,7 +74,7 @@ runFile :: String -> IO Int64
 runFile f = do
   (maybeToHostAddress, mem) <- readProgram f
   let c = Minimal64 { registers = (take 31 $ repeat 0),
-                      fpregisters = (take 32 $ repeat (0 :: Float)),
+                      fpregisters = (take 32 $ repeat 0),
                       csrs = (resetCSRFile 64),
                       pc = 0x80000000,
                       nextPC = 0,

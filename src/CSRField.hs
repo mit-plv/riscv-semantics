@@ -24,5 +24,6 @@ data CSRField = MXL | Extensions | -- misa
                 SEPC | -- sepc
                 SCauseInterrupt | SCauseCode | -- scause
                 STVal | -- stval
-                MODE | ASID | PPN -- satp
+                MODE | ASID | PPN | -- satp
+                FFlags | FRM -- fflags, frm, fcsr
   deriving (Ord, Eq, Show)

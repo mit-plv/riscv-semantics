@@ -45,6 +45,9 @@ csrTable = [(0x300, MStatus),
             (0x144, SIP),
             (0x180, SATP),
             (0x000, UStatus),
+            (0x001, FFlags),
+            (0x002, FRM),
+            (0x003, FCSR),
             (0x004, UIE),
             (0x005, UTVec),
             (0x040, UScratch),
@@ -91,6 +94,9 @@ lookupCSR 0x143 = STVal
 lookupCSR 0x144 = SIP
 lookupCSR 0x180 = SATP
 lookupCSR 0x000 = UStatus
+lookupCSR 0x001 = FFlags
+lookupCSR 0x002 = FRM
+lookupCSR 0x003 = FCSR
 lookupCSR 0x004 = UIE
 lookupCSR 0x005 = UTVec
 lookupCSR 0x040 = UScratch

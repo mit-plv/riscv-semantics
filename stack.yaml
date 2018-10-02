@@ -37,6 +37,10 @@ resolver: nightly-2017-10-26
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
+- location:
+    git: https://github.com/GaloisInc/softfloat-hs.git
+    commit: d60900669f35878c54114a0d4b5a3acd91ba0654
+  extra-dep: true
 # - clash/clash-ghc
 # - clash/clash-lib
 # - clash/clash-prelude

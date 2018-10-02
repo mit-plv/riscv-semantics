@@ -14,7 +14,7 @@ import qualified Data.Map as S
 import Control.Monad.State
 
 data Minimal64 = Minimal64 { registers :: [Int64],
-                             fpregisters :: [Float],
+                             fpregisters :: [Int32],
                              csrs :: CSRFile,
                              pc :: Int64,
                              nextPC :: Int64,
@@ -53,6 +53,9 @@ instance RiscvProgram MState Int64 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! ((fromIntegral:: Register -> Int) reg-1), comp)
   setRegister :: forall s. (Integral s) => Register -> s -> MState ()
   setRegister reg val = state $ \comp -> ((), if reg == 0 then comp else comp { registers = setIndex ((fromIntegral:: Register -> Int) reg-1) ((fromIntegral:: s -> Int64) val) (registers comp) })
+  getFPRegister reg = state $ \comp -> ((fpregisters comp) !! ((fromIntegral:: Register -> Int) reg), comp)
+  setFPRegister :: forall s. (Integral s) => FPRegister -> s -> MState ()
+  setFPRegister reg val = state $ \comp -> ((), comp { fpregisters = setIndex ((fromIntegral:: Register -> Int) reg) ((fromIntegral:: s -> Int32) val) (fpregisters comp) })
   getPC = state $ \comp -> (pc comp, comp)
   setPC :: forall s. (Integral s) => s -> MState ()
   setPC val = state $ \comp -> ((), comp { nextPC = (fromIntegral:: s -> Int64) val })

@@ -116,6 +116,15 @@ getCSR SATP = do
 
 -- User-level CSRs:
 
+getCSR FFlags = getCSRField Field.FFlags
+
+getCSR FRM = getCSRField Field.FRM
+
+getCSR FCSR = do
+  fflags <- getCSR FFlags
+  frm <- getCSR FRM
+  return (shift frm 5 .|. fflags)
+
 -- It's unclear whether these are allowed to raise an exception in machine mode.
 -- It's problematic if Time isn't, since that brings some extra platform
 -- dependent information (specifically, the MTime memory-mapped address) up into
@@ -207,5 +216,15 @@ setCSR SATP val = do
       setCSRField Field.MODE mode
       setCSRField Field.ASID (bitSlice val 44 60)
       setCSRField Field.PPN (bitSlice val 0 44)
+
+-- User-level CSRs:
+
+setCSR FFlags val = setCSRField Field.FFlags (bitSlice val 0 5)
+
+setCSR FRM val = setCSRField Field.FRM (bitSlice val 0 3)
+
+setCSR FCSR val = do
+  setCSR FFlags val
+  setCSR FRM (shift val (-5))
 
 setCSR _ _ = return ()

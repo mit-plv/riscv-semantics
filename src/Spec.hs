@@ -9,6 +9,7 @@ import Data.Int
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
+import Data.Word
 
 runCycle :: (RiscvProgram p t) => InstructionSet -> (Int32 -> p Bool) -> p () -> p ()
 runCycle iset preDecode preCommit = do

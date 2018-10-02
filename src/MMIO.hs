@@ -36,6 +36,8 @@ mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar))]
 instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (IOState s) t where
   getRegister r = liftState (getRegister r)
   setRegister r v = liftState (setRegister r v)
+  getFPRegister r = liftState (getFPRegister r)
+  setFPRegister r v = liftState (setFPRegister r v)
   loadByte a = liftState (loadByte a)
   loadHalf a = liftState (loadHalf a)
   loadWord :: t -> IOState s Int32

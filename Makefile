@@ -9,7 +9,7 @@ test:
 	$(MAKE) -C test
 
 riscv-tests:
-	RISCV_PREFIX=riscv-none-embed- $(MAKE) -C riscv-tests/isa rv64mi rv64si rv64ui
+	RISCV_PREFIX=riscv-none-embed- $(MAKE) -C riscv-tests/isa rv64mi rv64si rv64ui rv64uf
 
 clean:
 	rm -rf .stack-work/
