@@ -37,10 +37,7 @@ resolver: nightly-2017-10-26
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-- location:
-    git: https://github.com/GaloisInc/softfloat-hs.git
-    commit: d60900669f35878c54114a0d4b5a3acd91ba0654
-  extra-dep: true
+- 'softfloat-hs'
 # - clash/clash-ghc
 # - clash/clash-lib
 # - clash/clash-prelude
@@ -77,8 +74,8 @@ extra-package-dbs: []
 # arch: x86_64
 # 
 # Extra directories used by stack for building
-# extra-include-dirs: [/path/to/dir]
-# extra-lib-dirs: [/path/to/dir]
+extra-include-dirs: [softfloat-hs/include]
+extra-lib-dirs: [softfloat-hs/lib]
 # 
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
