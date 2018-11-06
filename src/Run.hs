@@ -23,6 +23,7 @@ import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import qualified Data.Map as S
+import qualified Data.ByteString as B
 import Debug.Trace
 import Numeric (showHex, readHex)
 
@@ -72,14 +73,16 @@ readProgram f = do
 
 runFile :: String -> IO Int64
 runFile f = do
-  (maybeToHostAddress, mem) <- readProgram f
+  deviceTree <- B.readFile "src/device_tree.bin"
+  (maybeToHostAddress, program) <- readProgram f
+  let mem = S.union (S.fromList (zip [0..] (B.unpack deviceTree))) (S.fromList program)
   let c = Minimal64 { registers = (take 31 $ repeat 0),
                       fpregisters = (take 32 $ repeat 0),
                       csrs = (resetCSRFile 64),
                       pc = 0x80000000,
                       nextPC = 0,
                       privMode = Machine,
-                      mem = MapMemory { bytes = S.fromList mem, reservation = Nothing } } in
+                      mem = MapMemory { bytes = mem, reservation = Nothing } } in
     fmap fst $ runProgram maybeToHostAddress c
 
 runFiles :: [String] -> IO Int64

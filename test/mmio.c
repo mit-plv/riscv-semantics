@@ -1,10 +1,11 @@
-int* CHAR_ADDR = (int *)0x000fff4;
+int* PUT_ADDR = (int *)0x000fff0;
+int* GET_ADDR = (int *)0x000fff4;
 
 int getchar() {
-  return *CHAR_ADDR;
+  return *GET_ADDR;
 }
 
 int putchar(int c) {
-  *CHAR_ADDR = c;
+  *PUT_ADDR = c;
   return c;
 }

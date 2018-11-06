@@ -29,9 +29,14 @@ rvGetChar = liftIO cGetChar
 rvPutChar :: StoreFunc s
 rvPutChar val = liftIO (putChar $ chr $ (fromIntegral:: Int32 -> Int) val)
 
+rvZero :: LoadFunc s
+rvZero = return 0
+rvNull :: StoreFunc s
+rvNull val = return ()
+
 -- Addresses for mtime/mtimecmp chosen for Spike compatibility.
 mmioTable :: S.Map MachineInt (LoadFunc s, StoreFunc s)
-mmioTable = S.fromList [(0xfff4, (rvGetChar, rvPutChar))]
+mmioTable = S.fromList [(0xfff0, (rvZero, rvPutChar)), (0xfff4, (rvGetChar, rvNull))]
 
 instance (RiscvProgram (State s) t, MachineWidth t) => RiscvProgram (IOState s) t where
   getRegister r = liftState (getRegister r)

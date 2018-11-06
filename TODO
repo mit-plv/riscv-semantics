@@ -157,3 +157,19 @@ Tuesday, May 1st
 * Implement "A" extension using GADTs
 * Implement "F" extension?
 * Attempt to boot Linux!
+
+Tuesday, September 11th
+* Implement F extension
+
+Tuesday, October 2nd
+* Boot bbl.
+* Tandem verification stuff?
+
+Tuesday, October 16th
+* Get dummy_payload printing: include device tree, initialize registers, memory map UART.
+* Add another device for user mode?
+* Investigate GDB remote debugging protocol (consult spike src, maybe gdb).
+
+For building bbl without compressed instructions:
+  ../configure --prefix=$RISCV --host=riscv64-unknown-linux-gnu CFLAGS=-march=rv64imafd
+  CFLAGS=-march=rv64imafd make
