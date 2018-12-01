@@ -22,7 +22,7 @@ execute (Jal rd jimm20) = do
   pc <- getPC
   let newPC = pc + (fromImm jimm20)
   if (remu newPC 4 /= 0)
-    then raiseException 0 0
+    then raiseExceptionWithInfo 0 0 (fromIntegral newPC)
     else (do
       setRegister rd (pc + 4)
       setPC newPC)
@@ -31,7 +31,7 @@ execute (Jalr rd rs1 oimm12) = do
   pc <- getPC
   let newPC = (x + fromImm oimm12) .&. (complement 1)
   if (remu newPC 4 /= 0)
-    then raiseException 0 0
+    then raiseExceptionWithInfo 0 0 (fromIntegral newPC)
     else (do
       setRegister rd (pc + 4)
       setPC newPC)
@@ -42,7 +42,7 @@ execute (Beq rs1 rs2 sbimm12) = do
   when (x == y) (do
     let newPC = (pc + fromImm sbimm12)
     if (remu newPC 4 /= 0)
-      then raiseException 0 0
+      then raiseExceptionWithInfo 0 0 (fromIntegral newPC)
       else setPC newPC)
 execute (Bne rs1 rs2 sbimm12) = do
   x <- getRegister rs1
@@ -51,7 +51,7 @@ execute (Bne rs1 rs2 sbimm12) = do
   when (x /= y) (do
     let addr = (pc + fromImm sbimm12)
     if (remu addr 4 /= 0)
-      then raiseException 0 0
+      then raiseExceptionWithInfo 0 0 (fromIntegral addr)
       else setPC addr)
 execute (Blt rs1 rs2 sbimm12) = do
   x <- getRegister rs1
@@ -60,7 +60,7 @@ execute (Blt rs1 rs2 sbimm12) = do
   when (x < y) (do
     let addr = (pc + fromImm sbimm12)
     if (remu addr 4 /= 0)
-      then raiseException 0 0
+      then raiseExceptionWithInfo 0 0 (fromIntegral addr)
       else setPC addr)
 execute (Bge rs1 rs2 sbimm12) = do
   x <- getRegister rs1
@@ -69,7 +69,7 @@ execute (Bge rs1 rs2 sbimm12) = do
   when (x >= y) (do
     let addr = (pc + fromImm sbimm12)
     if (remu addr 4 /= 0)
-      then raiseException 0 0
+      then raiseExceptionWithInfo 0 0 (fromIntegral addr)
       else setPC addr)
 execute (Bltu rs1 rs2 sbimm12) = do
   x <- getRegister rs1
@@ -78,7 +78,7 @@ execute (Bltu rs1 rs2 sbimm12) = do
   when ((ltu x y)) (do
     let addr = (pc + fromImm sbimm12)
     if (remu addr 4 /= 0)
-      then raiseException 0 0
+      then raiseExceptionWithInfo 0 0 (fromIntegral addr)
       else setPC addr)
 execute (Bgeu rs1 rs2 sbimm12) = do
   x <- getRegister rs1
@@ -87,7 +87,7 @@ execute (Bgeu rs1 rs2 sbimm12) = do
   when (not (ltu x y)) (do
     let addr = (pc + fromImm sbimm12)
     if (remu addr 4 /= 0)
-      then raiseException 0 0
+      then raiseExceptionWithInfo 0 0 (fromIntegral addr)
       else setPC addr)
 execute (Lb rd rs1 oimm12) = do
   a <- getRegister rs1

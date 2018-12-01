@@ -148,7 +148,7 @@ instance MachineWidth Int32 where
   regToShamt = lower 5
   highBits n = (fromIntegral:: Integer -> Int32) $ bitSlice n 32 64
   divu x y = (fromIntegral:: Word32 -> Int32)
-                (rem ((fromIntegral:: Int32 -> Word32) x)
+                (quot ((fromIntegral:: Int32 -> Word32) x)
                      ((fromIntegral:: Int32 -> Word32) y))
   remu x y = (fromIntegral:: Word32 -> Int32)
                 (rem ((fromIntegral:: Int32 -> Word32) x)
@@ -171,7 +171,7 @@ instance MachineWidth Int64 where
   regToShamt = lower 6
   highBits n = (fromIntegral:: Integer -> Int64) $ bitSlice n 64 128
   divu x y = (fromIntegral:: Word64 -> Int64)
-                (rem ((fromIntegral:: Int64 -> Word64) x)
+                (quot ((fromIntegral:: Int64 -> Word64) x)
                      ((fromIntegral:: Int64 -> Word64) y))
   remu x y = (fromIntegral:: Word64 -> Int64)
                 (rem ((fromIntegral:: Int64 -> Word64) x)
