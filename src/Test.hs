@@ -1,7 +1,7 @@
 module Test where
 import Data.Int
 import Data.List
-import qualified Data.Map as S
+import qualified Data.Map.Strict as S
 import Control.Monad.State
 import Control.Monad.Trans.Maybe
 import System.Directory
@@ -62,7 +62,7 @@ runProgram iset maybeToHostAddress comp input = (returnValue, output)
 runFile :: InstructionSet -> String -> String -> IO (Int64, String)
 runFile iset f input = do
   (maybeToHostAddress, mem) <- readProgram f
-  let c = Minimal64 { registers = (take 31 $ repeat 0),
+  let c = Minimal64 { registers = S.empty,
                       fpregisters = (take 31 $ repeat 0),
                       csrs = (resetCSRFile 64),
                       pc = 0x80000000,

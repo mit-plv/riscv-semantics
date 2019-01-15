@@ -3,7 +3,7 @@ import CSRField
 import Utility
 import Data.Bits
 import Data.List
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe
 
 type CSRFile = M.Map CSRField MachineInt

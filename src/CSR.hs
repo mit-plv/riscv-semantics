@@ -19,51 +19,7 @@ data CSR = MISA | MStatus | MTVec | MEDeleg | MIDeleg | MIP | MIE | MCycle |
            InvalidCSR
   deriving Eq
 
-csrTable = [(0x300, MStatus),
-            (0x301, MISA),
-            (0x302, MEDeleg),
-            (0x303, MIDeleg),
-            (0x304, MIE),
-            (0x305, MTVec),
-            (0x306, MCounterEn),
-            (0x340, MScratch),
-            (0x341, MEPC),
-            (0x342, MCause),
-            (0x343, MTVal),
-            (0x344, MIP),
-            (0xB00, MCycle),
-            (0xB02, MInstRet),
-            (0x100, SStatus),
-            (0x102, SEDeleg),
-            (0x103, SIDeleg),
-            (0x104, SIE),
-            (0x105, STVec),
-            (0x140, SScratch),
-            (0x141, SEPC),
-            (0x142, SCause),
-            (0x143, STVal),
-            (0x144, SIP),
-            (0x180, SATP),
-            (0x000, UStatus),
-            (0x001, FFlags),
-            (0x002, FRM),
-            (0x003, FCSR),
-            (0x004, UIE),
-            (0x005, UTVec),
-            (0x040, UScratch),
-            (0x041, UEPC),
-            (0x042, UCause),
-            (0x043, UTVal),
-            (0x044, UIP),
-            (0xC00, Cycle),
-            (0xC01, Time),
-            (0xC02, InstRet)]
-
-instance Enum CSR where
-    fromEnum = fromMaybe 0x1000 . flip lookup (map swap csrTable)
-    toEnum = fromMaybe InvalidCSR . flip lookup csrTable
-
--- For Clash's sake.
+-- For Clash's sake; otherwise, this could be an enum.
 lookupCSR :: (Integral x) => x -> CSR
 lookupCSR 0x300 = MStatus
 lookupCSR 0x301 = MISA

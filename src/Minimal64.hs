@@ -10,10 +10,13 @@ import MapMemory
 import Data.Bits
 import Data.Int
 import Data.Word
-import qualified Data.Map as S
+import Data.Maybe
+import qualified Data.Map.Strict as S
 import Control.Monad.State
 
-data Minimal64 = Minimal64 { registers :: [Int64],
+data Minimal64 = Minimal64 { registers :: S.Map Register Int64,
+                             -- TODO: May need to replace this with a strict map to avoid a memory leak.
+
                              fpregisters :: [Int32],
                              csrs :: CSRFile,
                              pc :: Int64,
@@ -23,6 +26,7 @@ data Minimal64 = Minimal64 { registers :: [Int64],
                            } deriving (Show)
 
 type MState = State Minimal64
+
 
 type LoadFunc = MState Int32
 type StoreFunc = Int32 -> MState ()
@@ -50,9 +54,9 @@ wrapStore :: forall a' v v' m. (Integral a', Integral v, Integral v') => (MapMem
 wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)) ((fromIntegral:: v' -> v) val) })
 
 instance RiscvProgram MState Int64 where
-  getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! ((fromIntegral:: Register -> Int) reg-1), comp)
+  getRegister reg = state $ \comp -> (if reg == 0 then 0 else fromMaybe 0 (S.lookup reg (registers comp)), comp)
   setRegister :: forall s. (Integral s) => Register -> s -> MState ()
-  setRegister reg val = state $ \comp -> ((), if reg == 0 then comp else comp { registers = setIndex ((fromIntegral:: Register -> Int) reg-1) ((fromIntegral:: s -> Int64) val) (registers comp) })
+  setRegister reg val = state $ \comp -> ((), if reg == 0 then comp else comp { registers = S.insert reg (fromIntegral val) (registers comp) })
   getFPRegister reg = state $ \comp -> ((fpregisters comp) !! ((fromIntegral:: Register -> Int) reg), comp)
   setFPRegister :: forall s. (Integral s) => FPRegister -> s -> MState ()
   setFPRegister reg val = state $ \comp -> ((), comp { fpregisters = setIndex ((fromIntegral:: Register -> Int) reg) ((fromIntegral:: s -> Int32) val) (fpregisters comp) })
