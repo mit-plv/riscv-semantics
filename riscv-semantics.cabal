@@ -16,18 +16,18 @@ extra-source-files:  ChangeLog.md, README.md
 cabal-version:       >=1.10
 
 executable riscv-semantics
-  main-is:             MainRun.hs
+  main-is:             Platform/MainRun.hs
   ghc-options:         -threaded
-  other-modules:       Run, Run32, CSR, CSRField, CSRFile, CSRSpec, Decode, Elf, Execute, ExecuteCSR, ExecuteI, ExecuteI64, ExecuteM, ExecuteM64, Minimal64, Minimal32, ExecuteA, ExecuteA64, ExecuteF, ExecuteF64, MMIO, MapMemory, Memory, Program, Utility, VirtualMemory, Spec, TLBExperiment, BufferMMIO
+  other-modules:       Platform.Run, Platform.Run32, Spec.CSR, Spec.CSRField, Spec.CSRFile, Spec.CSRSpec, Spec.Decode, Utility.Elf, Spec.Execute, Spec.ExecuteCSR, Spec.ExecuteI, Spec.ExecuteI64, Spec.ExecuteM, Spec.ExecuteM64, Platform.Minimal64, Platform.Minimal32, Spec.ExecuteA, Spec.ExecuteA64, Spec.ExecuteF, Spec.ExecuteF64, Platform.MMIO, Utility.MapMemory, Spec.Memory, Spec.Machine, Utility.Utility, Spec.VirtualMemory, Spec.Spec, Platform.TLBExperiment, Platform.BufferMMIO
   other-extensions:    MultiParamTypeClasses, FlexibleInstances, MultiWayIf, FunctionalDependencies, ScopedTypeVariables, NamedFieldPuns
   build-depends:       base >=4.9 && <4.11, mtl >=2.2 && <2.3, transformers >=0.5 && <0.6, containers >=0.5 && <0.6, bytestring >=0.10 && <0.11, text >=1.2 && <1.3, elf >=0.28, nondeterminism >=1.4, ilist >=0.3, softfloat-hs ==0.1.0
   hs-source-dirs:      src
   default-language:    Haskell2010
 
 executable riscv-semantics-rv32im-compliance
-  main-is:             MainCompliance.hs
+  main-is:             Platform/MainCompliance.hs
   ghc-options:         -threaded
-  other-modules:       Run, Run32, CSR, CSRField, CSRFile, CSRSpec, Decode, Elf, Execute, ExecuteCSR, ExecuteI, ExecuteI64, ExecuteM, ExecuteM64, Minimal64, Minimal32, ExecuteA, ExecuteA64, ExecuteF, ExecuteF64, MMIO, MapMemory, Memory, Program, Utility, VirtualMemory, Spec, TLBExperiment, BufferMMIO
+  other-modules:       Platform.Run, Platform.Run32, Spec.CSR, Spec.CSRField, Spec.CSRFile, Spec.CSRSpec, Spec.Decode, Utility.Elf, Spec.Execute, Spec.ExecuteCSR, Spec.ExecuteI, Spec.ExecuteI64, Spec.ExecuteM, Spec.ExecuteM64, Platform.Minimal64, Platform.Minimal32, Spec.ExecuteA, Spec.ExecuteA64, Spec.ExecuteF, Spec.ExecuteF64, Platform.MMIO, Utility.MapMemory, Spec.Memory, Spec.Machine, Utility.Utility, Spec.VirtualMemory, Spec.Spec, Platform.TLBExperiment, Platform.BufferMMIO
   other-extensions:    MultiParamTypeClasses, FlexibleInstances, MultiWayIf, FunctionalDependencies, ScopedTypeVariables, NamedFieldPuns
   build-depends:       base >=4.9 && <4.11, mtl >=2.2 && <2.3, transformers >=0.5 && <0.6, containers >=0.5 && <0.6, bytestring >=0.10 && <0.11, text >=1.2 && <1.3, elf >=0.28, nondeterminism >=1.4, ilist >=0.3, softfloat-hs ==0.1.0
   hs-source-dirs:      src
@@ -36,9 +36,9 @@ executable riscv-semantics-rv32im-compliance
 
 
 executable riscv-semantics-tests
-  main-is:             MainTest.hs
+  main-is:             Platform/MainTest.hs
   ghc-options:         -threaded
-  other-modules:       Run, Test, BufferMMIO, CSR, CSRField, CSRFile, CSRSpec, Decode, Elf, Execute, ExecuteCSR, ExecuteI, ExecuteI64, ExecuteM, ExecuteM64, ExecuteA, ExecuteA64, ExecuteF, ExecuteF64, Minimal64, MMIO, MapMemory, Memory, Program, Utility, VirtualMemory, Spec, TLBExperiment
+  other-modules:       Platform.Run, Platform.Test, Platform.BufferMMIO, Spec.CSR, Spec.CSRField, Spec.CSRFile, Spec.CSRSpec, Spec.Decode, Utility.Elf, Spec.Execute, Spec.ExecuteCSR, Spec.ExecuteI, Spec.ExecuteI64, Spec.ExecuteM, Spec.ExecuteM64, Spec.ExecuteA, Spec.ExecuteA64, Spec.ExecuteF, Spec.ExecuteF64, Platform.Minimal64, Platform.MMIO, Utility.MapMemory, Spec.Memory, Spec.Machine, Utility.Utility, Spec.VirtualMemory, Spec.Spec, Platform.TLBExperiment
   other-extensions:    MultiParamTypeClasses, FlexibleInstances, MultiWayIf, FunctionalDependencies, ScopedTypeVariables, NamedFieldPuns
   build-depends:       base >=4.9 && <4.11, mtl >=2.2 && <2.3, transformers >=0.5 && <0.6, containers >=0.5 && <0.6, bytestring >=0.10 && <0.11, text >=1.2 && <1.3, elf >=0.28, directory >=1.3 && <1.4, filepath >=1.4 && <1.5, nondeterminism >=1.4, ilist >=0.3, softfloat-hs ==0.1.0
   hs-source-dirs:      src

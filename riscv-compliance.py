@@ -11,7 +11,7 @@ import subprocess
 
 # ================================================================
 
-simulator = "stack exec -- riscv-semantics-rv32im-compliance src/device_tree.bin"
+simulator = "stack exec -- riscv-semantics-rv32im-compliance device_tree.bin"
 
 num_executed = 0
 num_passed   = 0
