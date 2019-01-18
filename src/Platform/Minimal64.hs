@@ -116,10 +116,10 @@ instance RiscvMachine MState Int64 where
 
   -- CSRs:
   getCSRField field = state $ \comp -> (getField field (csrs comp), comp)
-  setCSRField :: forall s. (Integral s) => Field.CSRField -> s -> MState ()
-  setCSRField field val = state $ \comp -> ((), comp { csrs = setField field ((fromIntegral:: s -> MachineInt) val) (csrs comp) })
+  unsafeSetCSRField :: forall s. (Integral s) => Field.CSRField -> s -> MState ()
+  unsafeSetCSRField field val = state $ \comp -> ((), comp { csrs = setField field ((fromIntegral:: s -> MachineInt) val) (csrs comp) })
   inTLB a b = return Nothing -- noTLB
   addTLB a b c= return ()
   flushTLB = return ()
 
-  getPlatform = return (Platform (return False))
+  getPlatform = return (Platform { dirtyHardware = return False, writePlatformCSRField = \field value -> return value })

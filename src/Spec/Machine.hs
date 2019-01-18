@@ -26,10 +26,12 @@ encodePrivMode Supervisor = 1
 encodePrivMode Machine = 3
 
 data Platform = Platform {
-  -- Existential here, or as type variable of platform?
-  -- Seems like having it as a type variable of platform might break lifting.
-  dirtyHardware :: forall p t. (RiscvMachine p t) => p Bool
-  -- warl :: forall (RiscvSemantics p t) => CSR -> p (),
+  -- The existential on p and t is per-function, rather than a type variable of
+  -- Platform, both for semantic clarity and because Having it as a type
+  -- variable of Platform would break lifting.
+  dirtyHardware :: forall p t. (RiscvMachine p t) => p Bool,
+  writePlatformCSRField :: forall p t. (RiscvMachine p t) => CSRField -> MachineInt -> p MachineInt
+  -- writeMISA :: forall p t. (RiscvMachine p t) => MachineInt -> p MachineInt
 }
 
 hardwareDirtyBit :: (RiscvMachine p t) => p Bool
@@ -37,6 +39,15 @@ hardwareDirtyBit = do
   p <- getPlatform
   r <- (dirtyHardware p)
   return r
+
+setCSRField :: (RiscvMachine p t, Integral s) => CSRField -> s -> p ()
+setCSRField field value = do
+  let ty = fieldType field
+  if (ty == WLRL || ty == WARL) then do
+    p <- getPlatform
+    v <- (writePlatformCSRField p) field (fromIntegral value)
+    unsafeSetCSRField field v
+  else unsafeSetCSRField field value
 
 class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
   getRegister :: Register -> p t
@@ -56,7 +67,7 @@ class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
   checkReservation :: t -> p Bool
   clearReservation :: t -> p ()
   getCSRField :: CSRField -> p MachineInt
-  setCSRField :: (Integral s) => CSRField -> s -> p ()
+  unsafeSetCSRField :: (Integral s) => CSRField -> s -> p ()
   getPC :: p t
   setPC :: t -> p ()
   getPrivMode :: p PrivMode
@@ -103,7 +114,7 @@ instance (RiscvMachine p t) => RiscvMachine (MaybeT p) t where
   checkReservation a = lift (checkReservation a)
   clearReservation a = lift (clearReservation a)
   getCSRField f = lift (getCSRField f)
-  setCSRField f v = lift (setCSRField f v)
+  unsafeSetCSRField f v = lift (unsafeSetCSRField f v)
   getPC = lift getPC
   setPC v = lift (setPC v)
   getPrivMode = lift getPrivMode

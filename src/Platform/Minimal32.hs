@@ -101,8 +101,8 @@ instance RiscvMachine MState Int32 where
   clearReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word32 -> Int) ((fromIntegral :: Int32 -> Word32) addr)) })
   -- CSRs:
   getCSRField field = state $ \comp -> (getField field (csrs comp), comp)
-  setCSRField :: forall s. (Integral s) => Field.CSRField -> s -> MState ()
-  setCSRField field val = state $ \comp -> ((), comp { csrs = setField field ((fromIntegral:: s -> MachineInt) val) (csrs comp) })
+  unsafeSetCSRField :: forall s. (Integral s) => Field.CSRField -> s -> MState ()
+  unsafeSetCSRField field val = state $ \comp -> ((), comp { csrs = setField field ((fromIntegral:: s -> MachineInt) val) (csrs comp) })
   -- Unimplemented:
   loadDouble _ = return 0
   storeDouble _ _ = return ()

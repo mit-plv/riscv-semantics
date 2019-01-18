@@ -84,7 +84,7 @@ instance RiscvMachine MState Int32 where
   storeDouble  a v = state $ \comp -> ((), comp)
 -- fake CSR
   getCSRField field = state $ \comp -> (0, comp)
-  setCSRField field val = state $ \comp -> ((), comp)
+  unsafeSetCSRField field val = state $ \comp -> ((), comp)
   getPC = state $ \comp -> (pc comp, comp)
   setPC val = state $ \comp -> ((), comp { nextPC = fromIntegral val })
   commit = state $ \comp -> ((), comp { pc = nextPC comp })

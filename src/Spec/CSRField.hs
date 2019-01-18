@@ -28,7 +28,7 @@ data CSRField = MXL | Extensions | -- misa
   deriving (Ord, Eq, Show)
 
 -- WPRI is implicit in a field's lack of existence here.
-data FieldType = RO | RW | WLRL | WARL
+data FieldType = RO | RW | WLRL | WARL deriving (Show, Eq)
 
 fieldType MXL = WARL
 fieldType Extensions = WARL
