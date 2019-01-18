@@ -1,0 +1,20 @@
+The Tandem verifier is expecting to communicate with the device under test (DUT):
+- It asks on stdout for the next packet with "n"
+(- It closes with n)
+
+The DUT is communicating back Verification Packet:
+- The protocol is:
+
+s
+64bits of pc in hex
+32bits of instruction in hex
+32 bits of exception in hex
+32 bits on interrupt in hex
+8 bits cause
+64 bits of addr (where it could store/load)
+64 bits of data (what it is gonna store/regsiter write)
+8 bits of dst register: 5 bits of index, one bit of FPU/GPR, one bit of valid.
+e
+
+The binary is going to complaint if spike the DUT diverge (for some notion of divergence).
+
