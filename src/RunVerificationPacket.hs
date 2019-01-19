@@ -7,6 +7,7 @@ import Data.Int
 import Data.List
 import Data.Word
 import Data.Bits
+import Data.Maybe
 import Utility
 import Program
 import VerifMinimal64
@@ -26,7 +27,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
-import qualified Data.Map as S
+import qualified Data.Map.Strict as S
 import qualified Data.ByteString as B
 import Debug.Trace
 import Numeric (showHex, readHex)
@@ -80,7 +81,7 @@ runFile f = do
   deviceTree <- B.readFile "src/device_tree.bin"
   (maybeToHostAddress, program) <- readProgram f
   let mem = S.union (S.fromList (zip [0..] (B.unpack deviceTree))) (S.fromList program)
-  let c = VerifMinimal64 { registers = (take 31 $ repeat 0),
+  let c = VerifMinimal64 { registers = S.empty,
                       fpregisters = (take 32 $ repeat 0),
                       csrs = (resetCSRFile 64),
                       pc = 0x80000000,
@@ -94,48 +95,48 @@ runFile f = do
                       dst = 0,
                       nextPC = 0,
                       privMode = Machine,
-                      mem = MapMemory { bytes = mem, reservation = Nothing } } in
-    iterate c
+                      fromHost = Nothing,
+                      mem = MapMemory { bytes = mem, reservation = Nothing } } in do
+    handle <- openFile "/tmp/hs2tandem" ReadWriteMode
+    iterate handle (fromMaybe 0 maybeToHostAddress) c
   where 
-        iterate lastState = do
-               nextState <- fmap snd $ runStateT (cycleAndOutput :: IOState VerifMinimal64 ()) lastState 
-               if pc lastState /= 0x6f then do
---                  line <- getLine
-                  let line = "n" 
-                  (if (line == "n") then do
-                     putStrLn "s" 
-                     putStrLn . show  $ pcPacket nextState
-                     putStrLn . show  $ instruction nextState
-                     putStrLn . show . fromEnum $ exception nextState
-                     putStrLn . show . fromEnum $ interrupt nextState
-                     putStrLn . show  $ cause nextState
-                     putStrLn . show  $ addr nextState
-                     putStrLn . show . fromEnum $ valid_addr nextState
-                     putStrLn . show  $ d nextState
-                     putStrLn . show . fromEnum $ valid_dst nextState
-                     putStrLn . show  $ dst nextState
-                     putStrLn "e"
-                     iterate (nextState{valid_dst=False, valid_addr=False})
+        iterate handle toHostAddress lastState = do
+               (_,nextState) <- runStateT ((cycleAndOutput toHostAddress):: IOState VerifMinimal64 ()) lastState 
+               if pc lastState /= 0x80000088 then do
+                  (if (fromHost nextState == Nothing) then do
+                     hPutStrLn handle "s" 
+                     hPutStrLn handle . show  $ pcPacket nextState
+                     hPutStrLn handle . show  $ instruction nextState
+                     hPutStrLn handle . show . fromEnum $ exception nextState
+                     hPutStrLn handle . show . fromEnum $ interrupt nextState
+                     hPutStrLn handle . show  $ cause nextState
+                     hPutStrLn handle . show  $ addr nextState
+                     hPutStrLn handle . show . fromEnum $ valid_addr nextState
+                     hPutStrLn handle . show  $ d nextState
+                     hPutStrLn handle . show . fromEnum $ valid_dst nextState
+                     hPutStrLn handle . show  $ dst nextState
+                     hPutStrLn handle "e"
+                     iterate handle toHostAddress (nextState{valid_dst=False, valid_addr=False})
                   else do
-                     putStrLn "failure" 
-                     return 0)
+                     putStrLn "finish" 
+                     return (fromMaybe 0 (fromHost nextState)))
                else do
                 putStrLn "finish"
-                return 0
-        cycleAndOutput = do
-               result <- runMaybeT (runCycle RV64IMAF preDecode preCommit) 
+                return .fromMaybe 0 $(S.lookup 10 $ registers nextState)  --TODO here we should get register 10 instead
+        cycleAndOutput toHostAddress = do
+               result <- runMaybeT (runCycle RV64IMAF preDecode (endCycle)) 
                case result of
-                 Nothing -> commit 
-                 Just _ -> commit --We go through independently we stop at top level 
+                 _ -> commit >> (postCommit toHostAddress :: IOState VerifMinimal64 ())
         preDecode inst = do 
              vpc <- getPC
              s <- lift get
              lift $ put (s{pcPacket = vpc, instruction = inst})
              return (inst /= 0x6f)
-        preCommit = do
-             s <- lift get
+        postCommit toHostAddress = do
+             s <- get 
              mtval <- getCSR MTVal
              stval <- getCSR STVal
+             toHost <- loadWord toHostAddress
              let npc = nextPC s
              let trappedM = npc == (mtval .&. (-3)) -- && ! 3
              let trappedS = npc == (stval .&. (-3)) -- && ! 3
@@ -143,17 +144,14 @@ runFile f = do
                isInterruptM <- getCSRField Field.MCauseInterrupt
                let isInterrupt = isInterruptM == 1 
                codeM <- getCSR MCause
-               lift $ put (s{exception= not isInterrupt, interrupt=isInterrupt, cause=codeM})
-               endCycle
+               put (s{exception= not isInterrupt, interrupt=isInterrupt, cause=codeM})
              else if trappedS then do
-                 isInterruptS <- getCSRField Field.SCauseInterrupt
-                 let isInterrupt = isInterruptS == 1
-                 codeS <- getCSR SCause
-                 lift $ put (s{exception= not isInterrupt, interrupt=isInterrupt, cause=codeS})
-                 endCycle
+                   isInterruptS <- getCSRField Field.SCauseInterrupt
+                   let isInterrupt = isInterruptS == 1
+                   codeS <- getCSR SCause
+                   put (s{exception= not isInterrupt, interrupt=isInterrupt, cause=codeS})
                  else do
-                   lift $ put (s{exception= False, interrupt=False, cause=0})
-                   endCycle
+                   put (s{exception= False, interrupt=False, cause=0})
 
 
 runFiles :: [String] -> IO Int64

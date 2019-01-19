@@ -10,10 +10,11 @@ import MapMemory
 import Data.Bits
 import Data.Int
 import Data.Word
-import qualified Data.Map as S
+import Data.Maybe
+import qualified Data.Map.Strict as S
 import Control.Monad.State
 
-data VerifMinimal64 = VerifMinimal64 { registers :: [Int64],
+data VerifMinimal64 = VerifMinimal64 { registers :: S.Map Register Int64,
                              fpregisters :: [Int32],
                              valid_dst :: Bool,
                              valid_addr :: Bool,
@@ -29,7 +30,8 @@ data VerifMinimal64 = VerifMinimal64 { registers :: [Int64],
                              pcPacket :: Int64,
                              nextPC :: Int64,
                              privMode :: PrivMode,
-                             mem :: MapMemory Int
+                             mem :: MapMemory Int,
+                             fromHost :: Maybe Int64
                            } deriving (Show)
 
 type MState = State VerifMinimal64
@@ -60,9 +62,9 @@ wrapStore :: forall a' v v' m. (Integral a', Integral v, Integral v') => (MapMem
 wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)) ((fromIntegral:: v' -> v) val), addr= fromIntegral addr, valid_addr=True, d = (fromIntegral :: v -> Word64) . (fromIntegral:: v' -> v) $ val})
 
 instance RiscvProgram MState Int64 where
-  getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! ((fromIntegral:: Register -> Int) reg-1), comp)
+  getRegister reg = state $ \comp -> (if reg == 0 then 0 else (fromMaybe 0 $ S.lookup reg (registers comp)) , comp)
   setRegister :: forall s. (Integral s) => Register -> s -> MState ()
-  setRegister reg val = state $ \comp -> ((), if reg == 0 then comp else comp {valid_dst = True, dst= fromIntegral reg, d=fromIntegral val, registers = setIndex ((fromIntegral:: Register -> Int) reg-1) ((fromIntegral:: s -> Int64) val) (registers comp) })
+  setRegister reg val = state $ \comp -> ((), if reg == 0 then comp else comp {valid_dst = True, dst= fromIntegral reg, d=fromIntegral val, registers = S.insert reg ((fromIntegral:: s -> Int64) val) (registers comp) })
   getFPRegister reg = state $ \comp -> ((fpregisters comp) !! ((fromIntegral:: Register -> Int) reg), comp)
   setFPRegister :: forall s. (Integral s) => FPRegister -> s -> MState ()
   setFPRegister reg val = state $ \comp -> ((), comp { fpregisters = setIndex ((fromIntegral:: Register -> Int) reg) ((fromIntegral:: s -> Int32) val) (fpregisters comp) })

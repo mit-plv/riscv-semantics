@@ -354,7 +354,8 @@ private:
 };
 
 int main(int argc, char* argv[]) {
-  const char* elf_path = "../test/build/mandelbrot64";
+  if (argc < 2) {std::cerr<<"Please path path toward elf"; exit(1);}
+  const char* elf_path = argv[1];
   // TODO Add some ways to read the path from the command line
   tandemspike_t sim(elf_path);
   VerificationPacket haskell_packet;
