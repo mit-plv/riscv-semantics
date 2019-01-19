@@ -22,7 +22,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
-import qualified Data.Map as S
+import qualified Data.Map.Strict as S
 import qualified Data.ByteString as B
 import Debug.Trace
 import Numeric (showHex, readHex)
@@ -76,7 +76,7 @@ runFile f = do
   deviceTree <- B.readFile "src/device_tree.bin"
   (maybeToHostAddress, program) <- readProgram f
   let mem = S.union (S.fromList (zip [0..] (B.unpack deviceTree))) (S.fromList program)
-  let c = Minimal64 { registers = (take 31 $ repeat 0),
+  let c = Minimal64 { registers = S.empty,
                       fpregisters = (take 32 $ repeat 0),
                       csrs = (resetCSRFile 64),
                       pc = 0x80000000,

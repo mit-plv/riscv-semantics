@@ -5,13 +5,14 @@ import Utility
 import Data.Maybe
 import Data.Word
 import Data.Bits
-import qualified Data.Map as S
+import qualified Data.Map.Strict as S
 import Prelude
 import Data.List as L
 readM :: (S.Map Int Word8) -> Int -> Word8
 readM mem addr = fromMaybe 0 (S.lookup addr mem)
 
 writeM :: (S.Map Int Word8) -> Int -> Word8 -> (S.Map Int Word8)
+writeM mem addr 0 = S.delete addr mem
 writeM mem addr val = S.insert addr val mem
 
 helpLoad :: (Bits b, Integral b) => (S.Map Int Word8) -> Int -> Int -> b

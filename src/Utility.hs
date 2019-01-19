@@ -18,25 +18,9 @@ setIndex :: Int -> a -> [a] -> [a]
 setIndex i x l = left ++ (x:(drop 1 right))
   where (left, right) = splitAt i l
 
-s8 :: forall t. (Integral t) => t -> t
-s8 n = (fromIntegral:: Int8 -> t) ((fromIntegral:: t -> Int8) n)
-{-# INLINE s8 #-}
-
-s16 :: forall t. (Integral t) => t -> t
-s16 n = (fromIntegral:: Int16 -> t) ((fromIntegral:: t -> Int16) n)
-{-# INLINE s16 #-}
-
 s32 :: forall t. (Integral t) => t -> t
 s32 n = (fromIntegral:: Int32 -> t) ((fromIntegral:: t -> Int32) n)
 {-# INLINE s32 #-}
-
-u8 :: forall t. (Integral t) => t -> t
-u8 n = (fromIntegral:: Word8 -> t) ((fromIntegral:: t -> Word8) n)
-{-# INLINE u8 #-}
-
-u16 :: forall t. (Integral t) => t -> t
-u16 n = (fromIntegral:: Word16 -> t) ((fromIntegral:: t -> Word16) n)
-{-# INLINE u16 #-}
 
 u32 :: forall t. (Integral t) => t -> t
 u32 n = (fromIntegral:: Word32 -> t) ((fromIntegral:: t -> Word32) n)

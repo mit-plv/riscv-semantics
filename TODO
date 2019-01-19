@@ -173,3 +173,8 @@ Tuesday, October 16th
 For building bbl without compressed instructions:
   ../configure --prefix=$RISCV --host=riscv64-unknown-linux-gnu CFLAGS=-march=rv64imafd
   CFLAGS=-march=rv64imafd make
+
+Tuesday, November 20th
+* Investigate memory leak. Profiling, test programs, try making everything strict, etc.
+* Try adding 'size' to Memory; requests above size are out-of-bounds.
+* Tandem verification stuff
