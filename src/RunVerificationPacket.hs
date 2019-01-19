@@ -100,18 +100,18 @@ runFile f = do
         iterate lastState = do
                nextState <- fmap snd $ runStateT (cycleAndOutput :: IOState VerifMinimal64 ()) lastState 
                if pc lastState /= 0x6f then do
-                  let line = "n" -- <- getLine
+                  line <- getLine
                   (if (line == "n") then do
                      putStrLn "s" 
                      putStrLn . show  $ pcPacket nextState
                      putStrLn . show  $ instruction nextState
-                     putStrLn . show  $ exception nextState
-                     putStrLn . show  $ interrupt nextState
+                     putStrLn . show . fromEnum $ exception nextState
+                     putStrLn . show . fromEnum $ interrupt nextState
                      putStrLn . show  $ cause nextState
                      putStrLn . show  $ addr nextState
-                     putStrLn . show  $ valid_addr nextState
+                     putStrLn . show . fromEnum $ valid_addr nextState
                      putStrLn . show  $ d nextState
-                     putStrLn . show  $ valid_dst nextState
+                     putStrLn . show . fromEnum $ valid_dst nextState
                      putStrLn . show  $ dst nextState
                      putStrLn "e"
                      iterate (nextState{valid_dst=False, valid_addr=False})
@@ -167,6 +167,7 @@ runFiles [] = return 0
 
 main :: IO ()
 main = do
+  hSetBuffering stdout LineBuffering
   args <- getArgs
   retval <- case args of
     [] -> do

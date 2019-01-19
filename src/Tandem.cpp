@@ -21,18 +21,20 @@ typedef struct VerificationPacket {
   uint32_t instruction;
   bool exception;
   bool interrupt;
-  uint8_t cause; // only 4 bits
+  uint64_t cause; // only 4 bits
   uint64_t addr;
   bool valid_addr;
   uint64_t data;
   bool valid_dst;
-  uint8_t dst; // Bit for fpr/valid
+  uint64_t dst; // Bit for fpr/valid
 } VerificationPacket;
 
 class tandemspike_t : public simif_t {
 public:
   tandemspike_t(const char* elf_path) : proc("rv64g", this, 0),outBuffer(40), disassembler(new disassembler_t(64)) {
-    data_sz = 0x800000;
+    consecutive_traps = 0;
+    errors = 0;
+    data_sz = 0x8000000;
     data = (char*) calloc(data_sz, 1);
     ElfFile prog;
     prog.open(elf_path);
@@ -40,7 +42,7 @@ public:
       if (it.base >= 0x80000000ull && ((((char*) it.base) + it.data_size) <= (char*)(0x80000000ull + data_sz))) {
 	memcpy((void*) (data + (((uint64_t) it.base) - 0x80000000ull)), it.data, it.data_size);
       } else {
-	std::cout << "Skipping section at " << it.base << std::endl;
+	std::cerr << "Skipping section at " << it.base << std::endl;
       }
     }
     proc.get_state()->pc = 0x80000000;
@@ -50,33 +52,33 @@ public:
      // Does not have any real memory because we need to hijack every load and store.
 
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes){
-    if ( addr > 0x80000000) {
+    if ( addr >= 0x80000000) {
       actual_packet.data = 0;
-      memcpy(bytes, data+addr, len);
-      memcpy(&(actual_packet.data), data+addr, len);
+      memcpy(bytes, data+(addr- 0x80000000ull), len);
+      memcpy(&(actual_packet.data), data + (addr - 0x80000000ull), len);
       actual_packet.addr = addr;
     }
     else {
-      std::cout << "Want to read from less than 80m" << std::endl;
+      std::cerr << "Want to read from less than 80m" << std::endl;
     }
   }
 
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes){
-    if ( addr > 0x80000000) {
+    if ( addr >= 0x80000000) {
       actual_packet.data = 0;
-      memcpy(data+addr,bytes, len);
+      memcpy(data+ addr - 0x80000000ull,bytes, len);
       memcpy(&(actual_packet.data), bytes, len);
       actual_packet.addr = addr;
     } else {
-      std::cout << "Want to store from less than 80m" << std::endl;
+      std::cerr << "Want to store from less than 80m" << std::endl;
     }
   }
 
   void proc_reset(unsigned id){}
   void dump_state() {
-    std::cout << "pc = 0x" << std::hex << proc.get_state()->pc << std::endl;
+    std::cerr << "pc = 0x" << std::hex << proc.get_state()->pc << std::endl;
     for (int i = 0 ; i < 32 ; i = i+1) {
-        std::cout << "  x" << std::dec << i << " = 0x" << std::hex << proc.get_state()->XPR[i] << std::endl;
+        std::cerr << "  x" << std::dec << i << " = 0x" << std::hex << proc.get_state()->XPR[i] << std::endl;
     }
   }
 
@@ -95,10 +97,11 @@ public:
     } catch(...) {
         // if the current instruction didn't cause an exception or an interrupt, we should have been able to get the current instruction
         if (!(synchronization_packet.interrupt || synchronization_packet.exception)) {
-            std::cout << "[ERROR] access_icache(0x" << std::hex << actual_packet.pc <<  ") failed even though there was no interrupt or exception for the current verification packet." << std::endl;
+            std::cerr << "[ERROR] access_icache(0x" << std::hex << actual_packet.pc <<  ") failed even though there was no interrupt or exception for the current verification packet." << std::endl;
         }
     }
 
+    std::cerr << "Instruction match\n" ; 
     proc.step(1);
 
     if (synchronization_packet.interrupt && ((synchronization_packet.cause == 3) || (synchronization_packet.cause == 9) || (synchronization_packet.cause == 11))) {
@@ -137,9 +140,10 @@ public:
 //        actual_packet.dst = ((actual_packet.instruction >> 7) & 0x1F);
 //        actual_packet.valid_dst = synchronization_packet.
 //    }
-
     if (synchronization_packet.valid_dst) { // Packet valid
-       actual_packet.data = proc.get_state()->XPR[actual_packet.dst & 0x1F];
+       actual_packet.data = proc.get_state()->XPR[actual_packet.dst];
+
+       std::cerr << "\nBring data in from register "<< actual_packet.dst << "\n" << actual_packet.data;
     }
 
 
@@ -150,16 +154,25 @@ public:
   bool comparePackets(VerificationPacket procP, VerificationPacket spikeP) {
     bool match = true;
     match = match && (procP.pc == spikeP.pc);
+    std::cerr <<  "pc "  << match << "\n"  ;
     match = match && (procP.instruction == spikeP.instruction);
+    std::cerr <<  "instruction "  << match << "\n"  ;
     match = match && (procP.exception == spikeP.exception);
+    std::cerr <<  "exception "  << match << "\n"  ;
     match = match && (procP.interrupt == spikeP.interrupt);
+    std::cerr <<  "interrupt "  << match << "\n"  ;
     if (procP.exception || procP.interrupt) {
         match = match && (procP.cause == spikeP.cause);
+    std::cerr <<  "cause "  << match << "\n"  ;
     } else {
-        match = match && (procP.valid_dst || procP.valid_addr ) &&(procP.data == spikeP.data);
+        match = match && (!(procP.valid_dst) || (procP.dst == spikeP.dst));
+    std::cerr <<  "dst_valid "  << procP.valid_dst  << "\n"  ;
+    std::cerr <<  "dst "  << match  << "\n"  ;
+        match = match && (!(procP.valid_dst || procP.valid_addr ) || (procP.data == spikeP.data));
+    std::cerr <<  "data "  << match << " proc" << procP.data << " spike " << spikeP.data << "\n"  ;
 // Ajouter une hypothese sur la validité
-        match = match && (procP.valid_dst) && (procP.dst == spikeP.dst);
-        match = match && (procP.valid_addr) && (procP.addr == spikeP.addr);
+        match = match && (!(procP.valid_addr) || (procP.addr == spikeP.addr));
+    std::cerr <<  "addr "  << match << "\n"  ;
     }
     return match;
   }
@@ -291,6 +304,7 @@ public:
   bool check_packet(VerificationPacket packet){
     // Step
     if (packet.interrupt || packet.exception) {
+        
         consecutive_traps += 1;
     } else {
         consecutive_traps = 0;
@@ -322,6 +336,7 @@ public:
         }
         outBuffer.printToOStream(&std::cerr, 20);
         // and let's abort!
+        std::cerr << " Too many errors" ;
         exit(1);
     }
 
@@ -346,29 +361,42 @@ int main(int argc, char* argv[]) {
   // TODO Add some ways to read the path from the command line
   tandemspike_t sim(elf_path);
   VerificationPacket haskell_packet;
+  bool debug = true;
   while (1) {
     // step the haskell model
     int read;
     std::string command;
-    std::cout << "n";
+    std::cout << "n" << std::endl;
     do {
       std::cin >> command;
     } while (command != "s");
+    if (debug) std::cerr << "Newpacket"; 
     // Parse packet
     std::cin >> haskell_packet.pc;
+    if (debug) std::cerr << "pcok" << haskell_packet.pc; 
     std::cin >> haskell_packet.instruction;
+    if (debug) std::cerr << "instruction " << haskell_packet.instruction; 
     std::cin >> haskell_packet.exception;
+    if (debug) std::cerr << "exception " << haskell_packet.exception; 
     std::cin >> haskell_packet.interrupt;
+    if (debug) std::cerr << "interrupt " << haskell_packet.interrupt; 
     std::cin >> haskell_packet.cause;
+    if (debug) std::cerr << "cause " << haskell_packet.cause; 
     std::cin >> haskell_packet.addr;
+    if (debug) std::cerr << "addr" << haskell_packet.interrupt; 
     std::cin >> haskell_packet.valid_addr;
+    if (debug) std::cerr << "valid_addr " << haskell_packet.valid_addr; 
     std::cin >> haskell_packet.data;
+    if (debug) std::cerr << "data " << haskell_packet.data; 
     std::cin >> haskell_packet.valid_dst;
+    if (debug) std::cerr << "valid_dst" << haskell_packet.valid_dst; 
     std::cin >> haskell_packet.dst;
-    do {
+    if (debug) std::cerr << "dst" << haskell_packet.dst; 
       std::cin >> command;
-    } while (command != "e");  
-    // parse the verification packet
+    if(command != "e") {std::cerr << "Not e at the end of a packet"; exit(1);}  
+    sim.step(haskell_packet);
+//    sim.dump_state();
+    sim.check_packet(haskell_packet);
     // step from this class
     // Check_packet
   }
