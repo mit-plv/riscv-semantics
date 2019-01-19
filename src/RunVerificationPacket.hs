@@ -100,7 +100,8 @@ runFile f = do
         iterate lastState = do
                nextState <- fmap snd $ runStateT (cycleAndOutput :: IOState VerifMinimal64 ()) lastState 
                if pc lastState /= 0x6f then do
-                  line <- getLine
+--                  line <- getLine
+                  let line = "n" 
                   (if (line == "n") then do
                      putStrLn "s" 
                      putStrLn . show  $ pcPacket nextState

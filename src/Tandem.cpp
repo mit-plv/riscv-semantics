@@ -1,7 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-
+#include <map>
 #include <string> 
 #include <vector>
 
@@ -15,6 +15,7 @@
 
 #include "ElfFile.h"
 
+bool debug = false;
 
 typedef struct VerificationPacket {
   uint64_t pc;
@@ -31,16 +32,17 @@ typedef struct VerificationPacket {
 
 class tandemspike_t : public simif_t {
 public:
-  tandemspike_t(const char* elf_path) : proc("rv64g", this, 0),outBuffer(40), disassembler(new disassembler_t(64)) {
+  tandemspike_t(const char* elf_path) : data(), proc("rv64g", this, 0),outBuffer(40), disassembler(new disassembler_t(64)) {
     consecutive_traps = 0;
     errors = 0;
     data_sz = 0x8000000;
-    data = (char*) calloc(data_sz, 1);
+//    data = (char*) calloc(data_sz, 1);
     ElfFile prog;
     prog.open(elf_path);
     for (auto& it : prog.getSections()) {
       if (it.base >= 0x80000000ull && ((((char*) it.base) + it.data_size) <= (char*)(0x80000000ull + data_sz))) {
-	memcpy((void*) (data + (((uint64_t) it.base) - 0x80000000ull)), it.data, it.data_size);
+        for( int i=0; i< it.data_size; i++) data[i+it.base] = it.data[i];
+//	memcpy((void*) (data + (((uint64_t) it.base) - 0x80000000ull)), it.data, it.data_size);
       } else {
 	std::cerr << "Skipping section at " << it.base << std::endl;
       }
@@ -52,26 +54,21 @@ public:
      // Does not have any real memory because we need to hijack every load and store.
 
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes){
-    if ( addr >= 0x80000000) {
       actual_packet.data = 0;
-      memcpy(bytes, data+(addr- 0x80000000ull), len);
-      memcpy(&(actual_packet.data), data + (addr - 0x80000000ull), len);
+      for (int i=0;i < len; i++) bytes[i] = data[addr+i];
+//      memcpy(bytes, data+(addr- 0x80000000ull), len);
+      memcpy(&(actual_packet.data), bytes, len);
       actual_packet.addr = addr;
-    }
-    else {
-      std::cerr << "Want to read from less than 80m" << std::endl;
-    }
   }
 
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes){
-    if ( addr >= 0x80000000) {
       actual_packet.data = 0;
-      memcpy(data+ addr - 0x80000000ull,bytes, len);
-      memcpy(&(actual_packet.data), bytes, len);
+      for(int i=0; i< len; i++) {
+          data[addr+i] = bytes[i];
+          ((char*)(&actual_packet.data))[i]=bytes[i];}
+//      memcpy(data+ addr - 0x80000000ull,bytes, len);
+//      memcpy((void*) &(actual_packet.data), (void*)bytes ,  len);
       actual_packet.addr = addr;
-    } else {
-      std::cerr << "Want to store from less than 80m" << std::endl;
-    }
   }
 
   void proc_reset(unsigned id){}
@@ -101,7 +98,7 @@ public:
         }
     }
 
-    std::cerr << "Instruction match\n" ; 
+    if(debug) std::cerr << "Instruction match\n" ; 
     proc.step(1);
 
     if (synchronization_packet.interrupt && ((synchronization_packet.cause == 3) || (synchronization_packet.cause == 9) || (synchronization_packet.cause == 11))) {
@@ -143,7 +140,7 @@ public:
     if (synchronization_packet.valid_dst) { // Packet valid
        actual_packet.data = proc.get_state()->XPR[actual_packet.dst];
 
-       std::cerr << "\nBring data in from register "<< actual_packet.dst << "\n" << actual_packet.data;
+       if(debug) std::cerr << "\nBring data in from register "<< actual_packet.dst << "\n" << actual_packet.data;
     }
 
 
@@ -154,25 +151,25 @@ public:
   bool comparePackets(VerificationPacket procP, VerificationPacket spikeP) {
     bool match = true;
     match = match && (procP.pc == spikeP.pc);
-    std::cerr <<  "pc "  << match << "\n"  ;
+if(debug)    std::cerr <<  "pc "  << match << "\n"  ;
     match = match && (procP.instruction == spikeP.instruction);
-    std::cerr <<  "instruction "  << match << "\n"  ;
+if(debug)    std::cerr <<  "instruction "  << match << "\n"  ;
     match = match && (procP.exception == spikeP.exception);
-    std::cerr <<  "exception "  << match << "\n"  ;
+if(debug)    std::cerr <<  "exception "  << match << "\n"  ;
     match = match && (procP.interrupt == spikeP.interrupt);
-    std::cerr <<  "interrupt "  << match << "\n"  ;
+if(debug)    std::cerr <<  "interrupt "  << match << "\n"  ;
     if (procP.exception || procP.interrupt) {
         match = match && (procP.cause == spikeP.cause);
-    std::cerr <<  "cause "  << match << "\n"  ;
+if(debug)     std::cerr <<  "cause "  << match << "\n"  ;
     } else {
         match = match && (!(procP.valid_dst) || (procP.dst == spikeP.dst));
-    std::cerr <<  "dst_valid "  << procP.valid_dst  << "\n"  ;
-    std::cerr <<  "dst "  << match  << "\n"  ;
+ if(debug)     std::cerr <<  "dst_valid "  << procP.valid_dst  << "\n"  ;
+ if(debug)    std::cerr <<  "dst "  << match  << "\n"  ;
         match = match && (!(procP.valid_dst || procP.valid_addr ) || (procP.data == spikeP.data));
-    std::cerr <<  "data "  << match << " proc" << procP.data << " spike " << spikeP.data << "\n"  ;
+ if(debug)    std::cerr <<  "data "  << std::hex << match << " proc" << std::hex << procP.data << " spike " << std::hex << spikeP.data << "\n"  ;
 // Ajouter une hypothese sur la validité
         match = match && (!(procP.valid_addr) || (procP.addr == spikeP.addr));
-    std::cerr <<  "addr "  << match << "\n"  ;
+ if(debug)    std::cerr <<  "addr "  << std::hex << match << "\n"  ;
     }
     return match;
   }
@@ -328,7 +325,7 @@ public:
     // XXX: this was to temporarily print everything
     // outBuffer.printToOStream(&std::cerr, 20000);
 
-    if ((errors > 40) || (consecutive_traps > 2)) {
+    if ((errors > 0) || (consecutive_traps > 2)) {
         if (consecutive_traps > 2) {
             std::ostringstream buffer;
             buffer << "[ERROR] More than 2 consecutive traps" << std::endl;
@@ -349,7 +346,7 @@ private:
   unsigned int packets;
   unsigned int consecutive_traps;
   unsigned int errors;
-  char* data; // Memory of the machine
+  std::map<uint64_t, uint8_t> data; // Memory of the machine
   VerificationPacket actual_packet;
   size_t data_sz;
   CircularBuffer outBuffer;
@@ -361,12 +358,12 @@ int main(int argc, char* argv[]) {
   // TODO Add some ways to read the path from the command line
   tandemspike_t sim(elf_path);
   VerificationPacket haskell_packet;
-  bool debug = true;
+  unsigned long long count = 0;
   while (1) {
     // step the haskell model
     int read;
     std::string command;
-    std::cout << "n" << std::endl;
+//    std::cout << "n" << std::endl;
     do {
       std::cin >> command;
     } while (command != "s");
@@ -397,6 +394,8 @@ int main(int argc, char* argv[]) {
     sim.step(haskell_packet);
 //    sim.dump_state();
     sim.check_packet(haskell_packet);
+    count++;
+    if (count% 100000 ==0) std::cout << count<< std::endl;
     // step from this class
     // Check_packet
   }

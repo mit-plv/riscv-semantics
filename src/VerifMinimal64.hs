@@ -17,12 +17,12 @@ data VerifMinimal64 = VerifMinimal64 { registers :: [Int64],
                              fpregisters :: [Int32],
                              valid_dst :: Bool,
                              valid_addr :: Bool,
-                             d :: Int64,
+                             d :: Word64,
                              instruction :: Int32,
                              cause :: Int64,
                              exception :: Bool,
                              interrupt :: Bool,
-                             addr :: Int64,
+                             addr :: Word64,
                              dst :: Int64,
                              csrs :: CSRFile,
                              pc :: Int64,
@@ -57,7 +57,7 @@ mtimecmp_addr = 0x2004000
 wrapLoad :: forall a' r r' m. (Integral a', Integral r, Integral r') => (MapMemory Int -> Int -> r) -> (a' -> MState r')
 wrapLoad loadFunc addr = state $ \comp -> ((fromIntegral:: r -> r') $ loadFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)), comp)
 wrapStore :: forall a' v v' m. (Integral a', Integral v, Integral v') => (MapMemory Int -> Int -> v -> MapMemory Int) -> (a' -> v' -> MState ())
-wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)) ((fromIntegral:: v' -> v) val), addr= fromIntegral addr, valid_addr=True, d = fromIntegral val})
+wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)) ((fromIntegral:: v' -> v) val), addr= fromIntegral addr, valid_addr=True, d = (fromIntegral :: v -> Word64) . (fromIntegral:: v' -> v) $ val})
 
 instance RiscvProgram MState Int64 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! ((fromIntegral:: Register -> Int) reg-1), comp)
