@@ -33,7 +33,7 @@ typedef struct VerificationPacket {
 
 class tandemspike_t : public simif_t {
 public:
-  tandemspike_t(const char* elf_path) : packets(0),  device_tree("device_tree.bin", std::ios::binary), data(), proc("rv64imaf", this, 0),outBuffer(40), disassembler(new disassembler_t(64)) {
+  tandemspike_t(const char* elf_path) : packets(0),  device_tree("device_tree.bin", std::ios::binary), data(), proc("rv64ima", this, 0),outBuffer(40), disassembler(new disassembler_t(64)) {
     consecutive_traps = 0;
     errors = 0;
     data_sz = 0x8000000;
