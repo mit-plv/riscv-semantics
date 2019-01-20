@@ -5,6 +5,7 @@
 #include <string> 
 #include <vector>
 
+#include <fstream>
 #include "simif.h"
 #include "processor.h"
 #include "encoding.h"
@@ -15,7 +16,7 @@
 
 #include "ElfFile.h"
 
-bool debug = false;
+bool debug = true;
 
 typedef struct VerificationPacket {
   uint64_t pc;
@@ -32,7 +33,7 @@ typedef struct VerificationPacket {
 
 class tandemspike_t : public simif_t {
 public:
-  tandemspike_t(const char* elf_path) : data(), proc("rv64g", this, 0),outBuffer(40), disassembler(new disassembler_t(64)) {
+  tandemspike_t(const char* elf_path) : packets(0),  device_tree("device_tree.bin", std::ios::binary), data(), proc("rv64imaf", this, 0),outBuffer(40), disassembler(new disassembler_t(64)) {
     consecutive_traps = 0;
     errors = 0;
     data_sz = 0x8000000;
@@ -47,6 +48,9 @@ public:
 	std::cerr << "Skipping section at " << it.base << std::endl;
       }
     }
+    int addrdt=0;
+    char bytedt=0;
+    while(device_tree.get(bytedt)){ data[addrdt]=bytedt; addrdt++;}
     proc.get_state()->pc = 0x80000000;
   }
 
@@ -55,17 +59,20 @@ public:
 
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes){
       actual_packet.data = 0;
+      if (addr != 0xfff0){
       for (int i=0;i < len; i++) bytes[i] = data[addr+i];
 //      memcpy(bytes, data+(addr- 0x80000000ull), len);
-      memcpy(&(actual_packet.data), bytes, len);
+      memcpy(&(actual_packet.data), bytes, len);}
+      else {memcpy(bytes, &(actual_packet.data),len);}
       actual_packet.addr = addr;
   }
 
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes){
       actual_packet.data = 0;
+      if (addr != 0xfff0){
       for(int i=0; i< len; i++) {
           data[addr+i] = bytes[i];
-          ((char*)(&actual_packet.data))[i]=bytes[i];}
+          ((char*)(&actual_packet.data))[i]=bytes[i];}}
 //      memcpy(data+ addr - 0x80000000ull,bytes, len);
 //      memcpy((void*) &(actual_packet.data), (void*)bytes ,  len);
       actual_packet.addr = addr;
@@ -165,6 +172,7 @@ if(debug)     std::cerr <<  "cause "  << match << "\n"  ;
         match = match && (!(procP.valid_dst) || (procP.dst == spikeP.dst));
  if(debug)     std::cerr <<  "dst_valid "  << procP.valid_dst  << "\n"  ;
  if(debug)    std::cerr <<  "dst "  << match  << "\n"  ;
+        if (spikeP.addr == 0xfff0) {dump_state();return match;} // special case for mmio
         match = match && (!(procP.valid_dst || procP.valid_addr ) || (procP.data == spikeP.data));
  if(debug)    std::cerr <<  "data "  << std::hex << match << " proc" << std::hex << procP.data << " spike " << std::hex << spikeP.data << "\n"  ;
 // Ajouter une hypothese sur la validité
@@ -342,6 +350,7 @@ if(debug)     std::cerr <<  "cause "  << match << "\n"  ;
 
 private:
   disassembler_t *disassembler;
+  std::ifstream device_tree;
   processor_t proc;
   unsigned int packets;
   unsigned int consecutive_traps;
