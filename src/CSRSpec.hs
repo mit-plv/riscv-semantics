@@ -18,6 +18,8 @@ getCSR MISA = do
   ext <- getCSRField Field.Extensions
   return (shift mxl (xlen - 2) .|. ext)
 
+getCSR MHartID = do
+  return 0
 getCSR MStatus = do
   tsr <- getCSRField Field.TSR
   tw <- getCSRField Field.TW
@@ -223,7 +225,7 @@ getCSR FCSR = do
 -- getCSR Time = raiseException 0 2
 
 -- Catch-all for other (possibly unimplemented) CSRs; hardwire to 0.
-getCSR _ = return 0
+getCSR _ = raiseException 0 2
 
 setCSR :: (RiscvProgram p t, Integral x, Bits x) => CSR -> x -> p ()
 
@@ -336,4 +338,6 @@ setCSR FCSR val = do
   setCSRField Field.FFlags (bitSlice val 0 5)
   setCSRField Field.FRM (bitSlice val 5 8)
 
-setCSR _ _ = return ()
+setCSR _ _ = raiseException 0 2
+
+

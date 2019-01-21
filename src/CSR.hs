@@ -8,7 +8,7 @@ import Prelude
 import qualified Prelude as P
 
 -- Machine-level CSRs.
-data CSR = MISA | MStatus | MTVec | MEDeleg | MIDeleg | MIP | MIE | MCycle |
+data CSR = MHartID | MISA | MStatus | MTVec | MEDeleg | MIDeleg | MIP | MIE | MCycle |
            MInstRet | MCounterEn | MScratch | MEPC | MCause | MTVal |
            MHPMCounter3 | MHPMCounter4 | MHPMCounter5 | MHPMCounter6 | MHPMCounter7 | MHPMCounter8 | MHPMCounter9 | MHPMCounter10 | MHPMCounter11 | MHPMCounter12 | MHPMCounter13 | MHPMCounter14 | MHPMCounter15 | MHPMCounter16 | MHPMCounter17 | MHPMCounter18 | MHPMCounter19 | MHPMCounter20 | MHPMCounter21 | MHPMCounter22 | MHPMCounter23 | MHPMCounter24 | MHPMCounter25 | MHPMCounter26 | MHPMCounter27 | MHPMCounter28 | MHPMCounter29 | MHPMCounter30 | MHPMCounter31 |
 -- Supervisor-level CSRs
@@ -93,4 +93,5 @@ lookupCSR 0x044 = UIP
 lookupCSR 0xC00 = Cycle
 lookupCSR 0xC01 = Time
 lookupCSR 0xC02 = InstRet
+lookupCSR 0xF14 = MHartID
 lookupCSR _ = InvalidCSR
