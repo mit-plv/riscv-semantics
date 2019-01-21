@@ -21,9 +21,9 @@ execute :: forall p t. (RiscvProgram p t) => InstructionCSR -> p ()
 execute (Csrrw rd rs1 csr12) = do
   checkPermissions True csr12
   x <- getRegister rs1
+  y <- getCSR (lookupCSR csr12)
   setCSR (lookupCSR csr12) x
   when (rd /= 0) (do
-    y <- getCSR (lookupCSR csr12)
     setRegister rd ((fromIntegral:: MachineInt -> t) y))
 execute (Csrrs rd rs1 csr12) = do
   checkPermissions (rs1 /= 0) csr12
@@ -39,9 +39,9 @@ execute (Csrrc rd rs1 csr12) = do
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
 execute (Csrrwi rd zimm csr12) = do
   checkPermissions True csr12
+  val <- getCSR (lookupCSR csr12)
   setCSR (lookupCSR csr12) zimm
   when (rd /= 0) (do
-    val <- getCSR (lookupCSR csr12)
     setRegister rd ((fromIntegral:: MachineInt -> t) val))
 execute (Csrrsi rd zimm csr12) = do
   checkPermissions (zimm /= 0) csr12
