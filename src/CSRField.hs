@@ -20,6 +20,7 @@ data CSRField = MXL | Extensions | -- misa
                 MTVal | -- mtval
                 -- Supervisor-level CSRs:
                 STVecBase | STVecMode | -- stvec
+                SHPM | SIR | STM | SCY | -- scounteren
                 SScratch | -- sscratch
                 SEPC | -- sepc
                 SCauseInterrupt | SCauseCode | -- scause

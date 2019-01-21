@@ -16,7 +16,7 @@ emptyFile = M.empty
 
 resetCSRFile :: Integer -> CSRFile
 resetCSRFile 32 = M.fromList [(MXL, 1), (Extensions, encodeExtensions "IMSU")]
-resetCSRFile 64 = M.fromList [(MXL, 2), (Extensions, encodeExtensions "IAFMSU")]
+resetCSRFile 64 = M.fromList [(MXL, 2), (Extensions, encodeExtensions "IAMSU")]
 
 -- TODO the previous function should be implementation defined and not in the spec at all
 

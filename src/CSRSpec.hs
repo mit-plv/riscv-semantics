@@ -59,6 +59,83 @@ getCSR MEPC = getCSRField Field.MEPC
 
 getCSR MScratch = getCSRField Field.MScratch
 
+getCSR InstRet = do
+  permS <- getCSRField Field.MIR
+  permU <-  getCSRField Field.SIR
+  priv <- getPrivMode
+-- TODO here we hardcode that user mode is supported.
+  if (priv == Machine ||
+      (priv == Supervisor && permS == 1) ||
+      (priv == User && permS == 1 && permU == 1))
+    then
+    getCSRField Field.MInstRet
+    else
+    raiseException 0 2
+
+getCSR Time = do
+  permS <- getCSRField Field.MTM
+  permU <-  getCSRField Field.STM
+  priv <- getPrivMode
+-- TODO here we hardcode that user mode is supported.
+  if (priv == Machine ||
+      (priv == Supervisor && permS == 1) ||
+      (priv == User && permS == 1 && permU == 1))
+    then
+    getCSRField undefined -- TODO FIX BUG here
+    else
+    raiseException 0 2
+
+getCSR Cycle = do
+  permS <- getCSRField Field.MCY
+  permU <-  getCSRField Field.SCY
+  priv <- getPrivMode
+-- TODO here we hardcode that user mode is supported.
+  if (priv == Machine ||
+      (priv == Supervisor && permS == 1) ||
+      (priv == User && permS == 1 && permU == 1))
+    then
+    getCSRField Field.MCycle -- TODO FIX BUG here
+    else
+    raiseException 0 2
+
+getCSR MHPMCounter3 = undefined
+getCSR MHPMCounter4 = undefined
+getCSR MHPMCounter5 = undefined
+getCSR MHPMCounter6 = undefined
+getCSR MHPMCounter7 = undefined
+getCSR MHPMCounter8 = undefined
+getCSR MHPMCounter9 = undefined
+getCSR MHPMCounter10 = undefined
+getCSR MHPMCounter11 = undefined
+getCSR MHPMCounter12 = undefined
+getCSR MHPMCounter13 = undefined
+getCSR MHPMCounter14 = undefined
+getCSR MHPMCounter15 = undefined
+getCSR MHPMCounter16 = undefined
+getCSR MHPMCounter17 = undefined
+getCSR MHPMCounter18 = undefined
+getCSR MHPMCounter19 = undefined
+getCSR MHPMCounter20 = undefined
+getCSR MHPMCounter21 = undefined
+getCSR MHPMCounter22 = undefined
+getCSR MHPMCounter23 = undefined
+getCSR MHPMCounter24 = undefined
+getCSR MHPMCounter25 = undefined
+getCSR MHPMCounter26 = undefined
+getCSR MHPMCounter27 = undefined
+getCSR MHPMCounter28 = undefined
+getCSR MHPMCounter29 = undefined
+getCSR MHPMCounter30 = undefined
+getCSR MHPMCounter31 = undefined
+
+                --MHPM | MIR | MTM | MCY | -- mcounteren
+getCSR MCounterEn = do
+  mhpm <- getCSRField Field.MHPM
+  mir <- getCSRField Field.MIR
+  mtm <- getCSRField Field.MTM
+  mcy <- getCSRField Field.MCY
+  return (mcy .|. shift mtm 1 .|. shift mir 2 .|. shift mhpm 3)
+
 getCSR MCause = do
   xlen <- getXLEN
   code <- getCSRField Field.MCauseCode
@@ -91,6 +168,14 @@ getCSR STVec = do
   return (shift base 2 .|. mode)
 
 getCSR SEPC = getCSRField Field.SEPC
+
+getCSR SCounterEn = do
+  shpm <- getCSRField Field.SHPM
+  sir <- getCSRField Field.SIR
+  stm <- getCSRField Field.STM
+  scy <- getCSRField Field.SCY
+  return (scy .|. shift stm 1 .|. shift sir 2 .|. shift shpm 3)
+
 
 getCSR SScratch = getCSRField Field.SScratch
 
@@ -129,9 +214,9 @@ getCSR FCSR = do
 -- It's problematic if Time isn't, since that brings some extra platform
 -- dependent information (specifically, the MTime memory-mapped address) up into
 -- the CSR specification.
-getCSR InstRet = raiseException 0 2
-getCSR Cycle = raiseException 0 2
-getCSR Time = raiseException 0 2
+-- getCSR InstRet = raiseException 0 2
+-- getCSR Cycle = raiseException 0 2
+-- getCSR Time = raiseException 0 2
 
 -- Catch-all for other (possibly unimplemented) CSRs; hardwire to 0.
 getCSR _ = return 0
@@ -165,6 +250,16 @@ setCSR MTVec val = do
   setCSRField Field.MTVecBase (shift val (-2))
 
 setCSR MEPC val = setCSRField Field.MEPC val
+
+setCSR MCounterEn val = do
+  let mhpm = shift val (-3)
+  let mir = bitSlice val 2 3
+  let mtm = bitSlice val 1 2
+  let mcy = bitSlice val 0 1
+  setCSRField Field.MHPM mhpm
+  setCSRField Field.MIR mir
+  setCSRField Field.MTM mtm
+  setCSRField Field.MCY mcy
 
 setCSR MScratch val = setCSRField Field.MScratch val
 
