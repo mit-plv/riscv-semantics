@@ -61,7 +61,7 @@ getCSR MScratch = getCSRField Field.MScratch
 
 getCSR InstRet = do
   permS <- getCSRField Field.MIR
-  permU <-  getCSRField Field.SIR
+  permU <- getCSRField Field.SIR
   priv <- getPrivMode
 -- TODO here we hardcode that user mode is supported.
   if (priv == Machine ||
@@ -80,10 +80,13 @@ getCSR Time = do
   if (priv == Machine ||
       (priv == Supervisor && permS == 1) ||
       (priv == User && permS == 1 && permU == 1))
-    then
-    getCSRField undefined -- TODO FIX BUG here
+    then do
+    timer <- loadWord 0x200bff8 --Hardcode for Minimal. TODO from platform. BUG it should be DOUBLE word not word. For size 64.
+    return (fromIntegral timer)
+ -- getCSRField timer -- TODO FIX BUG here
     else
     raiseException 0 2
+
 
 getCSR Cycle = do
   permS <- getCSRField Field.MCY
@@ -129,6 +132,7 @@ getCSR MHPMCounter30 = undefined
 getCSR MHPMCounter31 = undefined
 
                 --MHPM | MIR | MTM | MCY | -- mcounteren
+
 getCSR MCounterEn = do
   mhpm <- getCSRField Field.MHPM
   mir <- getCSRField Field.MIR
@@ -286,6 +290,16 @@ setCSR STVec val = do
 setCSR SEPC val = setCSRField Field.SEPC val
 
 setCSR SScratch val = setCSRField Field.SScratch val
+
+setCSR SCounterEn val = do
+  let shpm = shift val (-3)
+  let sir = bitSlice val 2 3
+  let stm = bitSlice val 1 2
+  let scy = bitSlice val 0 1
+  setCSRField Field.SHPM shpm
+  setCSRField Field.SIR sir
+  setCSRField Field.STM stm
+  setCSRField Field.SCY scy
 
 setCSR SCause val = do
   xlen <- getXLEN
