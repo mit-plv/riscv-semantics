@@ -101,7 +101,7 @@ instance RiscvProgram MState Int64 where
               trapPC <- getCSRField Field.MTVecBase
               return ((fromIntegral:: MachineInt -> Int64) trapPC * 4)
             else return nPC)
-    state $ \comp -> ((), comp { pc = (\x -> T.trace ("fpc "++show x++ "\n") x) fPC })
+    state $ \comp -> ((), comp { pc = (\x ->  x) fPC })
   -- Wrap Memory instance:
   loadByte = wrapLoad M.loadByte
   loadHalf = wrapLoad M.loadHalf

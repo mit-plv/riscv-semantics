@@ -16,7 +16,7 @@
 
 #include "ElfFile.h"
 
-bool debug = true;
+bool debug = false;
 
 typedef struct VerificationPacket {
   uint64_t pc;
@@ -173,7 +173,7 @@ if(debug)     std::cerr <<  "cause "  << match << "\n"  ;
  if(debug)     std::cerr <<  "dst_valid "  << procP.valid_dst  << "\n"  ;
  if(debug)    std::cerr <<  "dst "  << match  << "\n"  ;
         if (procP.valid_addr && procP.valid_dst) {return match;} // Special case for amo instructions
-        if (spikeP.addr == 0xfff0) {dump_state();return match;} // special case for mmio
+        if (spikeP.addr == 0xfff0) {return match;} // special case for mmio
         match = match && (!(procP.valid_dst || procP.valid_addr ) || (procP.data == spikeP.data));
  if(debug)    std::cerr <<  "data "  << std::hex << match << " proc" << std::hex << procP.data << " spike " << std::hex << spikeP.data << "\n"  ;
 // Ajouter une hypothese sur la validité
