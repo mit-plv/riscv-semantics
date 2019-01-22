@@ -28,9 +28,11 @@ getCSR MStatus = do
   mpp <- getCSRField Field.MPP
   mpie <- getCSRField Field.MPIE
   mie <- getCSRField Field.MIE
+  -- mxl = sxl = uxl for now
+  mxl <- getCSRField Field.MXL
   sstatus <- getCSR SStatus
   return (shift tsr 22 .|. shift tw 21 .|. shift tvm 20 .|. shift mprv 17 .|.
-          shift mpp 11 .|. shift mpie 7 .|. shift mie 3 .|. sstatus)
+          shift mpp 11 .|. shift mpie 7 .|. shift mie 3 .|. sstatus .|. shift mxl 34)
 
 getCSR MEDeleg = getCSRField Field.MEDeleg
 
@@ -165,7 +167,8 @@ getCSR SStatus = do
     then do
     -- SXL and UXL are currently hardwired to MXL.
     mxl <- getCSRField Field.MXL
-    return (shift mxl 32 .|. shift mxl 34 .|. base)
+    -- return (shift mxl 32 .|. shift mxl 34 .|. base)
+    return (shift mxl 32 .|. base)
     else return base
 
 getCSR STVec = do
@@ -211,6 +214,8 @@ getCSR FFlags = getCSRField Field.FFlags
 
 getCSR FRM = getCSRField Field.FRM
 
+getCSR SIE = getCSRField Field.SIE
+
 getCSR FCSR = do
   fflags <- getCSRField Field.FFlags
   frm <- getCSRField Field.FRM
@@ -225,7 +230,7 @@ getCSR FCSR = do
 -- getCSR Time = raiseException 0 2
 
 -- Catch-all for other (possibly unimplemented) CSRs; hardwire to 0.
-getCSR _ = raiseException 0 2
+getCSR _ = return (-1) -- raiseException 0 2
 
 setCSR :: (RiscvProgram p t, Integral x, Bits x) => CSR -> x -> p ()
 
@@ -310,6 +315,8 @@ setCSR SCause val = do
 
 setCSR STVal val = setCSRField Field.STVal val
 
+setCSR SIE val = setCSRField Field.SIE val
+
 setCSR SATP val = do
   priv <- getPrivMode
   tvm <- getCSRField Field.TVM
@@ -338,6 +345,6 @@ setCSR FCSR val = do
   setCSRField Field.FFlags (bitSlice val 0 5)
   setCSRField Field.FRM (bitSlice val 5 8)
 
-setCSR _ _ = raiseException 0 2
+setCSR _ _ = return () -- raiseException 0 2
 
 

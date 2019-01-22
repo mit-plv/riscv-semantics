@@ -124,22 +124,24 @@ runFile f = do
                 putStrLn "finish"
                 return .fromMaybe 0 $(S.lookup 10 $ registers nextState)  --TODO here we should get register 10 instead
         cycleAndOutput toHostAddress = do
+               vpc <- getPC
+               s <- get
+               put (s{pcPacket = vpc})
                result <- runMaybeT (runCycle RV64IMAF preDecode (endCycle)) 
                case result of
                  _ -> commit >> (postCommit toHostAddress :: IOState VerifMinimal64 ())
         preDecode inst = do 
-             vpc <- getPC
              s <- lift get
-             lift $ put (s{pcPacket = vpc, instruction = inst})
+             lift $ put (s{instruction = inst})
              return (inst /= 0x6f)
         postCommit toHostAddress = do
              s <- get 
-             mtval <- getCSR MTVal
-             stval <- getCSR STVal
-             toHost <- loadWord toHostAddress
-             let npc = nextPC s
-             let trappedM = npc == (mtval .&. (-3)) -- && ! 3
-             let trappedS = npc == (stval .&. (-3)) -- && ! 3
+             mtval <- getCSR MTVec
+             stval <- getCSR STVec
+             toHost <- loadWord toHostAddress --Finish by putting Just reg 10 in the fromHost of the state
+             npc <- getPC
+             let trappedM = npc == (mtval .&. (complement 3)) -- && ! 3
+             let trappedS = npc == (stval .&. (complement 3)) -- && ! 3
              if trappedM then do
                isInterruptM <- getCSRField Field.MCauseInterrupt
                let isInterrupt = isInterruptM == 1 

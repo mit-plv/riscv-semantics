@@ -1,4 +1,4 @@
-RISCV=/home/bthom/git/riscv/
-CXXFLAGS=-std=c++11 -I$(RISCV)/include/spike
+RISCV=/home/bthom/git/multiriscv/
+CXXFLAGS=-std=c++11 -I$(RISCV)/include/multispike
 Tandem: Tandem.o ElfFile.o
 	$(CXX) -L$(RISCV)/lib $^ -lriscv -o $@

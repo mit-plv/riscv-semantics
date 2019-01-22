@@ -13,6 +13,7 @@ import Data.Word
 import Data.Maybe
 import qualified Data.Map.Strict as S
 import Control.Monad.State
+import Debug.Trace as T
 
 data VerifMinimal64 = VerifMinimal64 { registers :: S.Map Register Int64,
                              fpregisters :: [Int32],
@@ -100,7 +101,7 @@ instance RiscvProgram MState Int64 where
               trapPC <- getCSRField Field.MTVecBase
               return ((fromIntegral:: MachineInt -> Int64) trapPC * 4)
             else return nPC)
-    state $ \comp -> ((), comp { pc = fPC })
+    state $ \comp -> ((), comp { pc = (\x -> T.trace ("fpc "++show x++ "\n") x) fPC })
   -- Wrap Memory instance:
   loadByte = wrapLoad M.loadByte
   loadHalf = wrapLoad M.loadHalf
