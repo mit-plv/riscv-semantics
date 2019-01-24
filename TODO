@@ -178,3 +178,6 @@ Tuesday, November 20th
 * Investigate memory leak. Profiling, test programs, try making everything strict, etc.
 * Try adding 'size' to Memory; requests above size are out-of-bounds.
 * Tandem verification stuff
+
+Tuesday, January 22nd
+* Documentation, debugging.

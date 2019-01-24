@@ -34,21 +34,6 @@ data Platform = Platform {
   -- writeMISA :: forall p t. (RiscvMachine p t) => MachineInt -> p MachineInt
 }
 
-hardwareDirtyBit :: (RiscvMachine p t) => p Bool
-hardwareDirtyBit = do
-  p <- getPlatform
-  r <- (dirtyHardware p)
-  return r
-
-setCSRField :: (RiscvMachine p t, Integral s) => CSRField -> s -> p ()
-setCSRField field value = do
-  let ty = fieldType field
-  if (ty == WLRL || ty == WARL) then do
-    p <- getPlatform
-    v <- (writePlatformCSRField p) field (fromIntegral value)
-    unsafeSetCSRField field v
-  else unsafeSetCSRField field value
-
 class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
   getRegister :: Register -> p t
   setRegister :: Register -> t -> p ()
@@ -96,6 +81,21 @@ getXLEN = do
             case mxl of
                 1 -> return 32
                 2 -> return 64
+
+hardwareDirtyBit :: (RiscvMachine p t) => p Bool
+hardwareDirtyBit = do
+  p <- getPlatform
+  r <- dirtyHardware p
+  return r
+
+setCSRField :: (RiscvMachine p t, Integral s) => CSRField -> s -> p ()
+setCSRField field value = do
+  let ty = fieldType field
+  if (ty == WLRL || ty == WARL) then do
+    p <- getPlatform
+    v <- (writePlatformCSRField p) field (fromIntegral value)
+    unsafeSetCSRField field v
+  else unsafeSetCSRField field value
 
 instance (RiscvMachine p t) => RiscvMachine (MaybeT p) t where
   getRegister r = lift (getRegister r)
