@@ -62,10 +62,10 @@ Using ExecuteI.hs as an example, this code includes:
 
 - The comment-ish thing on the very first line ("{-# LANGUAGE ... #-}").
 - All of the module-related code following that ("module ...", "import ...").
-- And the type signature for execute ("execute :: forall ...").
+- The type signature for execute ("execute :: forall ...").
 - And finally, integer conversion functions, which usually start with "from" or
   include "To": "fromIntegral", "fromImm", "regToInt8", etc. These are currently
-  scattered throughout the code to deal with the type system, and are don't
+  scattered throughout the code to deal with the type system, and don't
   represent any actual bits changing (just being reinterpreted).
 
 You don't need to understand the details of any of this code to understand the
@@ -105,7 +105,7 @@ represented by `/=` (rather than `!=`, which you might be used to).
 
 `bitSlice` returns a "slice" of bits from an integer. `bitSlice n a b` returns
 the bits in `n` starting from bit `a` up to (but not including) bit `b`; it's
-equivalent to `n[a:b-1]` in Verilog, or the notation of the spec.
+equivalent to `n[b-1:a]` in Verilog or the notation of the spec.
 
 `when <condition> <action>` performs an action only when `<condition>` is true;
 otherwise, it does nothing. Sometimes we use helper functions that change
