@@ -6,7 +6,7 @@ import qualified CSRField as Field
 import Data.Bits
 import Control.Monad
 import Prelude
-
+import Debug.Trace
 -- Permission checks are handled in ExecuteCSR.
 
 getCSR :: (RiscvProgram p t) => CSR -> p MachineInt
@@ -78,11 +78,12 @@ getCSR InstRet = do
 
 getCSR Time = do
   permS <- getCSRField Field.MTM
-  permU <-  getCSRField Field.STM
+  permU <- getCSRField Field.STM
   priv <- getPrivMode
+  _ <- trace (show priv ++ show permS ++ show permU) (return ())
 -- TODO here we hardcode that user mode is supported.
   if (priv == Machine ||
-      (priv == Supervisor && permS == 1) ||
+      (priv == Supervisor && permS == 1)||
       (priv == User && permS == 1 && permU == 1))
     then do
     timer <- loadWord 0x200bff8 --Hardcode for Minimal. TODO from platform. BUG it should be DOUBLE word not word. For size 64.
@@ -100,6 +101,7 @@ getCSR Cycle = do
   if (priv == Machine ||
       (priv == Supervisor && permS == 1) ||
       (priv == User && permS == 1 && permU == 1))
+     -- (priv == User &&  permU == 1))
     then
     getCSRField Field.MCycle -- TODO FIX BUG here
     else
@@ -168,7 +170,8 @@ getCSR SStatus = do
     -- SXL and UXL are currently hardwired to MXL.
     mxl <- getCSRField Field.MXL
     -- return (shift mxl 32 .|. shift mxl 34 .|. base)
-    return (shift mxl 32 .|. base)
+    vpc <- getPC
+    return $ (\x-> trace ((show $ (fromIntegral vpc)) ++ " " ++ show x) x)(shift mxl 32 .|. base)
     else return base
 
 getCSR STVec = do
@@ -214,7 +217,19 @@ getCSR FFlags = getCSRField Field.FFlags
 
 getCSR FRM = getCSRField Field.FRM
 
-getCSR SIE = getCSRField Field.SIE
+getCSR SIE = do 
+ meie <- getCSRField Field.MEIE
+ seie <- getCSRField Field.SEIE
+ ueie <- getCSRField Field.UEIE
+ mtie <- getCSRField Field.MTIE
+ stie <- getCSRField Field.STIE
+ utie <- getCSRField Field.UTIE
+ msie <- getCSRField Field.MSIE
+ ssie <- getCSRField Field.SSIE
+ usie <- getCSRField Field.USIE
+ return (usie .|. shift ssie 1 .|. shift msie 3 .|.
+         shift utie 4 .|. shift stie 5 .|. shift mtie 7 .|.
+         shift ueie 8 .|. shift seie 9 .|. shift meie 11 )
 
 getCSR FCSR = do
   fflags <- getCSRField Field.FFlags
@@ -289,6 +304,8 @@ setCSR SStatus val = do
   setCSRField Field.SPP (bitSlice val 8 9)
   setCSRField Field.SPIE (bitSlice val 5 6)
   setCSRField Field.SIE (bitSlice val 1 2)
+  getCSR SStatus
+  return () 
 
 setCSR STVec val = do
   setCSRField Field.STVecMode (bitSlice val 0 2)
@@ -315,7 +332,25 @@ setCSR SCause val = do
 
 setCSR STVal val = setCSRField Field.STVal val
 
-setCSR SIE val = setCSRField Field.SIE val
+setCSR SIE val = do 
+   let usie = bitSlice val 0 1
+   let ssie = bitSlice val 1 2
+   let msie = bitSlice val 3 4
+   let utie = bitSlice val 4 5
+   let stie = bitSlice val 5 6
+   let mtie = bitSlice val 7 8
+   let ueie = bitSlice val 8 9
+   let seie = bitSlice val 9 10
+   let meie = bitSlice val 11 12 
+   setCSRField Field.USIE usie
+   setCSRField Field.SSIE usie
+   setCSRField Field.MSIE msie
+   setCSRField Field.UTIE utie
+   setCSRField Field.STIE utie
+   setCSRField Field.MTIE mtie
+   setCSRField Field.UEIE ueie
+   setCSRField Field.SEIE ueie
+   setCSRField Field.MEIE meie
 
 setCSR SATP val = do
   priv <- getPrivMode

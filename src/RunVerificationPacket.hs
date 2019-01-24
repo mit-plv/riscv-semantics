@@ -96,6 +96,8 @@ runFile f = do
                       nextPC = 0,
                       privMode = Machine,
                       fromHost = Nothing,
+                      valid_timer = False,
+                      timer = 0,
                       mem = MapMemory { bytes = mem, reservation = Nothing } } in do
     handle <- openFile "/tmp/hs2tandem" ReadWriteMode
     iterate handle (fromMaybe 0 maybeToHostAddress) c
@@ -115,8 +117,10 @@ runFile f = do
                      hPutStrLn handle . show  $ d nextState
                      hPutStrLn handle . show . fromEnum $ valid_dst nextState
                      hPutStrLn handle . show  $ dst nextState
+                     hPutStrLn handle . show  . fromEnum $valid_timer nextState
+                     hPutStrLn handle . show  $ timer nextState
                      hPutStrLn handle "e"
-                     iterate handle toHostAddress (nextState{valid_dst=False, valid_addr=False})
+                     iterate handle toHostAddress (nextState{valid_dst=False, valid_addr=False, valid_timer=False})
                   else do
                      putStrLn "finish" 
                      return (fromMaybe 0 (fromHost nextState)))

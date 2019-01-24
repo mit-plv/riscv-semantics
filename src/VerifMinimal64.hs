@@ -13,6 +13,7 @@ import Data.Word
 import Data.Maybe
 import qualified Data.Map.Strict as S
 import Control.Monad.State
+import Control.Monad.Trans.Maybe
 import Debug.Trace as T
 
 data VerifMinimal64 = VerifMinimal64 { registers :: S.Map Register Int64,
@@ -32,7 +33,9 @@ data VerifMinimal64 = VerifMinimal64 { registers :: S.Map Register Int64,
                              nextPC :: Int64,
                              privMode :: PrivMode,
                              mem :: MapMemory Int,
-                             fromHost :: Maybe Int64
+                             fromHost :: Maybe Int64,
+                             valid_timer ::  Bool,
+                             timer :: Int32 
                            } deriving (Show)
 
 type MState = State VerifMinimal64
@@ -46,8 +49,18 @@ instance (Show StoreFunc) where
   show _ = "<storefunc>"
 
 getMTime :: LoadFunc
-getMTime = fmap (fromIntegral:: MachineInt -> Int32) (getCSRField Field.MCycle)
+getMTime = do
+ timer <- fmap (fromIntegral:: MachineInt -> Int32) (getCSRField Field.MCycle)
+ s <- get
+ put (s{valid_timer = True, timer = timer})
+ return timer
 
+
+getMTimeInt :: LoadFunc
+getMTimeInt = do
+ timer <- fmap (fromIntegral:: MachineInt -> Int32) (getCSRField Field.MCycle)
+ return timer
+ 
 -- Ignore writes to mtime.
 setMTime :: StoreFunc
 setMTime _ = return ()
@@ -76,7 +89,7 @@ instance RiscvProgram MState Int64 where
   setPrivMode val = state $ \comp -> ((), comp { privMode = val })
   commit = do
     -- Post interrupt if mtime >= mtimecmp
-    mtime <- getMTime
+    mtime <- getMTimeInt
     mtimecmp <- loadWord mtimecmp_addr
     setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
     -- Check for interrupts before updating PC.
@@ -86,22 +99,20 @@ instance RiscvProgram MState Int64 where
     mtie <- getCSRField Field.MTIE
     mtip <- getCSRField Field.MTIP
     nPC <- state $ \comp -> (nextPC comp, comp)
-    fPC <- (if (mie > 0 && ((meie > 0 && meip > 0) || (mtie > 0 && mtip > 0))) then do
+    if (mie > 0 && ((meie > 0 && meip > 0) || (mtie > 0 && mtip > 0))) then do
               -- Disable interrupts
               setCSRField Field.MIE 0
               if (meie > 0 && meip > 0) then do
                 -- Remove pending external interrupt
                 setCSRField Field.MEIP 0
-                setCSRField Field.MCauseCode 11 -- Machine external interrupt.
-              else if (mtie > 0 && mtip > 0) then
-                setCSRField Field.MCauseCode 7 -- Machine timer interrupt.
-              else return ()
+                runMaybeT (raiseException 1 11)-- Machine external interrupt.
+              else if (mtie > 0 && mtip > 0) then do
+                runMaybeT (raiseException 1 7) -- Machine timer interrupt.
+              else return Nothing
               -- Save the PC of the next (unexecuted) instruction.
               setCSRField Field.MEPC nPC
-              trapPC <- getCSRField Field.MTVecBase
-              return ((fromIntegral:: MachineInt -> Int64) trapPC * 4)
-            else return nPC)
-    state $ \comp -> ((), comp { pc = (\x ->  x) fPC })
+            else return ()
+    state $ \comp -> ((), comp{pc=nextPC comp})
   -- Wrap Memory instance:
   loadByte = wrapLoad M.loadByte
   loadHalf = wrapLoad M.loadHalf

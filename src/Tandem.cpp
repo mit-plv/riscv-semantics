@@ -59,11 +59,17 @@ public:
 
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes){
       actual_packet.data = 0;
+      if (addr == 0x200bff8){
+          actual_packet.data = timer;
+          if(len != 4) {std::cerr<< "Failure trying to read timer not with a word?!\n"<<std::endl;exit(1);}
+          memcpy(bytes, &timer, len);
+      }
+      else {
       if (addr != 0xfff0){
       for (int i=0;i < len; i++) bytes[i] = data[addr+i];
 //      memcpy(bytes, data+(addr- 0x80000000ull), len);
       memcpy(&(actual_packet.data), bytes, len);}
-      else {memcpy(bytes, &(actual_packet.data),len);}
+      else {memcpy(bytes, &(actual_packet.data),len);}}
       actual_packet.addr = addr;
   }
 
@@ -84,6 +90,8 @@ public:
     for (int i = 0 ; i < 32 ; i = i+1) {
         std::cerr << "  x" << std::dec << i << " = 0x" << std::hex << proc.get_state()->XPR[i] << std::endl;
     }
+   std::cerr << "   csr mcounteren" << std::hex <<proc.get_csr(0x306) << std::endl; 
+
   }
 
   void step(VerificationPacket synchronization_packet){
@@ -156,6 +164,7 @@ public:
 
 
   bool comparePackets(VerificationPacket procP, VerificationPacket spikeP) {
+    if (spikeP.pc == 0xffffffe0003c5724) dump_state();
     bool match = true;
     match = match && (procP.pc == spikeP.pc);
 if(debug)    std::cerr <<  "pc "  << match << "\n"  ;
@@ -348,6 +357,7 @@ if(debug)     std::cerr <<  "cause "  << match << "\n"  ;
 
     return match;
   }
+  int timer;
 
 private:
   disassembler_t *disassembler;
@@ -360,7 +370,6 @@ private:
   VerificationPacket actual_packet;
   size_t data_sz;
   CircularBuffer outBuffer;
-
 };
 
 int main(int argc, char* argv[]) {
@@ -370,10 +379,12 @@ int main(int argc, char* argv[]) {
   tandemspike_t sim(elf_path);
   VerificationPacket haskell_packet;
   unsigned long long count = 0;
+  int read;
+  bool valid_timer; 
+  int timer; 
+  std::string command;
   while (1) {
     // step the haskell model
-    int read;
-    std::string command;
 //    std::cout << "n" << std::endl;
     do {
       std::cin >> command;
@@ -400,6 +411,11 @@ int main(int argc, char* argv[]) {
     if (debug) std::cerr << "valid_dst" << haskell_packet.valid_dst; 
     std::cin >> haskell_packet.dst;
     if (debug) std::cerr << "dst" << haskell_packet.dst; 
+    std::cin >> valid_timer;
+    if (debug) std::cerr << "valid_timer" << valid_timer; 
+    std::cin >> timer;
+    if (debug) std::cerr << "timer" << timer; 
+    if (valid_timer) sim.timer=timer;
       std::cin >> command;
     if(command != "e") {std::cerr << "Not e at the end of a packet"; exit(1);}  
     sim.step(haskell_packet);
@@ -407,6 +423,7 @@ int main(int argc, char* argv[]) {
     sim.check_packet(haskell_packet);
     count++;
     if (count% 100000 ==0) std::cout << count<< std::endl;
+    if (count ==  13623540) debug=true;
     // step from this class
     // Check_packet
   }
