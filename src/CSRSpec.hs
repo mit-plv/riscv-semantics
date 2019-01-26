@@ -38,15 +38,32 @@ getCSR MEDeleg = getCSRField Field.MEDeleg
 
 getCSR MIDeleg = getCSRField Field.MIDeleg
 
-getCSR MIP = do
-  meip <- getCSRField Field.MEIP
-  mtip <- getCSRField Field.MTIP
-  return (shift meip 11 .|. shift mtip 7)
+getCSR SIP = do
+ seip <- getCSRField Field.SEIP
+ ueip <- getCSRField Field.UEIP
+ stip <- getCSRField Field.STIP
+ utip <- getCSRField Field.UTIP
+ ssip <- getCSRField Field.SSIP
+ usip <- getCSRField Field.USIP
+ return (usip .|. shift ssip 1 .|. --shift msie 3 .|.
+         shift utip 4 .|. shift stip 5 .|. -- shift mtie 7 .|.
+         shift ueip 8 .|. shift seip 9 ) -- .|.  shift meie 11 )
 
-getCSR MIE = do
-  meie <- getCSRField Field.MEIE
-  mtie <- getCSRField Field.MTIE
-  return (shift meie 11 .|. shift mtie 7)
+
+getCSR SIE = do
+-- meie <- getCSRField Field.MEIE
+ seie <- getCSRField Field.SEIE
+ ueie <- return 0 -- getCSRField Field.UEIE
+-- mtie <- getCSRField Field.MTIE
+ stie <- getCSRField Field.STIE
+ utie <- return 0 -- getCSRField Field.UTIE
+--  msie <- getCSRField Field.MSIE
+ ssie <- getCSRField Field.SSIE
+ usie <- return 0 -- getCSRField Field.USIE
+ return (usie .|. shift ssie 1 .|. --shift msie 3 .|.
+         shift utie 4 .|. shift stie 5 .|. -- shift mtie 7 .|.
+         shift ueie 8 .|. shift seie 9 ) -- .|.  shift meie 11 )
+
 
 getCSR MTVec = do
   base <- getCSRField Field.MTVecBase
@@ -80,7 +97,7 @@ getCSR Time = do
   permS <- getCSRField Field.MTM
   permU <- getCSRField Field.STM
   priv <- getPrivMode
-  _ <- trace (show priv ++ show permS ++ show permU) (return ())
+--  _ <- trace (show priv ++ show permS ++ show permU) (return ())
 -- TODO here we hardcode that user mode is supported.
   if (priv == Machine ||
       (priv == Supervisor && permS == 1)||
@@ -171,7 +188,8 @@ getCSR SStatus = do
     mxl <- getCSRField Field.MXL
     -- return (shift mxl 32 .|. shift mxl 34 .|. base)
     vpc <- getPC
-    return $ (\x-> trace ((show $ (fromIntegral vpc)) ++ " " ++ show x) x)(shift mxl 32 .|. base)
+    --return $ (\x-> trace ((show $ (fromIntegral vpc)) ++ " " ++ show x) x)(shift mxl 32 .|. base)
+    return $ (shift mxl 32 .|. base)
     else return base
 
 getCSR STVec = do
@@ -217,16 +235,31 @@ getCSR FFlags = getCSRField Field.FFlags
 
 getCSR FRM = getCSRField Field.FRM
 
-getCSR SIE = do 
+getCSR MIP = do 
+ meip <- getCSRField Field.MEIP
+ seip <- getCSRField Field.SEIP
+ ueip <- getCSRField Field.UEIP
+ mtip <- getCSRField Field.MTIP
+ stip <- getCSRField Field.STIP
+ utip <- getCSRField Field.UTIP
+ msip <- getCSRField Field.MSIP
+ ssip <- getCSRField Field.SSIP
+ usip <- getCSRField Field.USIP
+ return (usip .|. shift ssip 1 .|. shift msip 3 .|.
+         shift utip 4 .|. shift stip 5 .|. shift mtip 7 .|.
+         shift ueip 8 .|. shift seip 9 .|. shift meip 11 )
+
+
+getCSR MIE = do 
  meie <- getCSRField Field.MEIE
  seie <- getCSRField Field.SEIE
- ueie <- getCSRField Field.UEIE
+ ueie <- return 0 -- getCSRField Field.UEIE
  mtie <- getCSRField Field.MTIE
  stie <- getCSRField Field.STIE
- utie <- getCSRField Field.UTIE
+ utie <- return 0 -- getCSRField Field.UTIE
  msie <- getCSRField Field.MSIE
  ssie <- getCSRField Field.SSIE
- usie <- getCSRField Field.USIE
+ usie <- return 0 -- getCSRField Field.USIE
  return (usie .|. shift ssie 1 .|. shift msie 3 .|.
          shift utie 4 .|. shift stie 5 .|. shift mtie 7 .|.
          shift ueie 8 .|. shift seie 9 .|. shift meie 11 )
@@ -263,13 +296,35 @@ setCSR MEDeleg val = setCSRField Field.MEDeleg (val .&. complement (shift 1 11))
 
 setCSR MIDeleg val = setCSRField Field.MIDeleg val
 
-setCSR MIP val = do
-  setCSRField Field.MTIP (bitSlice val 7 8)
-  setCSRField Field.MEIP (bitSlice val 11 12)
 
-setCSR MIE val = do
-  setCSRField Field.MTIE (bitSlice val 7 8)
-  setCSRField Field.MEIE (bitSlice val 11 12)
+setCSR SIP val = do
+   let usip = bitSlice val 0 1
+   let ssip = bitSlice val 1 2
+   let utip = bitSlice val 4 5
+   let stip = bitSlice val 5 6
+   let ueip = bitSlice val 8 9
+   let seip = bitSlice val 9 10
+   setCSRField Field.USIP usip
+   setCSRField Field.SSIP ssip
+   setCSRField Field.UTIP utip
+   setCSRField Field.STIP stip
+   setCSRField Field.UEIP ueip
+   setCSRField Field.SEIP seip
+
+
+setCSR SIE val = do
+   let usie = bitSlice val 0 1
+   let ssie = bitSlice val 1 2
+   let utie = bitSlice val 4 5
+   let stie = bitSlice val 5 6
+   let ueie = bitSlice val 8 9
+   let seie = bitSlice val 9 10
+   --setCSRField Field.USIE usie
+   setCSRField Field.SSIE ssie
+   --setCSRField Field.UTIE utie
+   setCSRField Field.STIE stie
+   --setCSRField Field.UEIE ueie
+   setCSRField Field.SEIE seie
 
 setCSR MTVec val = do
   setCSRField Field.MTVecMode (bitSlice val 0 2)
@@ -332,7 +387,30 @@ setCSR SCause val = do
 
 setCSR STVal val = setCSRField Field.STVal val
 
-setCSR SIE val = do 
+
+setCSR MIP val = do 
+   let usip = bitSlice val 0 1
+   let ssip = bitSlice val 1 2
+   let msip = bitSlice val 3 4
+   let utip = bitSlice val 4 5
+   let stip = bitSlice val 5 6
+   let mtip = bitSlice val 7 8
+   let ueip = bitSlice val 8 9
+   let seip = bitSlice val 9 10
+   let meip = bitSlice val 11 12 
+   setCSRField Field.USIP usip
+   setCSRField Field.SSIP ssip
+   setCSRField Field.MSIP msip
+   setCSRField Field.UTIP utip
+   setCSRField Field.STIP stip
+   setCSRField Field.MTIP mtip
+   setCSRField Field.UEIP ueip
+   setCSRField Field.SEIP seip
+   setCSRField Field.MEIP meip
+
+
+
+setCSR MIE val = do 
    let usie = bitSlice val 0 1
    let ssie = bitSlice val 1 2
    let msie = bitSlice val 3 4
@@ -342,14 +420,14 @@ setCSR SIE val = do
    let ueie = bitSlice val 8 9
    let seie = bitSlice val 9 10
    let meie = bitSlice val 11 12 
-   setCSRField Field.USIE usie
-   setCSRField Field.SSIE usie
+  -- setCSRField Field.USIE usie
+   setCSRField Field.SSIE ssie
    setCSRField Field.MSIE msie
-   setCSRField Field.UTIE utie
-   setCSRField Field.STIE utie
+  --setCSRField Field.UTIE utie
+   setCSRField Field.STIE stie
    setCSRField Field.MTIE mtie
-   setCSRField Field.UEIE ueie
-   setCSRField Field.SEIE ueie
+  -- setCSRField Field.UEIE ueie
+   setCSRField Field.SEIE seie
    setCSRField Field.MEIE meie
 
 setCSR SATP val = do

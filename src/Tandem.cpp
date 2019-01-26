@@ -68,7 +68,9 @@ public:
       if (addr != 0xfff0){
       for (int i=0;i < len; i++) bytes[i] = data[addr+i];
 //      memcpy(bytes, data+(addr- 0x80000000ull), len);
-      memcpy(&(actual_packet.data), bytes, len);}
+      memcpy(&(actual_packet.data), bytes, len);
+      if  (addr == 0x87e6bf7c || addr == 0x87e6bf7e || addr == 0x87e6bf7f || addr == 0x87e6bf78 ) std::cerr << "WRITE TO SUSPICIOUS ADDRESS "<< actual_packet.data;
+      }
       else {memcpy(bytes, &(actual_packet.data),len);}}
       actual_packet.addr = addr;
   }
@@ -78,7 +80,11 @@ public:
       if (addr != 0xfff0){
       for(int i=0; i< len; i++) {
           data[addr+i] = bytes[i];
-          ((char*)(&actual_packet.data))[i]=bytes[i];}}
+          ((char*)(&actual_packet.data))[i]=bytes[i];}
+
+      if (addr == 0x87e6bf7c || addr == 0x87e6bf7e || addr == 0x87e6bf7f || addr == 0x87e6bf78 ) std::cerr << "WRITE TO SUSPICIOUS ADDRESS "<< actual_packet.data;
+
+      }
 //      memcpy(data+ addr - 0x80000000ull,bytes, len);
 //      memcpy((void*) &(actual_packet.data), (void*)bytes ,  len);
       actual_packet.addr = addr;
@@ -91,6 +97,7 @@ public:
         std::cerr << "  x" << std::dec << i << " = 0x" << std::hex << proc.get_state()->XPR[i] << std::endl;
     }
    std::cerr << "   csr mcounteren" << std::hex <<proc.get_csr(0x306) << std::endl; 
+   std::cerr << "   csr mie" << std::hex <<proc.get_csr(0x304) << std::endl; 
 
   }
 
@@ -101,6 +108,7 @@ public:
         // try to force the specified interrupt
         proc.get_state()->mip = 1 << synchronization_packet.cause;
     }
+
 
     actual_packet.pc = proc.get_state()->pc;
     // Read new instruction
@@ -423,7 +431,8 @@ int main(int argc, char* argv[]) {
     sim.check_packet(haskell_packet);
     count++;
     if (count% 100000 ==0) std::cout << count<< std::endl;
-    if (count ==  13623540) debug=true;
+    if (count == 61000000 ) debug=true;
+    if (count >= 61000000) sim.dump_state();
     // step from this class
     // Check_packet
   }

@@ -127,7 +127,40 @@ runFile f = do
                else do
                 putStrLn "finish"
                 return .fromMaybe 0 $(S.lookup 10 $ registers nextState)  --TODO here we should get register 10 instead
+        checkInterrupt = do
+             mtime <- fmap (fromIntegral:: MachineInt -> Int32) (getCSRField Field.MCycle)
+             mtimecmp <- loadWord mtimecmp_addr :: IOState VerifMinimal64 Int32 
+             setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
+             -- Check for interrupts before updating PC.
+             mie <- getCSRField Field.MIE
+             meie <- getCSRField Field.MEIE
+             meip <- getCSRField Field.MEIP
+             mtie <- getCSRField Field.MTIE
+             mtip <- getCSRField Field.MTIP
+             s <- get   
+             let nPC = nextPC s
+             k <- if (mie > 0 && ((meie > 0 && meip > 0) || (mtie > 0 && mtip > 0))) then do
+                       -- Disable interrupts
+                       setCSRField Field.MIE 0
+                       interruptHappen <- if (meie > 0 && meip > 0) then do
+                               -- Remove pending external interrupt
+                               setCSRField Field.MEIP 0
+                               runMaybeT (raiseException 1 11)-- Machine external interrupt.
+                               return True
+                             else if (mtie > 0 && mtip > 0) then do
+                               runMaybeT (raiseException 1 7) -- Machine timer interrupt.
+                               return True
+                             else return False
+                       -- Save the PC of the next (unexecuted) instruction.
+                       setCSRField Field.MEPC nPC
+                       return interruptHappen
+                  else return False
+             if (k) then 
+                  put (s{pc=nextPC s}) --state $ \comp -> ((), comp{pc=nextPC comp})
+             else 
+                  return () 
         cycleAndOutput toHostAddress = do
+               checkInterrupt
                vpc <- getPC
                s <- get
                put (s{pcPacket = vpc})
@@ -143,18 +176,20 @@ runFile f = do
              mtval <- getCSR MTVec
              stval <- getCSR STVec
              toHost <- loadWord toHostAddress --Finish by putting Just reg 10 in the fromHost of the state
-             npc <- getPC
+             npc <- getPC 
+             --mieg <- getCSR MIE
+             --trace (show npc ++ " at pc mieg is:" ++ show mieg) $ return()
              let trappedM = npc == (mtval .&. (complement 3)) -- && ! 3
              let trappedS = npc == (stval .&. (complement 3)) -- && ! 3
              if trappedM then do
                isInterruptM <- getCSRField Field.MCauseInterrupt
                let isInterrupt = isInterruptM == 1 
-               codeM <- getCSR MCause
+               codeM <- getCSRField Field.MCauseCode
                put (s{exception= not isInterrupt, interrupt=isInterrupt, cause=codeM})
              else if trappedS then do
                    isInterruptS <- getCSRField Field.SCauseInterrupt
                    let isInterrupt = isInterruptS == 1
-                   codeS <- getCSR SCause
+                   codeS <- getCSRField Field.SCauseCode
                    put (s{exception= not isInterrupt, interrupt=isInterrupt, cause=codeS})
                  else do
                    put (s{exception= False, interrupt=False, cause=0})

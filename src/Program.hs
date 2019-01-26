@@ -128,6 +128,9 @@ raiseExceptionWithInfo isInterrupt exceptionCode info =  do
     setPrivMode Machine
     setCSRField MTVal info
     setCSRField MPP (encodePrivMode mode)
+    mie <- getCSRField MIE
+    setCSRField MPIE mie
+    setCSRField MIE 0 
     setCSRField MEPC pc
     setCSRField MCauseInterrupt isInterrupt
     setCSRField MCauseCode exceptionCode

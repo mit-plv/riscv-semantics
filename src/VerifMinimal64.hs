@@ -68,12 +68,15 @@ setMTime _ = return ()
 -- Addresses for mtime/mtimecmp chosen for Spike compatibility.
 memMapTable :: S.Map MachineInt (LoadFunc, StoreFunc)
 memMapTable = S.fromList [(0x200bff8, (getMTime, setMTime))]
-mtimecmp_addr = 0x2004000
+mtimecmp_addr = 0x2004000 :: Int64
 
 wrapLoad :: forall a' r r' m. (Integral a', Integral r, Integral r') => (MapMemory Int -> Int -> r) -> (a' -> MState r')
-wrapLoad loadFunc addr = state $ \comp -> ((fromIntegral:: r -> r') $ loadFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)), comp)
+wrapLoad loadFunc addr = (if addr == 0x87e6bf7c || addr == 0x87e6bf78 || addr == 0x87e6bf7e || addr == 0x87e6bf7f then (\x-> trace ( "LOAD FROM THE ADDRESS " ++ (show $ fromIntegral addr) ) x)
+ else id) . state $ \comp -> ((fromIntegral:: r -> r') $ loadFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)), comp)
 wrapStore :: forall a' v v' m. (Integral a', Integral v, Integral v') => (MapMemory Int -> Int -> v -> MapMemory Int) -> (a' -> v' -> MState ())
-wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)) ((fromIntegral:: v' -> v) val), addr= fromIntegral addr, valid_addr=True, d = (fromIntegral :: v -> Word64) . (fromIntegral:: v' -> v) $ val})
+wrapStore storeFunc addr val = 
+ (if addr == 0x87e6bf7c || addr == 0x87e6bf78 || addr == 0x87e6bf7e || addr == 0x87e6bf7f then (\x-> trace ("WRITE TO THE ADDRESS " ++ (show $ fromIntegral val)) x)
+ else id) . state $ \comp -> ((), comp { mem = storeFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)) ((fromIntegral:: v' -> v) val), addr= fromIntegral addr, valid_addr=True, d = (fromIntegral :: v -> Word64) . (fromIntegral:: v' -> v) $ val})
 
 instance RiscvProgram MState Int64 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (fromMaybe 0 $ S.lookup reg (registers comp)) , comp)
@@ -89,30 +92,7 @@ instance RiscvProgram MState Int64 where
   setPrivMode val = state $ \comp -> ((), comp { privMode = val })
   commit = do
     -- Post interrupt if mtime >= mtimecmp
-    mtime <- getMTimeInt
-    mtimecmp <- loadWord mtimecmp_addr
-    setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
-    -- Check for interrupts before updating PC.
-    mie <- getCSRField Field.MIE
-    meie <- getCSRField Field.MEIE
-    meip <- getCSRField Field.MEIP
-    mtie <- getCSRField Field.MTIE
-    mtip <- getCSRField Field.MTIP
-    nPC <- state $ \comp -> (nextPC comp, comp)
-    if (mie > 0 && ((meie > 0 && meip > 0) || (mtie > 0 && mtip > 0))) then do
-              -- Disable interrupts
-              setCSRField Field.MIE 0
-              if (meie > 0 && meip > 0) then do
-                -- Remove pending external interrupt
-                setCSRField Field.MEIP 0
-                runMaybeT (raiseException 1 11)-- Machine external interrupt.
-              else if (mtie > 0 && mtip > 0) then do
-                runMaybeT (raiseException 1 7) -- Machine timer interrupt.
-              else return Nothing
-              -- Save the PC of the next (unexecuted) instruction.
-              setCSRField Field.MEPC nPC
-            else return ()
-    state $ \comp -> ((), comp{pc=nextPC comp})
+      state $ \comp -> ((), comp{pc=nextPC comp})
   -- Wrap Memory instance:
   loadByte = wrapLoad M.loadByte
   loadHalf = wrapLoad M.loadHalf
