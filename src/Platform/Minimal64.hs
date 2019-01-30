@@ -46,7 +46,7 @@ setMTime _ = return ()
 -- Addresses for mtime/mtimecmp chosen for Spike compatibility.
 memMapTable :: S.Map MachineInt (LoadFunc, StoreFunc)
 memMapTable = S.fromList [(0x200bff8, (getMTime, setMTime))]
-mtimecmp_addr = 0x2004000
+mtimecmp_addr = 0x2004000 :: Int64
 
 wrapLoad :: forall a' r r' m. (Integral a', Integral r, Integral r') => (MapMemory Int -> Int -> r) -> (a' -> MState r')
 wrapLoad loadFunc addr = state $ \comp -> ((fromIntegral:: r -> r') $ loadFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)), comp)
@@ -65,34 +65,7 @@ instance RiscvMachine MState Int64 where
   setPC val = state $ \comp -> ((), comp { nextPC = (fromIntegral:: s -> Int64) val })
   getPrivMode = state $ \comp -> (privMode comp, comp)
   setPrivMode val = state $ \comp -> ((), comp { privMode = val })
-  commit = do
-    -- Post interrupt if mtime >= mtimecmp
-    mtime <- getMTime
-    mtimecmp <- loadWord mtimecmp_addr
-    setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
-    -- Check for interrupts before updating PC.
-    mie <- getCSRField Field.MIE
-    meie <- getCSRField Field.MEIE
-    meip <- getCSRField Field.MEIP
-    mtie <- getCSRField Field.MTIE
-    mtip <- getCSRField Field.MTIP
-    nPC <- state $ \comp -> (nextPC comp, comp)
-    fPC <- (if (mie > 0 && ((meie > 0 && meip > 0) || (mtie > 0 && mtip > 0))) then do
-              -- Disable interrupts
-              setCSRField Field.MIE 0
-              if (meie > 0 && meip > 0) then do
-                -- Remove pending external interrupt
-                setCSRField Field.MEIP 0
-                setCSRField Field.MCauseCode 11 -- Machine external interrupt.
-              else if (mtie > 0 && mtip > 0) then
-                setCSRField Field.MCauseCode 7 -- Machine timer interrupt.
-              else return ()
-              -- Save the PC of the next (unexecuted) instruction.
-              setCSRField Field.MEPC nPC
-              trapPC <- getCSRField Field.MTVecBase
-              return ((fromIntegral:: MachineInt -> Int64) trapPC * 4)
-            else return nPC)
-    state $ \comp -> ((), comp { pc = fPC })
+  commit = state $ \comp -> ((), comp { pc = nextPC comp })
   -- Wrap Memory instance:
   loadByte = wrapLoad M.loadByte
   loadHalf = wrapLoad M.loadHalf

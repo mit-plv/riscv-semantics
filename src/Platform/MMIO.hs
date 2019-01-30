@@ -73,3 +73,4 @@ instance (RiscvMachine (State s) t, MachineWidth t) => RiscvMachine (IOState s) 
   inTLB a b = liftState (inTLB a b)-- noTLB
   addTLB a b c= liftState (addTLB a b c) 
   flushTLB = liftState flushTLB
+  getPlatform = liftState getPlatform

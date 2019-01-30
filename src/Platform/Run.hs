@@ -44,8 +44,8 @@ readHexFile f = do
                  then return $ snd $ processLine s l
                  else helper h (processLine s l)
 
-checkInterrupt :: IO Bool
-checkInterrupt = do
+checkExternalInterrupt :: IO Bool
+checkExternalInterrupt = do
   ready <- hReady stdin
   if ready then do
     c <- hLookAhead stdin
@@ -57,8 +57,13 @@ checkInterrupt = do
   else return False
 
 runProgram :: Maybe Int64 -> Minimal64 -> IO (Int64, Minimal64)
+runProgram maybeToHostAddress c =
+  runStateT (stepHelper RV64IMAF maybeToHostAddress (do 
+                                                        pc <- getPC
+                                                        liftIO . putStrLn $ showHex pc ""
+                                                        liftIO checkExternalInterrupt) mtimecmp_addr ) c 
 
-runProgram maybeToHostAddress = runStateT (stepHelper RV64IMAF maybeToHostAddress (liftIO checkInterrupt) :: IOState Minimal64 Int64)
+
 
 readProgram :: String -> IO (Maybe Int64, [(Int, Word8)])
 readProgram f = do
