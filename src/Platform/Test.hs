@@ -31,30 +31,30 @@ runTest (Test name iset input returnValue output) = do
 
 -- TODO: Read this from a file.
 tests :: [Test]
-tests = []
---  [Test "add64" RV64I ""  11 "",
---         Test "ebreak64" RV64IM "" 0 "D\n?\n",
---         Test "mul_support64" RV64IM "" 0 "A\n",
---         Test "mul_support64" RV64I  "" 0 "cA\n",
---         Test "sub64" RV64I ""   7 "",
---         Test "mul64" RV64IM ""  42 "",
---         Test "and64" RV64I ""  35 "",
---         Test "or64"  RV64IM "" 111 "",
---         Test "xor64" RV64I ""  76 "",
---         Test "csr64" RV64IM ""  29 "",
---         Test "hello64" RV64IM "" 0 "Hello, world!\n",
---         Test "reverse64" RV64IM "asdf" 0 "fdsa\n",
---         Test "thuemorse64" RV64IM "" 0 "01101001100101101001011001101001100101100110100101101001100101101001011001101001011010011001011001101001100101101001011001101001\n",
---         Test "illegal64" RV64IM "" 0 "!\n?\n",
---         Test "time64" RV64IM "" 0 "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\n!\n.\n"]
+tests = 
+  [Test "add64" RV64I ""  11 "",
+         Test "ebreak64" RV64IM "" 0 "D\n?\n",
+         Test "mul_support64" RV64IM "" 0 "A\n",
+         Test "mul_support64" RV64I  "" 0 "cA\n",
+         Test "sub64" RV64I ""   7 "",
+         Test "mul64" RV64IM ""  42 "",
+         Test "and64" RV64I ""  35 "",
+         Test "or64"  RV64IM "" 111 "",
+         Test "xor64" RV64I ""  76 "",
+         Test "csr64" RV64IM ""  29 "",
+         Test "hello64" RV64IM "" 0 "Hello, world!\n",
+         Test "reverse64" RV64IM "asdf" 0 "fdsa\n",
+         Test "thuemorse64" RV64IM "" 0 "01101001100101101001011001101001100101100110100101101001100101101001011001101001011010011001011001101001100101101001011001101001\n",
+         Test "illegal64" RV64IM "" 0 "!\n?\n"]
+         --Test "time64" RV64IM "" 0 "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\n!\n.\n"]
 
 getRiscvTests :: IO [Test]
 getRiscvTests = do
   ls <- getDirectoryContents "riscv-tests/isa"
   return (map makeTest (sort (filter isEnabled ls)))
   where makeTest f = Test ("../../riscv-tests/isa/" ++ f) RV64IMAF "" 0 ""
-        isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-" f || isPrefixOf "rv64ua-" f)
---         || isPrefixOf "rv64uf-" f) 
+        isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-" f || isPrefixOf "rv64ua-" f
+         || isPrefixOf "rv64uf-" f) 
                        && not (isSuffixOf ".dump" f)
 
 runProgram :: InstructionSet -> Maybe Int64 -> Minimal64 -> String -> (Int64, String)
