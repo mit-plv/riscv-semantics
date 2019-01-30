@@ -1,29 +1,29 @@
-# RISC-V exceptions
+# RISC-V Exceptions
 
 Raising an exception involves two things:
 
 - Modifying a bunch of state (namely numerous CSRs, potentially including
   `mtval`, `mepc`, `mcause`, etc.)
-- 'Bailing out' of a cycle early, such that nothing that an instruction would do
+- "Bailing out" of a cycle early, such that nothing that an instruction would do
   after an exception is raised actually happens.
 
-Updating all the relevant state a little tedious, especially since determining
+Updating all the relevant state is a little tedious, especially since determining
 that right set of CSRs to modify (machine-mode or supervisor-mode) involves
 consulting `medeleg` or `mideleg` and the current privilege mode. We provide the
 helper functions `raiseException` and `raiseExceptionWithInfo` to alleviate
-this.
+this tedium.
 
 Cutting the current cycle short is a bit involved. The details are covered in a
 [later section](#the-nitty-gritty), but suffice it to say here that ending the
-cycle early (via exception) is like returning from a function early: anything
+cycle early (via an exception) is like returning from a function early: anything
 prior to the exception actually happens, and nothing after the exception happens
-at all. The next section elaborates on this.
+at all. The next section elaborates.
 
-# Practical consequences
+# Practical Consequences
 
 In hardware implementations, it's often the case that the effects of an
 instruction (such as writing to memory) don't actually go into effect or become
-permanent until the instruction is 'committed' or 'retired', in order to support
+permanent until the instruction is "committed" or "retired," in order to support
 out-of-order execution. This is not the case in our project; as soon as an
 instruction issues the command `setRegister rd 42`, register `rd` really is set
 to 42. If that instruction goes on to raise an exception, it will still be the
@@ -35,10 +35,10 @@ before setting registers, writing to memory, etc.
 
 So: what functions can raise an exception?
 
-`raiseException` and `raiseExceptionWithInfo`, of course, and anything that call them:
+`raiseException` and `raiseExceptionWithInfo`, of course, and anything that calls them:
 
-- `translate` from `VirtualMemory.hs`
-- `checkPermissions`, which is specific to `ExecuteCSR.hs`
+- `translate` from [`VirtualMemory.hs`](src/Spec/VirtualMemory.hs)
+- `checkPermissions`, which is specific to [`ExecuteCSR.hs`](src/Spec/ExecuteCSR.hs)
 - `setCSR` and `getCSR`.
 
 `translate` tends to be simple enough to get right, as you'll usually call it
@@ -53,11 +53,12 @@ If you just want to know how to read or write code that involves RISC-V
 exceptions, feel free to stop reading. The remainder of this document deals with
 our implementation of RISC-V exceptions and how it might change in the future.
 
-# The nitty gritty
+# The Nitty Gritty
 
-tl;dr: exceptions work via the `MaybeT` monad transformer.
+tl;dr: exceptions work via the `MaybeT` monad transformer, where intermediate
+Haskell knowledge will be required to follow the details.
 
-The interface for a RISC-V machine is specified by the `RiscvMachine` typeclass, which is defined in `Machine.hs`. Part of this definition looks like this:
+The interface for a RISC-V machine is specified by the `RiscvMachine` type class, which is defined in [`Machine.hs`](src/Spec/Machine.hs). Part of this definition looks like:
 
     class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
       getRegister :: Register -> p t
@@ -69,14 +70,14 @@ The interface for a RISC-V machine is specified by the `RiscvMachine` typeclass,
 The first line indicates that essentially one thing parameterizes a
 `RiscvMachine`: some monad `p` (which also implies some `MachineWidth t`). A
 particular instance of the `RiscvMachine` typeclass can be defined by specifying
-a specific `Monad` and `MachineWidth`, and then defining functions
+a specific `Monad` and `MachineWidth` and then defining functions
 (`getRegister`, `setRegister`, etc.) that satisfy the type signatures given in
-the typeclass.
+the type class.
 
 As an example, I might have a monad called `MState` that models the state of a
 simple machine (with registers, memory, and so on). I can define an instance of
 `RiscvMachine` using this monad like `instance RiscvMachine MState Int64 where
-...`, in which case `p` is `MState` and `t` is `Int64`. Substituting these in to
+...`, in which case `p` is `MState` and `t` is `Int64`. Substituting these into
 the typeclass, the definition of `getRegister` I provide had better have the
 type signature `Register -> MState Int64`, meaning a function that takes a
 `Register` and returns an `Int64` wrapped in the `MState` monad.
@@ -105,12 +106,12 @@ adding in the functionality of the `Maybe` monad. If you're unfamiliar, in the
 `Maybe` monad, functions can return something or they can return `Nothing`, a
 special value. This is sort of like how methods in Java can always return some
 valid object or `null`. But in the `Maybe` monad, a computation halts as soon as
-something returns `Nothing`, and this precisely captures the 'early-return'
+something returns `Nothing`, and this precisely captures the "early-return"
 behavior we want upon encountering an exception.
 
 So, `endCycle` returns `Nothing` (halting the computation), and all other
-functions do what they would normally do, just 'lifted' into the new
-Maybe-infused form of the monad. This matches the type signature for `endCycle`,
+functions do what they would normally do, just "lifted" into the new
+`Maybe`-infused form of the monad. This matches the type signature for `endCycle`,
 too: `Nothing` could be a `Maybe Int`, a `Maybe String`, or a `Maybe` anything
 else.
 
@@ -118,7 +119,7 @@ We use this kind of augmentation repeatedly in our code, sometimes to encode the
 semantics of a core feature (like RISC-V exceptions), and sometimes to add neat
 features (like memory-mapped I/O) to existing `RiscvMachine` instances.
 
-# Future plans
+# Future Plans
 
 Thus far, we believe being careful when ordering operations is sufficient to
 handle everything in the spec. However, if some hypothetical extension comes up
@@ -126,7 +127,7 @@ that makes correct behavior with regard to exceptions more complex, it might be
 useful to have some construction that approximates the hardware practice of
 buffering state changes before they are finalized by a commit. That is, "do
 everything in this block, unless something raises an exception, in which case
-don't do any of it".
+don't do any of it."
 
 This could look something like:
 
@@ -148,5 +149,5 @@ exception and we bail from the execution: in this case, nothing in block 2
 happens (`rs2` isn't changed), but everything in block 1 already happened.
 
 We believe this should be relatively straightforward to implement by
-constructing a 'phony' instance of `RiscvMachine`, but haven't found it
+constructing a "phony" instance of `RiscvMachine`, but we haven't found it
 necessary yet.
