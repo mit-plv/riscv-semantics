@@ -13,7 +13,7 @@ Finally, people with sufficient Haskell background should be able to understand 
 More documentation for that class of users may be forthcoming!
 
 
-# How to read this spec
+# How to Read this Spec
 
 1. Read [the reading guide](READING.md).
 2. Read the first half of [our explanation of exception handling in the semantics](exceptions.md).
