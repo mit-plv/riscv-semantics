@@ -21,38 +21,38 @@ execute :: forall p t. (RiscvMachine p t) => InstructionCSR -> p ()
 execute (Csrrw rd rs1 csr12) = do
   checkPermissions True csr12
   x <- getRegister rs1
+  setCSR (lookupCSR csr12) x
   when (rd /= 0) (do
     y <- getCSR (lookupCSR csr12)
     setRegister rd ((fromIntegral:: MachineInt -> t) y))
-  setCSR (lookupCSR csr12) x
 execute (Csrrs rd rs1 csr12) = do
   checkPermissions (rs1 /= 0) csr12
   mask <- getRegister rs1
   val <- getCSR (lookupCSR csr12)
-  setRegister rd ((fromIntegral:: MachineInt -> t) val)
   when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .|. ((fromIntegral:: t -> MachineInt) mask)))
+  setRegister rd ((fromIntegral:: MachineInt -> t) val)
 execute (Csrrc rd rs1 csr12) = do
   checkPermissions (rs1 /= 0) csr12
   mask <- getRegister rs1
   val <- getCSR (lookupCSR csr12)
-  setRegister rd ((fromIntegral:: MachineInt -> t) val)
   when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .&. (complement ((fromIntegral:: t -> MachineInt) mask))))
+  setRegister rd ((fromIntegral:: MachineInt -> t) val)
 execute (Csrrwi rd zimm csr12) = do
   checkPermissions True csr12
+  setCSR (lookupCSR csr12) zimm
   when (rd /= 0) (do
     val <- getCSR (lookupCSR csr12)
     setRegister rd ((fromIntegral:: MachineInt -> t) val))
-  setCSR (lookupCSR csr12) zimm
 execute (Csrrsi rd zimm csr12) = do
   checkPermissions (zimm /= 0) csr12
   val <- getCSR (lookupCSR csr12)
-  setRegister rd ((fromIntegral:: MachineInt -> t) val)
   when (zimm /= 0) (setCSR (lookupCSR csr12) (val .|. zimm))
+  setRegister rd ((fromIntegral:: MachineInt -> t) val)
 execute (Csrrci rd zimm csr12) = do
   checkPermissions (zimm /= 0) csr12
   val <- getCSR (lookupCSR csr12)
-  setRegister rd ((fromIntegral:: MachineInt -> t) val)
   when (zimm /= 0) (setCSR (lookupCSR csr12) (val .&. (complement zimm)))
+  setRegister rd ((fromIntegral:: MachineInt -> t) val)
 execute Ecall = do
   mode <- getPrivMode
   case mode of

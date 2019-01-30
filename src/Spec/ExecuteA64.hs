@@ -31,64 +31,64 @@ execute (Amoswap_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
-  setRegister rd (int64ToReg x)
   y <- getRegister rs2
+  setRegister rd (int64ToReg x)
   storeDouble addr (regToInt64 y)
 execute (Amoadd_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
-  setRegister rd (int64ToReg x)
   y <- getRegister rs2
+  setRegister rd (int64ToReg x)
   storeDouble addr (regToInt64 (int64ToReg x + y))
 execute (Amoand_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
-  setRegister rd (int64ToReg x)
   y <- getRegister rs2
+  setRegister rd (int64ToReg x)
   storeDouble addr (regToInt64 (int64ToReg x .&. y))
 execute (Amoor_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
-  setRegister rd (int64ToReg x)
   y <- getRegister rs2
+  setRegister rd (int64ToReg x)
   storeDouble addr (regToInt64 (int64ToReg x .|. y))
 execute (Amoxor_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
-  setRegister rd (int64ToReg x)
   y <- getRegister rs2
+  setRegister rd (int64ToReg x)
   storeDouble addr (regToInt64 (xor (int64ToReg x) y))
 execute (Amomax_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
-  setRegister rd (int64ToReg x)
   y <- getRegister rs2
+  setRegister rd (int64ToReg x)
   storeDouble addr (regToInt64 (if x > (regToInt64 y) then x else regToInt64 y))
 execute (Amomaxu_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
-  setRegister rd (int64ToReg x)
   y <- getRegister rs2
+  setRegister rd (int64ToReg x)
   storeDouble addr (regToInt64 (if ltu (regToInt64 y) x then x else regToInt64 y))
 execute (Amomin_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
-  setRegister rd (int64ToReg x)
   y <- getRegister rs2
+  setRegister rd (int64ToReg x)
   storeDouble addr (regToInt64 (if x < (regToInt64 y) then x else (regToInt64 y)))
 execute (Amominu_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
-  setRegister rd (int64ToReg x)
   y <- getRegister rs2
+  setRegister rd (int64ToReg x)
   storeDouble addr (regToInt64 (if ltu x (regToInt64 y) then x else (regToInt64 y)))
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst
