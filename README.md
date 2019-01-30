@@ -5,9 +5,9 @@ Here lies a formal specification of the RISC-V ISA, written in Haskell.
 
 # How to read this spec
 
-1. Read the reading guide: [./hardware-hacker.md](https://github.com/mit-plv/riscv-semantics/blob/master/hardware-hacker.md)
-2. Read the first half of [./exceptions.md](https://github.com/mit-plv/riscv-semantics/blob/master/exceptions.md)
-3. Dive into the [./src/Spec](https://github.com/mit-plv/riscv-semantics/tree/master/src/Spec) folder
+1. Read [the reading guide](hardware-hacker.md).
+2. Read the first half of [our explanation of exception handling in the semantics](exceptions.md).
+3. Dive into the [the Spec directory](src/Spec).
 
 
 # Installation Guide
