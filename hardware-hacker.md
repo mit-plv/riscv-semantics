@@ -2,8 +2,12 @@
 
 The source code of this project can (and is intended to) be used as a definitive
 reference for the behavior of a compliant RISC-V machine. To that end, we hope
-hardware engineers will find it useful as a highly precise description of the
-specification, especially with regards to decoding and executing instructions.
+e.g. hardware and compiler engineers will find it useful as a highly precise
+description of the specification, especially with regards to decoding and
+executing instructions.  This guide is written to help that class of people read
+the specification constructively, with no required background in formal
+verification or functional programming.  (Such background is likely required to
+extend the spec, though.)
 
 The reason that this is such a precise description is, of course, that it's also
 a computer program that implements the spec. The benefit is precision and
@@ -32,7 +36,7 @@ counter; therefore, you probably don't care much about Platform either.
 That leaves [`Spec`](src/Spec), which has a bunch of things you might be interested in.
 
 The first is [`Decode.hs`](src/Spec/Decode.hs), which lays out all of the instructions and their
-parameters, and describes how instructions are extracted from words.
+parameters, also describing how instructions are extracted from words.
 
 Next, there are a series of files that describe the execution of
 different RISC-V instruction subsets. These are all files of the form `Execute*.hs` ([`ExecuteI.hs`](src/Spec/ExecuteI.hs), [`ExecuteM.hs`](src/Spec/ExecuteM.hs), [`ExecuteF.hs`](src/Spec/ExecuteF.hs)...).
@@ -56,7 +60,7 @@ Haskell-y and less friendly than `Execute*.hs`.)
 
 Within a given file, there's still a little bit of code that won't matter to
 you. You can consider it boilerplate and generally ignore it. Of course, this
-holds more for more straightforward files.
+characterization holds more for more straightforward files.
 
 Using [`ExecuteI.hs`](src/Spec/ExecuteI.hs) as an example, this code includes:
 
@@ -65,13 +69,13 @@ Using [`ExecuteI.hs`](src/Spec/ExecuteI.hs) as an example, this code includes:
 - The type signature for execute (`execute :: forall ...`).
 - And finally, integer conversion functions, which usually start with `from` or
   include `To`: `fromIntegral`, `fromImm`, `regToInt8`, etc. These are currently
-  scattered throughout the code to deal with the type system, and don't
+  scattered throughout the code to deal with the type system, and they don't
   represent any actual bits changing (just being reinterpreted).
 
 You don't need to understand the details of any of this code to understand the
-semantics being described by the execute function.
+semantics being described by the `execute` function.
 
-This approach will work fine for things like `Execute*.hs` or [`CSRSpec.hs`](src/Spec/CSRSpec.hs), where
+This approach will work fine for files like `Execute*.hs` or [`CSRSpec.hs`](src/Spec/CSRSpec.hs), where
 you likely just want to know the behavior of executing a particular instruction
 or reading/writing a particular CSR; it will work decreasingly well as the
 complexity of the code increases (e.g. [`VirtualMemory.hs`](src/Spec/VirtualMemory.hs), [`Machine.hs`](src/Spec/Machine.hs)).
@@ -87,7 +91,7 @@ instruction. Take `ADD`, for example:
       setRegister rd (x + y)
 
 This is intended to be readable without any knowledge of Haskell. `execute (Add
-rd rs1 rs2) =` says that we're describing the behavior of `execute` for ADD
+rd rs1 rs2) =` says that we're describing the behavior of `execute` for `ADD`
 instructions, which are parameratized by `rd`, `rs1`, and `rs2` - the
 destination register and input registers. The names are arbitrary (they could
 have been `foo`, `bar`, and `baz`), but we maintain the naming conventions of
@@ -99,7 +103,7 @@ would expect, performs addition.
 
 # Miscellaneous
 
-Most operators will look familiar, but a few bear explanation. `.|.` and `.&.`
+Most operators will look familiar, but a few deserve explanation. `.|.` and `.&.`
 perform bitwise OR and AND, respectively. The predicate "not equal" is
 represented by `/=` (rather than `!=`, which you might be used to).
 
@@ -112,7 +116,7 @@ otherwise, it does nothing. Sometimes we use helper functions that change
 machine state, such as `raiseExceptionWithInfo`. If you like, you can take this
 as a basic operation, but if you're curious or want to check your implementation
 of exceptions, the source is in [`Machine.hs`](src/Spec/Machine.hs). Finally, if you see `getPlatform`
-anywhere, that indicates we're about to rely on platform-specific behavior which
+anywhere, that indicates we're about to rely on platform-specific behavior that
 is not fully defined by the spec; you can think of this as asking the platform
 what to do.
 
@@ -121,5 +125,5 @@ what to do.
 The inner workings of our semantics are fairly involved, but one of our primary
 goals is having very readable code when it comes to the description of things
 like instruction behavior. If you encounter something that seems impenetrable,
-please let us know so that we can address it either in the code or the
+please let us know so that we can address it in either the code or the
 documentation. Thanks!
