@@ -58,7 +58,7 @@ class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
   getPrivMode :: p PrivMode
   setPrivMode :: PrivMode -> p ()
   commit :: p ()
-  endCycle :: forall t. p t
+  endCycle :: forall z. p z
   inTLB :: AccessType -> MachineInt -> p (Maybe MachineInt)
   addTLB :: MachineInt -> MachineInt -> Int -> p ()
   flushTLB :: p ()
