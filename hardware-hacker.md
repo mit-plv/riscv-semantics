@@ -1,6 +1,6 @@
 # Introduction
 
-The source code of this project can (and is intended to be) used as a definitive
+The source code of this project can (and is intended to) be used as a definitive
 reference for the behavior of a compliant RISC-V machine. To that end, we hope
 hardware engineers will find it useful as a highly precise description of the
 specification, especially with regards to decoding and executing instructions.
@@ -12,7 +12,7 @@ in how this describes the specification, because the computer will not allow it.
 And unlike a specification in English, one in Haskell can be run directly
 against test suites.
 
-The flip side of this is that there's a great deal of code necessary to make
+The flip side is that there's a great deal of code necessary to make
 this actually runnable, much of which you, dear reader, will not care about in
 the least. The purpose of this document is to serve as a reading guide for the
 kind of reader that cares a great deal about the behavior mandated by the RISC-V
@@ -21,7 +21,7 @@ virtual RISC-V machine.
 
 # Relevant source files
 
-All source files are in the src/ directory. Within that, there are three
+All source files are in the [`src`](src) directory. Within it, there are three
 directories: Platform, Spec, and Utility. Utility entirely consists of
 infrastructure code, and can be ignored entirely. Platform consists of specific
 implementations of virtual machines (i.e. "how does setPC work?"). If you're
