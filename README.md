@@ -1,6 +1,16 @@
 # riscv-semantics  [![Build Status](https://travis-ci.org/mit-plv/riscv-semantics.svg?branch=master)]
 
-Here lies a formal specification of the RISC-V ISA, written in Haskell.
+Here lies a formal specification of [the RISC-V ISA](https://riscv.org), written in [Haskell](https://www.haskell.org/).
+It is meant to serve many audiences.
+
+First, it should be readable as documentation of the ISA, for, say, hardware and compiler engineers with no background in formal verification or functional programming.
+The next section suggests how such readers should get started.
+
+Second, it should be executable as an oracle for test cases and so on.
+See the later sections here for build-and-run instructions.
+
+Finally, people with sufficient Haskell background should be able to understand subtleties of the semantics and even extend with new features.
+More documentation for that class of users may be forthcoming!
 
 
 # How to read this spec
