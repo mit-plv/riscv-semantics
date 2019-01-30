@@ -40,14 +40,14 @@ This invocation should produce the output
 
 To run the default 64-bit executable simulator on riscv-tests:
 
-   $ stack exec riscv-semantics-tests
+    $ stack exec riscv-semantics-tests
 
 # Generation of Verilog (work in progress)
 
-	$ ./install-clash.sh
-	$ ./make-circuit.sh
+    $ ./install-clash.sh
+    $ ./make-circuit.sh
 
 The output will be in `src/verilog`.
 
 To get rid of intermediate files create in the `src` folder:
-	$ ./clean-circuit.sh
+    $ ./clean-circuit.sh

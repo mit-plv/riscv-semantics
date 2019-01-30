@@ -3,3 +3,5 @@ elf2hex/elf2hex
 *.hi
 *.hex
 test/build/
+.stack-work
+gnu-mcu-eclipse
