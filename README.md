@@ -5,7 +5,7 @@ Here lies a formal specification of the RISC-V ISA, written in Haskell.
 
 # How to read this spec
 
-1. Read [the reading guide](hardware-hacker.md).
+1. Read [the reading guide](READING.md).
 2. Read the first half of [our explanation of exception handling in the semantics](exceptions.md).
 3. Dive into the [the Spec directory](src/Spec).
 
