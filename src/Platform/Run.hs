@@ -59,8 +59,6 @@ checkExternalInterrupt = do
 runProgram :: Maybe Int64 -> Minimal64 -> IO (Int64, Minimal64)
 runProgram maybeToHostAddress c =
   runStateT (stepHelper RV64IMAF maybeToHostAddress (do 
-                                                        pc <- getPC
-                                                        liftIO . putStrLn $ showHex pc ""
                                                         liftIO checkExternalInterrupt) mtimecmp_addr ) c 
 
 
