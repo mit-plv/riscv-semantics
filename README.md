@@ -2,6 +2,14 @@
 
 Here lies a formal specification of the RISC-V ISA, written in Haskell.
 
+
+# How to read this spec
+
+1. Read the reading guide: [./hardware-hacker.md](https://github.com/mit-plv/riscv-semantics/blob/master/hardware-hacker.md)
+2. Read the first half of [./exceptions.md](https://github.com/mit-plv/riscv-semantics/blob/master/exceptions.md)
+3. Dive into the [./src/Spec](https://github.com/mit-plv/riscv-semantics/tree/master/src/Spec) folder
+
+
 # Installation Guide
 
 ## Install Stack
@@ -49,5 +57,6 @@ To run the default 64-bit executable simulator on riscv-tests:
 
 The output will be in `src/verilog`.
 
-To get rid of intermediate files create in the `src` folder:
+To get rid of intermediate files created in the `src` folder:
+
     $ ./clean-circuit.sh
