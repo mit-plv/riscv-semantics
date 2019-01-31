@@ -38,9 +38,9 @@ resolver: nightly-2017-10-26
 packages:
 - '.'
 - softfloat-hs
-# - clash/clash-ghc
-# - clash/clash-lib
-# - clash/clash-prelude
+- clash/clash-ghc
+- clash/clash-lib
+- clash/clash-prelude
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
@@ -54,9 +54,6 @@ extra-deps:
 - uu-interleaved-0.2.0.0
 - uu-parsinglib-2.9.1.1
 - elf-0.28
-- ilist-0.3.1.0
-- nondeterminism-1.4
-- array-0.5.3.0
 # Override default flag values for local packages and extra-deps
 flags: {}
 
