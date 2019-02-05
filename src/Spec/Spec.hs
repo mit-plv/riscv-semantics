@@ -26,20 +26,20 @@ runCycle iset preDecode preCommit = do
     execute (decode iset ((fromIntegral :: Int32 -> MachineInt) inst))
     preCommit
     else
-    return ()
+    return $! ()
 
 -- Useful helper, not actually part of spec.
 stepHelper :: (RiscvMachine p t) => InstructionSet -> Maybe t -> p Bool -> t -> p t
 stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmp_addr = do
   toHostValue <- case maybeToHostAddress of
-    Nothing -> return 0 -- default value
+    Nothing -> return $! 0 -- default value
     Just toHostAddress -> loadWord toHostAddress
   if toHostValue /= 0
     then do
       -- quit running
       if toHostValue == 1
-        then return 0
-        else return 1
+        then return $! 0
+        else return $! 1
     else do
     checkInterrupt
     result <- runMaybeT (runCycle iset preDecode preCommit)
@@ -69,15 +69,15 @@ stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmp_addr = do
                                -- Remove pending external interrupt
                                setCSRField Field.MEIP 0
                                runMaybeT (raiseException 1 11)-- Machine external interrupt.
-                               return True
+                               return $! True
                              else if (mtie > 0 && mtip > 0) then do
                                runMaybeT (raiseException 1 7) -- Machine timer interrupt.
-                               return True
-                             else return False
+                               return $! True
+                             else return $! False
                        -- Save the PC of the next (unexecuted) instruction.
                        setCSRField Field.MEPC nPC
-                       return interruptHappen
-                  else return False
+                       return $! interruptHappen
+                  else return $! False
              if (k) then 
                   commit
              else 

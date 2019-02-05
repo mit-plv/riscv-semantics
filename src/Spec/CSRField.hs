@@ -1,4 +1,5 @@
 module Spec.CSRField where
+import Data.Ix
 import Prelude
 
 data CSRField = MXL | Extensions | -- misa
@@ -26,7 +27,7 @@ data CSRField = MXL | Extensions | -- misa
                 STVal | -- stval
                 MODE | ASID | PPN | -- satp
                 FFlags | FRM -- fflags, frm, fcsr
-  deriving (Ord, Eq, Show)
+  deriving (Ord, Ix, Eq, Show)
 
 -- WPRI is implicit in a field's lack of existence here.
 data FieldType = RO | RW | WLRL | WARL deriving (Show, Eq)

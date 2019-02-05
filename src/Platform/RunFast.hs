@@ -1,3 +1,4 @@
+{-# OPTIONS -Wall #-}
 module Platform.RunFast where
 import System.IO
 import System.Environment
@@ -12,20 +13,14 @@ import Spec.Machine
 import Platform.CleanTest
 import Utility.Elf
 import qualified Spec.CSRField as Field
-import Spec.CSRFile
+import Spec.CSRFileIO
 import Spec.Decode
-import Spec.Execute
-import Spec.VirtualMemory
 import Spec.Spec
 import Control.Monad
 import Control.Monad.Trans
-import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.State
-import Control.Monad.Trans.Writer
-import qualified Data.Map.Strict as S
 import qualified Data.ByteString as B
-import Debug.Trace
-import Numeric (showHex, readHex)
+import Numeric (readHex)
 
 processLine :: String -> (Int, [(Int, Word8)]) -> (Int, [(Int, Word8)])
 processLine ('@':xs) (p, l) = ((fst $ head $ readHex xs) * 4, l)
@@ -86,6 +81,9 @@ runFile f = do
   privMode <- newIORef Machine
   mem <- newArray (0,0x00000000ffffffff) 0 -- Create a big 2GB chunk of memory 
   reservation <- newIORef Nothing
+  csrs <- newArray (Field.MXL,Field.FRM) 0 --GUESS TO GET ALL THE CSRFIELDS 
+  writeArray csrs Field.MXL 2
+  writeArray csrs Field.Extensions $! encodeExtensions "IAMSU" 
   putStrLn "All the state is created"
   -- write the program and the device tree in it
   let addressCommaByteS = (zip [0..] (B.unpack deviceTree)) ++ program
@@ -93,7 +91,7 @@ runFile f = do
   putStrLn "The program is copied"
   let c = VerifMinimal64 { registers = registers,
                       fpregisters = fpregisters,
-                      csrs = (resetCSRFile 64),
+                      csrs = csrs,
                       pc = pc,
                       nextPC = npc,
                       privMode = privMode,
