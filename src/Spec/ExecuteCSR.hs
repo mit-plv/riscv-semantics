@@ -76,7 +76,7 @@ execute Sret = do
   priv <- getPrivMode
   when (priv < Supervisor) (raiseException 0 2)
   tsr <- getCSRField Field.TSR
-  when (tsr == 1) (raiseException 0 2)
+  when (tsr == 1 && priv == Supervisor) (raiseException 0 2)
   spp <- getCSRField Field.SPP
   setCSRField Field.SPP (encodePrivMode User)
   setPrivMode (decodePrivMode spp)
