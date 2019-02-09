@@ -44,20 +44,6 @@ poller master list =
       putMVar list (l  ++ [ byte ])
       iterateChar
 
---
---    iterateChar = do
---      h <- async $ getC master
---      cont <- poll h
---      case cont of
---        Nothing -> iterateChar
---        Just eOrByte ->
---            case eOrByte of
---              Left e -> error $ "The async raised an exception" ++ show e
---              Right byte -> do
---                         l <- takeMVar list
---                         putMVar list (l  ++ [ byte ])
---                         iterateChar
-
 writePty :: Fd -> Word8 -> IO ()
 writePty master byte = do
   count <- fdWrite master . unpack $ B.singleton byte
