@@ -18,28 +18,36 @@ import Foreign.Ptr
 import Data.Word
 import Control.Exception
 
-
 -- Returns a bool that tells if we should set MIP_MTIP
-writeClint :: IORef Int32 -> Int32 -> Int32 -> IO (Bool)
+writeClint :: IORef Int64 -> Int32 -> Int32 -> IO (Bool)
 writeClint mtimecmp addr val = do
   case (addr) of
-    0x4000 -> undefined
-    0x4004 -> undefined
-    otherwise -> return False
-  undefined
+    0x4000 -> do
+      oldTime <- readIORef mtimecmp
+      writeIORef mtimecmp $ (oldTime .&. (complement 0xffffffff)) .|. (fromIntegral ((fromIntegral  val) :: Word32) :: Int64)
+      return True
+    0x4004 -> do
+      oldTime <- readIORef mtimecmp
+      writeIORef mtimecmp $ (oldTime .&. 0xffffffff) .|. (shiftL (fromIntegral ((fromIntegral  val) :: Word32) :: Int64) 32)
+      return True
+    _ -> return False
 
-readClint :: IORef Int32 -> IORef Int32 -> Int32 -> IO (Maybe Int32)
+readClint :: IORef Int64 -> MVar Int64 -> Int32 -> IO (Maybe Int32)
 readClint mtimecmp rtc addr = do
  case (addr) of
-   0xbff8 -> fmap Just $ readIORef rtc
-   0xbffc -> fmap (Just . (\x -> shiftR x 32)) $ readIORef rtc
-   0x4000 -> fmap Just $ readIORef mtimecmp
-   0x4004 -> fmap (Just . (\x -> shiftR x 32)) $ readIORef mtimecmp
-   otherwise -> return Nothing
+   0xbff8 -> fmap (Just . fromIntegral) $ readMVar rtc
+   0xbffc -> fmap (Just . fromIntegral . (\x -> shiftR x 32)) $ readMVar rtc
+   0x4000 -> fmap (Just . fromIntegral) $ readIORef mtimecmp
+   0x4004 -> fmap (Just . fromIntegral . (\x -> shiftR x 32)) $ readIORef mtimecmp
+   _ -> return Nothing
 
-initClint :: IO (MVar [Word8], Fd)
+
+-- Returns mtimecmp and rtc.
+initClint :: IO (IORef Int64, MVar Int64)
 initClint = do
-  undefined
+  mtimecmp <- newIORef 0 :: IO(IORef Int64)
+  rtc <- newMVar 0 :: IO(MVar Int64)
+  return (mtimecmp,rtc)
   -- (master,_) <- openPseudoTerminal
   -- file <- getSlaveTerminalName master
   -- attr <- getTerminalAttributes master
