@@ -21,9 +21,11 @@ import Control.Monad.Trans
 import Control.Monad.Trans.State
 import qualified Data.ByteString as B
 import Numeric (readHex)
+import Platform.Pty
+import Control.Concurrent.MVar
 
 processLine :: String -> (Int, [(Int, Word8)]) -> (Int, [(Int, Word8)])
-processLine ('@':xs) (p, l) = ((fst $ head $ readHex xs) * 4, l)
+processLine ('@':xs) (_, l) = ((fst $ head $ readHex xs) * 4, l)
 processLine s (p, l) = (p + 4, l ++ (zip [p..] $ splitWord (fst $ head $ readHex s :: Word32)))
 
 readHexFile :: FilePath -> IO [(Int, Word8)]
@@ -41,15 +43,7 @@ readHexFile f = do
 
 checkExternalInterrupt :: IO Bool
 checkExternalInterrupt = do
-  ready <- hReady stdin
-  if ready then do
-    c <- hLookAhead stdin
-    if c == '!' then do
-      _ <- getChar
-      _ <- getChar
-      return True
-    else return False
-  else return False
+  return False
 
 runProgram :: Maybe Int64 -> VerifMinimal64 -> IO (Int64, VerifMinimal64)
 runProgram maybeToHostAddress c =
@@ -82,6 +76,8 @@ runFile f = do
   mem <- newArray (0,0x00000000ffffffff) 0 -- Create a big 2GB chunk of memory 
   reservation <- newIORef Nothing
   csrs <- newArray (Field.MXL,Field.FRM) 0 --GUESS TO GET ALL THE CSRFIELDS 
+  putStrLn "init PTY"
+  console <- initPty
   writeArray csrs Field.MXL 2
   writeArray csrs Field.Extensions $! encodeExtensions "IAMSU" 
   putStrLn "All the state is created"
@@ -96,6 +92,7 @@ runFile f = do
                       nextPC = npc,
                       privMode = privMode,
                       mem = mem,
+                      console = console,
                       reservation = reservation } in
     fmap fst $ runProgram maybeToHostAddress c
 

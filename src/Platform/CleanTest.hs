@@ -1,4 +1,3 @@
-{-# OPTIONS -Wall #-}
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, ScopedTypeVariables, InstanceSigs, AllowAmbiguousTypes, FlexibleContexts #-}
 module Platform.CleanTest where
 import Spec.Machine
@@ -13,22 +12,25 @@ import Data.Char
 import Data.Maybe
 import Data.IORef
 import Data.Array.IO
+import System.Posix.Types
 import System.IO.Error
 import qualified Data.Map.Strict as S
 import Control.Monad.State
 import Control.Monad.Trans.Maybe
 import Debug.Trace as T
-
+import Platform.Pty
+import Control.Concurrent.MVar
 
 data VerifMinimal64 = VerifMinimal64 { registers :: IOUArray Register Int64 ,
-                             fpregisters :: IOUArray Register Int32,
-                             csrs :: CSRFile,
-                             privMode :: IORef PrivMode,
-                             pc :: IORef Int64,
-                             nextPC :: IORef Int64,
-                             mem :: IOUArray Int Word8,
-                             reservation :: IORef (Maybe Int)
-                           }
+                                       fpregisters :: IOUArray Register Int32,
+                                       csrs :: CSRFile,
+                                       privMode :: IORef PrivMode,
+                                       pc :: IORef Int64,
+                                       nextPC :: IORef Int64,
+                                       mem :: IOUArray Int Word8,
+                                       console :: (MVar [Word8], Fd),
+                                       reservation :: IORef (Maybe Int)
+                                     }
 
 
 type IOState = StateT VerifMinimal64 IO
@@ -36,22 +38,32 @@ type IOState = StateT VerifMinimal64 IO
 type LoadFunc = IOState Int32
 type StoreFunc = Int32 -> IOState ()
 
-instance (Show LoadFunc) where
-  show _ = "<loadfunc>"
-instance (Show StoreFunc) where
-  show _ = "<storefunc>"
+-- instance (Show LoadFunc) where
+--    show _ = "<loadfunc>"
+-- instance (Show StoreFunc) where
+--    show _ = "<storefunc>"
 
 cGetChar :: IO Int32
 cGetChar = catchIOError (fmap ((fromIntegral:: Int -> Int32). ord) getChar) (\e -> if isEOFError e then return (-1) else ioError e)
 
-rvGetChar = liftIO cGetChar
-rvPutChar val = liftIO (putChar $ chr $ (fromIntegral:: Int32 -> Int) val)
+rvGetChar :: IOState Int32
+rvGetChar = do
+  refs <- get
+  mWord <- liftIO $ readPty (fst (console refs))
+  case mWord of
+    Nothing -> return $ -1
+    Just a -> return $ fromIntegral a
+
+rvPutChar :: Int32 -> IOState ()
+rvPutChar val = do
+  refs <- get
+  liftIO $ writePty (snd (console refs)) (fromIntegral val)
 
 rvZero = return 0
 rvNull val = return ()
 
 getMTime :: LoadFunc
-getMTime = fmap (fromIntegral:: MachineInt -> Int32) (getCSRField Field.MCycle)
+getMTime = fmap ((\x-> quot x 1000000).(fromIntegral:: MachineInt -> Int32)) (getCSRField Field.MCycle)
 
 -- Ignore writes to mtime.
 setMTime :: StoreFunc
