@@ -48,12 +48,3 @@ initClint = do
   mtimecmp <- newIORef 0 :: IO(IORef Int64)
   rtc <- newMVar 0 :: IO(MVar Int64)
   return (mtimecmp,rtc)
-  -- (master,_) <- openPseudoTerminal
-  -- file <- getSlaveTerminalName master
-  -- attr <- getTerminalAttributes master
-  -- setTerminalAttributes master (withOutputSpeed (withInputSpeed attr  B115200) B115200) Immediately
-  -- list <- (newMVar [] :: IO (MVar [Word8]))
-  -- putStrLn $ "Connect to console with : screen " ++ show file ++ " 115200"
-  -- _ <- async $ poller master list
-  -- putStrLn "Spawned the emulated pty"
-  -- return (list, master)
