@@ -15,7 +15,8 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: nightly-2017-10-26
+# resolver: nightly-2017-10-26
+resolver: lts-13.6
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -57,6 +58,8 @@ extra-deps:
 - ilist-0.3.1.0
 - nondeterminism-1.4
 - array-0.5.2.0
+- async-2.2.1
+- unix-2.7.2.2
 # Override default flag values for local packages and extra-deps
 flags: {}
 
