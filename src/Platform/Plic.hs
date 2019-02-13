@@ -1,5 +1,6 @@
 module Platform.Plic
-  (plicSetIRQ,
+  (ChangeMIP,
+   plicSetIRQ,
    readPlic,
    writePlic,
    initPlic) where
@@ -7,11 +8,14 @@ import Data.Int
 import Data.Bits
 import Data.IORef
 
+data ChangeMIP =
+  Set | Reset | DoNothing
+
 data Plic = Plic { plicServedIrq :: IORef Int32,
                    plicPendingIrq :: IORef Int32}
 
 -- The boolean indicate if we need to set/reset mip in the RV machine.
-writePlic :: Plic -> Int32 -> Int32 -> IO Bool
+writePlic :: Plic -> Int32 -> Int32 -> IO ChangeMIP
 writePlic plic offset val = do
   let servedIrqs = plicServedIrq plic
   case offset of
@@ -24,15 +28,15 @@ writePlic plic offset val = do
         doUpdate <- plicUpdateMIP plic
         return doUpdate
         else do
-        return False
-    _ -> return False
+        return DoNothing
+    _ -> return DoNothing
 
 -- The boolean indicate if we need to set/reset mip
-readPlic :: Plic -> Int32 -> IO (Int32,Bool)
+readPlic :: Plic -> Int32 -> IO (Int32,ChangeMIP)
 readPlic plic offset = do
   case offset of
     0x200000 -> do -- PLIC_HART_BASE
-      return (0,False)
+      return (0,DoNothing)
     0x200004 -> do -- PLIC_HART_BASE + 4
       vPendingIrqs <- readIORef $ plicPendingIrq plic
       vServedIrqs <- readIORef $ plicServedIrq plic
@@ -44,21 +48,21 @@ readPlic plic offset = do
         doUpdate <- plicUpdateMIP plic
         return (i + 1, doUpdate)
         else do
-        return (0,False)
-    _ -> return (0,False)
+        return (0,DoNothing)
+    _ -> return (0,DoNothing)
 
--- Internal function, used to compute if we need to tell the caller of read/write/set to set the MIP register.
-plicUpdateMIP :: Plic -> IO Bool
+-- Interal function, used to compute if we need to tell the caller of read/write/set to set the MIP register.
+plicUpdateMIP :: Plic -> IO ChangeMIP
 plicUpdateMIP plic = do
   pendings <- readIORef $ plicPendingIrq plic
   served <- readIORef $ plicServedIrq plic
   if (pendings .&. (complement served)) /= 0
-    then return True
-    else return False
+    then return Set
+    else return Reset
 
 -- Function called by different devices to raise an external
 -- interrupt. Return if we need to setup mip.
-plicSetIRQ :: Plic -> Int -> Int -> IO Bool
+plicSetIRQ :: Plic -> Int -> Int -> IO ChangeMIP
 plicSetIRQ plic irqNum state = do
   let pendingIrqs = plicPendingIrq plic
   let mask = shiftL 1 (irqNum -1)
