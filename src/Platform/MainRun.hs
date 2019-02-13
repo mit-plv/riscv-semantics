@@ -1,3 +1,3 @@
-import qualified Platform.Run as Run
+import qualified Platform.RunFast as Run
 
 main = Run.main
