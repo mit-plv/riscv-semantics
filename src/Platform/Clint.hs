@@ -19,18 +19,16 @@ import Data.Word
 import Control.Exception
 
 -- Returns a bool that tells if we should set MIP_MTIP
-writeClint :: IORef Int64 -> Int32 -> Int32 -> IO (Bool)
+writeClint :: IORef Int64 -> Int32 -> Int32 -> IO ()
 writeClint mtimecmp addr val = do
   case (addr) of
     0x4000 -> do
       oldTime <- readIORef mtimecmp
       writeIORef mtimecmp $ (oldTime .&. (complement 0xffffffff)) .|. (fromIntegral ((fromIntegral  val) :: Word32) :: Int64)
-      return True
     0x4004 -> do
       oldTime <- readIORef mtimecmp
       writeIORef mtimecmp $ (oldTime .&. 0xffffffff) .|. (shiftL (fromIntegral ((fromIntegral  val) :: Word32) :: Int64) 32)
-      return True
-    _ -> return False
+    _ -> return ()
 
 readClint :: IORef Int64 -> MVar Int64 -> Int32 -> IO (Maybe Int32)
 readClint mtimecmp rtc addr = do

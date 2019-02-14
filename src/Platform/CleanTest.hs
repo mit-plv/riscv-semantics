@@ -19,6 +19,8 @@ import Control.Monad.State
 import Control.Monad.Trans.Maybe
 import Debug.Trace as T
 import Platform.Pty
+import Platform.Plic
+import Platform.Clint
 import Control.Concurrent.MVar
 
 data VerifMinimal64 = VerifMinimal64 { registers :: IOUArray Register Int64 ,
@@ -28,6 +30,8 @@ data VerifMinimal64 = VerifMinimal64 { registers :: IOUArray Register Int64 ,
                                        pc :: IORef Int64,
                                        nextPC :: IORef Int64,
                                        mem :: IOUArray Int Word8,
+                                       plic :: Plic,
+                                       clint :: (IORef Int64, MVar Int64),
                                        console :: (MVar [Word8], Fd),
                                        reservation :: IORef (Maybe Int)
                                      }
@@ -37,14 +41,6 @@ type IOState = StateT VerifMinimal64 IO
 
 type LoadFunc = IOState Int32
 type StoreFunc = Int32 -> IOState ()
-
--- instance (Show LoadFunc) where
---    show _ = "<loadfunc>"
--- instance (Show StoreFunc) where
---    show _ = "<storefunc>"
-
-cGetChar :: IO Int32
-cGetChar = catchIOError (fmap ((fromIntegral:: Int -> Int32). ord) getChar) (\e -> if isEOFError e then return (-1) else ioError e)
 
 rvGetChar :: IOState Int32
 rvGetChar = do
@@ -63,17 +59,58 @@ rvZero = return 0
 rvNull val = return ()
 
 getMTime :: LoadFunc
-getMTime = fmap ((\x-> quot x 1000000).(fromIntegral:: MachineInt -> Int32)) (getCSRField Field.MCycle)
+getMTime = undefined
 
 -- Ignore writes to mtime.
 setMTime :: StoreFunc
 setMTime _ = return ()
 
+
+readPlicWrap addr = do
+  refs <- get
+  (val, interrupt) <- lift $ readPlic (plic refs) addr
+  when (interrupt == Set) (setCSRField Field.MEIP 1)
+  when (interrupt == Reset) (setCSRField Field.MEIP 0)
+  return val
+writePlicWrap addr val = do
+  refs <- get
+  interrupt <- lift $ writePlic (plic refs) addr val
+  when (interrupt == Set) (setCSRField Field.MEIP 1)
+  when (interrupt == Reset) (setCSRField Field.MEIP 0)
+  return ()
+
+readClintWrap addr = do
+  refs <- get
+  let (mtimecmp,rtc) = clint refs
+  mint <- lift $ readClint mtimecmp rtc addr
+  case mint of
+    Just a -> return a
+    Nothing -> return 0 --Impossible
+writeClintWrap addr val = do
+  refs <- get
+  let (mtimecmp,rtc) = clint refs
+  lift $ writeClint mtimecmp addr val
+  setCSRField Field.MTIP 0
+
 -- Addresses for mtime/mtimecmp chosen for Spike compatibility, and getchar putchar.
 memMapTable :: S.Map MachineInt (LoadFunc, StoreFunc)
-memMapTable = S.fromList [(0x200bff8, (getMTime, setMTime)),(0xfff0, (rvZero, rvPutChar)), (0xfff4, (rvGetChar, rvNull))]
-mtimecmp_addr = 0x2004000 :: Int64
+memMapTable = S.fromList
+              [
+              -- Pty
+               (0xfff0, (rvZero, rvPutChar)),
+               (0xfff4, (rvGetChar, rvNull)),
+               -- Plic
+               (0x200000, (readPlicWrap 0x200000,  writePlicWrap 0x200000)),
+               (0x200004, (readPlicWrap 0x200004, writePlicWrap 0x200004)),
+               -- Clint
+               (0xbff8, (readClintWrap 0xbff8, writeClintWrap 0xbff8)),
+               (0xbffc, (readClintWrap 0xbffc, writeClintWrap 0xbffc)),
+               (0x4000, (readClintWrap 0x4000, writeClintWrap 0x4000)),
+               (0x4004, (readClintWrap 0x4004, writeClintWrap 0x4004))
+ 
+              ]
 
+mtimecmp_addr = 0x4000 :: Int64
 
 instance RiscvMachine IOState Int64 where
   getRegister reg = do

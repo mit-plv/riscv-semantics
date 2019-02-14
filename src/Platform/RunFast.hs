@@ -22,7 +22,10 @@ import Control.Monad.Trans.State
 import qualified Data.ByteString as B
 import Numeric (readHex)
 import Platform.Pty
+import Platform.Plic
+import Platform.Clint
 import Control.Concurrent.MVar
+import System.CPUTime
 
 processLine :: String -> (Int, [(Int, Word8)]) -> (Int, [(Int, Word8)])
 processLine ('@':xs) (_, l) = ((fst $ head $ readHex xs) * 4, l)
@@ -47,8 +50,26 @@ checkExternalInterrupt = do
 
 runProgram :: Maybe Int64 -> VerifMinimal64 -> IO (Int64, VerifMinimal64)
 runProgram maybeToHostAddress c =
-  runStateT (stepHelper RV64IMAF maybeToHostAddress (do
-                                                        liftIO checkExternalInterrupt) mtimecmp_addr ) c 
+  runStateT (stepHelper RV64IMAF maybeToHostAddress
+             (do
+                 refs <- get
+                 -- Update RTC
+                 let (_, rtc) = clint refs
+                 time <- lift getCPUTime
+                 _ <- lift $ takeMVar rtc
+                 lift . putMVar rtc $ (fromIntegral $ time `div` 10000) -- Time goes 10000 times slower for the RV
+                 listChar <- lift $ readMVar (fst (console refs))
+                 if (listChar == [])
+                 then return DoNothing
+                 else lift $ plicSetIRQ (plic refs) 0 1)
+                 -- Propagate if we need to set or reset the external interrupt.
+                 -- Set interrupt line if there is something in the char device
+             (do
+                 let (mtimecmp, rtc) = clint c
+                 vmtimecmp <- lift $ readIORef mtimecmp
+                 vrtc <- lift $ readMVar rtc
+                 return $! (vmtimecmp,vrtc)))
+             c
 
 
 
@@ -68,32 +89,36 @@ runFile f = do
   deviceTree <- B.readFile "device_tree.bin"
   (maybeToHostAddress, program) <- readProgram f
   -- Create the references and the arrays that are going to be passed around
-  registers <- newArray (0,31) 0   
+  registers <- newArray (0,31) 0
   pc <- newIORef 0x80000000
   fpregisters <- newArray (0,31) 0
   npc <- newIORef 0
   privMode <- newIORef Machine
-  mem <- newArray (0,0x00000000ffffffff) 0 -- Create a big 2GB chunk of memory 
+  mem <- newArray (0,0x00000000ffffffff) 0 -- Create a big 2GB chunk of memory
   reservation <- newIORef Nothing
-  csrs <- newArray (Field.MXL,Field.FRM) 0 --GUESS TO GET ALL THE CSRFIELDS 
+  csrs <- newArray (Field.MXL,Field.FRM) 0 --GUESS TO GET ALL THE CSRFIELDS
   putStrLn "init PTY"
   console <- initPty
+  plic <- initPlic
+  clint <- initClint
   writeArray csrs Field.MXL 2
-  writeArray csrs Field.Extensions $! encodeExtensions "IAMSU" 
+  writeArray csrs Field.Extensions $! encodeExtensions "IAMSU"
   putStrLn "All the state is created"
   -- write the program and the device tree in it
   let addressCommaByteS = (zip [0..] (B.unpack deviceTree)) ++ program
   forM_ addressCommaByteS  $ (\(addr,byte)-> writeArray mem (fromIntegral addr) (fromIntegral byte))
   putStrLn "The program is copied"
   let c = VerifMinimal64 { registers = registers,
-                      fpregisters = fpregisters,
-                      csrs = csrs,
-                      pc = pc,
-                      nextPC = npc,
-                      privMode = privMode,
-                      mem = mem,
-                      console = console,
-                      reservation = reservation } in
+                           fpregisters = fpregisters,
+                           csrs = csrs,
+                           pc = pc,
+                           nextPC = npc,
+                           privMode = privMode,
+                           mem = mem,
+                           plic = plic,
+                           clint = clint,
+                           console = console,
+                           reservation = reservation } in
     fmap fst $ runProgram maybeToHostAddress c
 
 runFiles :: [String] -> IO Int64

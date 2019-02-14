@@ -1,6 +1,8 @@
 module Platform.Plic
-  (ChangeMIP,
+  (Plic,
+   ChangeMIP(..),
    plicSetIRQ,
+   plicUpdateMIP,
    readPlic,
    writePlic,
    initPlic) where
@@ -9,7 +11,7 @@ import Data.Bits
 import Data.IORef
 
 data ChangeMIP =
-  Set | Reset | DoNothing
+  Set | Reset | DoNothing deriving(Eq, Show)
 
 data Plic = Plic { plicServedIrq :: IORef Int32,
                    plicPendingIrq :: IORef Int32}
@@ -36,7 +38,7 @@ readPlic :: Plic -> Int32 -> IO (Int32,ChangeMIP)
 readPlic plic offset = do
   case offset of
     0x200000 -> do -- PLIC_HART_BASE
-      return (0,DoNothing)
+      return (0, DoNothing)
     0x200004 -> do -- PLIC_HART_BASE + 4
       vPendingIrqs <- readIORef $ plicPendingIrq plic
       vServedIrqs <- readIORef $ plicServedIrq plic

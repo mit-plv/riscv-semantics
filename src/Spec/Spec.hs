@@ -10,9 +10,9 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Data.Word
+import qualified Platform.Plic as Plic
 
 -- TODO: Cleanup/rename/move this file.
-
 runCycle :: (RiscvMachine p t) => InstructionSet -> (Int32 -> p Bool) -> p () -> p ()
 runCycle iset preDecode preCommit = do
   vpc <- getPC
@@ -29,8 +29,8 @@ runCycle iset preDecode preCommit = do
     return $! ()
 
 -- Useful helper, not actually part of spec.
-stepHelper :: (RiscvMachine p t) => InstructionSet -> Maybe t -> p Bool -> t -> p t
-stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmp_addr = do
+stepHelper :: (RiscvMachine p t) => InstructionSet -> Maybe t -> p Plic.ChangeMIP -> p (t,t) -> p t
+stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmpAndMtime = do
   toHostValue <- case maybeToHostAddress of
     Nothing -> return $! 0 -- default value
     Just toHostAddress -> loadWord toHostAddress
@@ -44,24 +44,24 @@ stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmp_addr = do
     checkInterrupt
     result <- runMaybeT (runCycle iset preDecode preCommit)
     case result of
-      Nothing -> commit >> stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmp_addr
+      Nothing -> commit >>  stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmpAndMtime
       Just _ -> getRegister 10
   where preDecode inst = return (inst /= 0x6f)
         preCommit = do
           interrupt <- lift checkExternalInterrupt
-          when interrupt (setCSRField Field.MEIP 1)
+          when (interrupt == Plic.Set) (setCSRField Field.MEIP 1)
+          when (interrupt == Plic.Reset) (setCSRField Field.MEIP 0)
           endCycle
         checkInterrupt = do
-        --     mtime <- fmap (fromIntegral:: MachineInt -> Int32) (getCSRField Field.MCycle)
-        --     mtimecmp <- loadWord mtimecmp_addr
-        --     setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
+             (mtime, mtimecmp) <- mtimecmpAndMtime
+             setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
              -- Check for interrupts before updating PC.
              mie <- getCSRField Field.MIE
              meie <- getCSRField Field.MEIE
              meip <- getCSRField Field.MEIP
              mtie <- getCSRField Field.MTIE
              mtip <- getCSRField Field.MTIP
-             nPC <- getPC   
+             nPC <- getPC
              k <- if (mie > 0 && ((meie > 0 && meip > 0) || (mtie > 0 && mtip > 0))) then do
                        -- Disable interrupts
                        setCSRField Field.MIE 0
@@ -78,8 +78,8 @@ stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmp_addr = do
                        setCSRField Field.MEPC nPC
                        return $! interruptHappen
                   else return $! False
-             if (k) then 
+             if (k) then
                   commit
-             else 
-                  return () 
+             else
+                  return ()
 
