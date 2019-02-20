@@ -21,6 +21,7 @@ import Control.Exception
 -- Returns a bool that tells if we should set MIP_MTIP
 writeClint :: IORef Int64 -> Int32 -> Int32 -> IO ()
 writeClint mtimecmp addr val = do
+  putStrLn "WRITE CLINT"
   case (addr) of
     0x4000 -> do
       oldTime <- readIORef mtimecmp

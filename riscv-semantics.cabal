@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 
 executable riscv-semantics
   main-is:             Platform/MainRun.hs
-  ghc-options:         -fspecialise-aggressively -funfolding-use-threshold=24 -funfolding-creation-threshold=100 -fstatic-argument-transformation -O2 -optc-O3 -threaded 
+  ghc-options:         -fexpose-all-unfoldings -fspecialise-aggressively -funfolding-use-threshold=50 -funfolding-creation-threshold=100 -fstatic-argument-transformation -O2 -optc-O3 -threaded 
   other-modules:       Platform.Run, Platform.Run32, Spec.CSR, Spec.CSRField,  Spec.CSRSpec, Spec.Decode, Utility.Elf, Spec.Execute, Spec.ExecuteCSR, Spec.ExecuteI, Spec.ExecuteI64, Spec.ExecuteM, Spec.ExecuteM64, Platform.Minimal64, Platform.Minimal32, Spec.ExecuteA, Spec.ExecuteA64, Spec.ExecuteF, Spec.ExecuteF64, Platform.MMIO, Utility.MapMemory, Spec.Memory, Spec.Machine, Utility.Utility, Spec.VirtualMemory, Spec.Spec, Platform.TLBExperiment, Platform.BufferMMIO, Platform.CleanTest, Platform.RunFast, Spec.CSRFileIO, Spec.CSRFile, Platform.Pty
 
   other-extensions:    MultiParamTypeClasses, FlexibleInstances, MultiWayIf, FunctionalDependencies, ScopedTypeVariables, NamedFieldPuns

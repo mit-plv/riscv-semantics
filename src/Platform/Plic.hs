@@ -1,5 +1,6 @@
 module Platform.Plic
   (Plic,
+   toDo,
    ChangeMIP(..),
    plicSetIRQ,
    plicUpdateMIP,
@@ -8,13 +9,14 @@ module Platform.Plic
    initPlic) where
 import Data.Int
 import Data.Bits
-import Data.IORef
+import Control.Concurrent.MVar
 
 data ChangeMIP =
   Set | Reset | DoNothing deriving(Eq, Show)
 
-data Plic = Plic { plicServedIrq :: IORef Int32,
-                   plicPendingIrq :: IORef Int32}
+data Plic = Plic { toDo :: MVar ChangeMIP,
+                   plicServedIrq :: MVar Int32,
+                   plicPendingIrq :: MVar Int32}
 
 -- The boolean indicate if we need to set/reset mip in the RV machine.
 writePlic :: Plic -> Int32 -> Int32 -> IO ChangeMIP
@@ -25,8 +27,8 @@ writePlic plic offset val = do
       let realval = val - 1
       if val < 32
         then do
-        vServedIrqs <- readIORef servedIrqs
-        writeIORef servedIrqs $ vServedIrqs .&. (complement $ shiftL 1 (fromIntegral realval))
+        vServedIrqs <- takeMVar servedIrqs
+        putMVar servedIrqs $ vServedIrqs .&. (complement $ shiftL 1 (fromIntegral realval))
         doUpdate <- plicUpdateMIP plic
         return doUpdate
         else do
@@ -40,24 +42,26 @@ readPlic plic offset = do
     0x200000 -> do -- PLIC_HART_BASE
       return (0, DoNothing)
     0x200004 -> do -- PLIC_HART_BASE + 4
-      vPendingIrqs <- readIORef $ plicPendingIrq plic
-      vServedIrqs <- readIORef $ plicServedIrq plic
+      vPendingIrqs <- readMVar $ plicPendingIrq plic
+      vServedIrqs <- takeMVar $ plicServedIrq plic
       let mask = vPendingIrqs .&. (complement vServedIrqs)
       if mask /= 0
         then do
-        let i = undefined mask --todo ctz32?
-        writeIORef (plicServedIrq plic) $ vServedIrqs .|. (shiftL 1 i)
+        let i = countTrailingZeros mask --todo ctz32?
+        putMVar (plicServedIrq plic) $ vServedIrqs .|. (shiftL 1 i)
         doUpdate <- plicUpdateMIP plic
-        return (i + 1, doUpdate)
+        return (fromIntegral $ i + 1, doUpdate)
         else do
+        putMVar (plicServedIrq plic) $ vServedIrqs
         return (0,DoNothing)
     _ -> return (0,DoNothing)
 
 -- Interal function, used to compute if we need to tell the caller of read/write/set to set the MIP register.
 plicUpdateMIP :: Plic -> IO ChangeMIP
 plicUpdateMIP plic = do
-  pendings <- readIORef $ plicPendingIrq plic
-  served <- readIORef $ plicServedIrq plic
+  pendings <- readMVar $ plicPendingIrq plic
+  served <- readMVar $ plicServedIrq plic
+  putStrLn $ "Status Plic: " ++ show (pendings) ++ " " ++ show served 
   if (pendings .&. (complement served)) /= 0
     then return Set
     else return Reset
@@ -67,19 +71,21 @@ plicUpdateMIP plic = do
 plicSetIRQ :: Plic -> Int -> Int -> IO ChangeMIP
 plicSetIRQ plic irqNum state = do
   let pendingIrqs = plicPendingIrq plic
-  let mask = shiftL 1 (irqNum -1)
+  let mask = shiftL 1 (irqNum)
   if (state /= 0)
     then do
-    vPendingIrqs <- readIORef pendingIrqs
-    writeIORef pendingIrqs $ vPendingIrqs .|. mask
+    vPendingIrqs <- takeMVar pendingIrqs
+    putStrLn . show $  vPendingIrqs .|. mask
+    putMVar pendingIrqs $ vPendingIrqs .|. mask
     else do
-    vPendingIrqs <- readIORef pendingIrqs
-    writeIORef pendingIrqs $ vPendingIrqs .&. (complement mask)
+    vPendingIrqs <- takeMVar pendingIrqs
+    putMVar pendingIrqs $ vPendingIrqs .&. (complement mask)
   plicUpdateMIP plic
 
 initPlic :: IO Plic
 initPlic = do
-  pendings <- newIORef 0
-  served <- newIORef 0
-  return $ Plic {plicServedIrq = served, plicPendingIrq = pendings}
+  pendings <- newMVar 0
+  served <- newMVar 0
+  td <- newMVar DoNothing
+  return $ Plic {toDo = td, plicServedIrq = served, plicPendingIrq = pendings}
 

@@ -20,7 +20,7 @@ import Foreign.Marshal.Alloc
 import Foreign.Ptr
 import Data.Word
 import Control.Exception
-
+import Platform.Plic
 
 getC master = do
   bytePtr <- malloc :: IO (Ptr Word8)
@@ -35,13 +35,18 @@ getC master = do
     free bytePtr
     error "EOF sent by the pty"
 
-poller master list =
+poller master list plic =
   iterateChar
   where
     iterateChar = do
       byte <- getC master
       l <- takeMVar list
       putMVar list (l  ++ [ byte ])
+      putStrLn "Set IRQ"
+      doset <- plicSetIRQ plic 0 1 -- Bit 0 of the Plic is the console
+      putStrLn . show $ doset
+      _ <- takeMVar (toDo plic)
+      putMVar (toDo plic) doset
       iterateChar
 
 writePty :: Fd -> Word8 -> IO ()
@@ -64,14 +69,14 @@ readPty list = do
     putMVar list (tail l)
     return . Just $ head l
 
-initPty :: IO (MVar [Word8], Fd)
-initPty = do
+initPty :: Plic -> IO (MVar [Word8], Fd)
+initPty plic = do
   (master,_) <- openPseudoTerminal
   file <- getSlaveTerminalName master
   attr <- getTerminalAttributes master
   setTerminalAttributes master (withOutputSpeed (withInputSpeed attr  B115200) B115200) Immediately
   list <- (newMVar [] :: IO (MVar [Word8]))
   putStrLn $ "Connect to console with : screen " ++ show file ++ " 115200"
-  _ <- async $ poller master list
+  _ <- async $ poller master list plic
   putStrLn "Spawned the emulated pty"
   return (list, master)

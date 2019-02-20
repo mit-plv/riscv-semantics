@@ -33,7 +33,22 @@ data VerifMinimal64 = VerifMinimal64 { registers :: IOUArray Register Int64 ,
                                        plic :: Plic,
                                        clint :: (IORef Int64, MVar Int64),
                                        console :: (MVar [Word8], Fd),
-                                       reservation :: IORef (Maybe Int)
+                                       reservation :: IORef (Maybe Int),
+                                                     -- Verification Packet
+                                       exception :: IORef Bool,
+                                       interrupt :: IORef Bool,
+                                       valid_dst :: IORef Bool,
+                                       valid_addr :: IORef Bool,
+                                       instruction :: IORef Int32,
+                                       cause :: IORef Int32,
+                                       d :: IORef Word64,
+                                       dst :: IORef Int64,
+                                       addrPacket :: IORef Word64,
+                                       pcPacket :: IORef Int64,
+                                       valid_timer :: IORef Bool,
+                                       timer :: IORef Int64,
+                                       mipPacket:: IORef Int64
+
                                      }
 
 
@@ -46,6 +61,7 @@ rvGetChar :: IOState Int32
 rvGetChar = do
   refs <- get
   mWord <- liftIO $ readPty (fst (console refs))
+  lift $ putStrLn "Get Char happened"
   case mWord of
     Nothing -> return $ -1
     Just a -> return $ fromIntegral a
@@ -69,26 +85,38 @@ setMTime _ = return ()
 readPlicWrap addr = do
   refs <- get
   (val, interrupt) <- lift $ readPlic (plic refs) addr
-  when (interrupt == Set) (setCSRField Field.MEIP 1)
-  when (interrupt == Reset) (setCSRField Field.MEIP 0)
+  when (interrupt == Set) (do
+                  lift $ putStrLn "Set external interrupt from read"
+                  setCSRField Field.MEIP 1)
+  when (interrupt == Reset) (do
+                  lift $ putStrLn "Reset external initerrupt"
+                  setCSRField Field.MEIP 0)
   return val
 writePlicWrap addr val = do
   refs <- get
   interrupt <- lift $ writePlic (plic refs) addr val
-  when (interrupt == Set) (setCSRField Field.MEIP 1)
-  when (interrupt == Reset) (setCSRField Field.MEIP 0)
+  when (interrupt == Set) (do
+                  lift $ putStrLn "Set external interrupt from write"
+                  setCSRField Field.MEIP 1)
+  when (interrupt == Reset) (do
+                  lift $ putStrLn "Reset external interrupt from write"
+                  setCSRField Field.MEIP 0)
   return ()
 
 readClintWrap addr = do
   refs <- get
   let (mtimecmp,rtc) = clint refs
   mint <- lift $ readClint mtimecmp rtc addr
+  lift $ writeIORef (valid_timer refs) True
+  when (addr == 0xbff8) . lift . writeIORef (timer refs) . fromIntegral . fromJust $ mint
+--  lift . putStrLn $ "readClint " ++ show mint ++ " at addr " ++ show addr
   case mint of
     Just a -> return a
     Nothing -> return 0 --Impossible
 writeClintWrap addr val = do
   refs <- get
   let (mtimecmp,rtc) = clint refs
+  lift . putStrLn $ "writeClint " ++ show val ++ " at addr " ++ show addr
   lift $ writeClint mtimecmp addr val
   setCSRField Field.MTIP 0
 
@@ -100,13 +128,14 @@ memMapTable = S.fromList
                (0xfff0, (rvZero, rvPutChar)),
                (0xfff4, (rvGetChar, rvNull)),
                -- Plic
-               (0x200000, (readPlicWrap 0x200000,  writePlicWrap 0x200000)),
-               (0x200004, (readPlicWrap 0x200004, writePlicWrap 0x200004)),
+               (0x4000000, (readPlicWrap 0x200000,  writePlicWrap 0x200000)),
+               (0x4000004, (readPlicWrap 0x200004, writePlicWrap 0x200004)),
                -- Clint
-               (0xbff8, (readClintWrap 0xbff8, writeClintWrap 0xbff8)),
-               (0xbffc, (readClintWrap 0xbffc, writeClintWrap 0xbffc)),
-               (0x4000, (readClintWrap 0x4000, writeClintWrap 0x4000)),
-               (0x4004, (readClintWrap 0x4004, writeClintWrap 0x4004))
+               (0x2000000, (fmap fromIntegral $ getCSRField Field.MSIP, setCSRField Field.SSIP)),
+               (0x200bff8, (readClintWrap 0xbff8, writeClintWrap 0xbff8)),
+               (0x200bffc, (readClintWrap 0xbffc, writeClintWrap 0xbffc)),
+               (0x2004000, (readClintWrap 0x4000, writeClintWrap 0x4000)),
+               (0x2004004, (readClintWrap 0x4004, writeClintWrap 0x4004))
  
               ]
 
@@ -114,17 +143,24 @@ mtimecmp_addr = 0x4000 :: Int64
 
 instance RiscvMachine IOState Int64 where
   getRegister reg = do
-       if reg == 0
-         then return 0
-         else do
-           refs <- get
-           lift $! readArray (registers refs) reg
+      if reg == 0
+      then return 0
+      else do
+        refs <- get
+        lift $! readArray (registers refs) reg
   setRegister reg val = do
-       if reg == 0
-         then return ()
-         else do
-           refs <- get
-           lift $! writeArray (registers refs) reg val
+      refs <- get
+      if reg == 0
+      then do
+      --  lift $ writeIORef (valid_dst refs) True
+      --  lift $ writeIORef (dst refs) reg
+      --  lift $ writeIORef (d refs) $ fromIntegral val
+        return ()
+      else do
+        lift $ writeIORef (valid_dst refs) True
+        lift $ writeIORef (dst refs) reg
+        lift $ writeIORef (d refs) $ fromIntegral val
+        lift $! writeArray (registers refs) reg val
   getFPRegister reg = do
        refs <- get
        lift $! readArray (fpregisters refs) reg
@@ -148,55 +184,74 @@ instance RiscvMachine IOState Int64 where
        npc <- lift $ readIORef (nextPC refs)
        lift $! writeIORef (pc refs) npc
 --  -- Wrap Memory instance:
-  loadByte addr = do
-       refs <- get
-       fmap fromIntegral . lift $ readArray (mem refs) (fromIntegral addr)
-  loadHalf addr = do
-       refs <- get
-       b0 <- lift . readArray (mem refs) $ fromIntegral addr
-       b1 <- lift . readArray (mem refs) $ fromIntegral (addr + 1)
-       return (combineBytes [b0,b1])
+  loadByte addr = 
+       case S.lookup (fromIntegral addr) memMapTable of
+       Just _ -> error "loadByte on MMIO unsupported" 
+       Nothing -> do
+         refs <- get
+         fmap fromIntegral . lift $ readArray (mem refs) (fromIntegral addr)
+  loadHalf addr = 
+       case S.lookup (fromIntegral addr) memMapTable of
+       Just _ -> error "loadHalf on MMIO unsupported" 
+       Nothing -> do
+          refs <- get
+          b0 <- lift . readArray (mem refs) $ fromIntegral addr
+          b1 <- lift . readArray (mem refs) $ fromIntegral (addr + 1)
+          return (combineBytes [b0,b1])
   loadWord :: forall s. (Integral s) => s -> IOState Int32
-  loadWord addr =
-    case S.lookup ((fromIntegral:: s -> MachineInt) addr) memMapTable of
+  loadWord ad = do
+    val <- (case S.lookup ((fromIntegral:: s -> MachineInt) ad) memMapTable of
       Just (getFunc, _) -> getFunc
       Nothing -> do
        refs <- get
-       b0 <- lift . readArray (mem refs) $! fromIntegral addr
-       b1 <- lift . readArray (mem refs) $! fromIntegral (addr + 1)
-       b2 <- lift . readArray (mem refs) $! fromIntegral (addr + 2)
-       b3 <- lift . readArray (mem refs) $! fromIntegral (addr + 3)
-       return (combineBytes [b0,b1,b2,b3])
+       b0 <- lift . readArray (mem refs) $! fromIntegral ad
+       b1 <- lift . readArray (mem refs) $! fromIntegral (ad + 1)
+       b2 <- lift . readArray (mem refs) $! fromIntegral (ad + 2)
+       b3 <- lift . readArray (mem refs) $! fromIntegral (ad + 3)
+       return (combineBytes [b0,b1,b2,b3]))
+    return val
   loadDouble addr = do
-       refs <- get
-       b0 <- lift . readArray (mem refs) $! fromIntegral addr
-       b1 <- lift . readArray (mem refs) $! fromIntegral (addr + 1)
-       b2 <- lift . readArray (mem refs) $! fromIntegral (addr + 2)
-       b3 <- lift . readArray (mem refs) $! fromIntegral (addr + 3)
-       b4 <- lift . readArray (mem refs) $! fromIntegral (addr + 4)
-       b5 <- lift . readArray (mem refs) $! fromIntegral (addr + 5)
-       b6 <- lift . readArray (mem refs) $! fromIntegral (addr + 6)
-       b7 <- lift . readArray (mem refs) $! fromIntegral (addr + 7)
-       return (combineBytes [b0,b1,b2,b3,b4,b5,b6,b7])
-  storeByte addr val = do
-       refs <- get
-       lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral val) -- Convert from Int8 to Word8
-  storeHalf addr val = do
-       let bytes = splitHalf val
-       refs <- get
-       forM_ (zip bytes [addr + i| i<- [0..]])  $ (\(x,addr)-> lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral x))
+       res_bot <- loadWord addr
+       res_top <- loadWord (addr+4)
+       let bytes_bot = splitWord res_bot
+       let bytes_top = splitWord res_top
+       return (combineBytes $ bytes_bot ++ bytes_top)
+  storeByte addr val =
+       case S.lookup (fromIntegral addr) memMapTable of
+       Just _ -> error "storeByte on MMIO unsupported"
+       Nothing -> do
+          refs <- get
+          lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral val) -- Convert from Int8 to Word8
+  storeHalf addr val =  
+       case S.lookup (fromIntegral addr) memMapTable of
+       Just _ -> error "storeHald on MMIO unsupported"
+       Nothing -> do
+         let bytes = splitHalf val
+         refs <- get
+         forM_ (zip bytes [addr + i| i<- [0..]])  $ (\(x,addr)-> lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral x))
   storeWord :: forall s. (Integral s, Bits s) => s -> Int32 -> IOState ()
-  storeWord addr val =
+  storeWord addr val = do
+    refs <- get
+    lift $ writeIORef (valid_addr refs) True
+    lift $ writeIORef (addrPacket refs) $ fromIntegral addr
+    lift $ writeIORef (d refs) . fromIntegral $ (fromIntegral val :: Word32)
+   -- when (addr >= 0x2000000 && addr < 0x20c0000) .lift $ putStrLn ("write to the clint:  " ++ show ( fromIntegral addr))
     case S.lookup ((fromIntegral:: s -> MachineInt) addr) memMapTable of
       Just (_, setFunc) -> setFunc val
       Nothing -> do 
        let bytes = splitWord val
-       refs <- get
+      -- refs <- get
        forM_ (zip bytes [addr + i| i<- [0..]])  $ (\(x,addr)-> lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral x))
-  storeDouble addr val = do
+  storeDouble addr val =
+    case (S.lookup (fromIntegral addr) memMapTable,S.lookup (fromIntegral (addr+4)) memMapTable) of
+    (Just (_, setFunc1 ),Just (_, setFunc2 ))  -> do
+           setFunc1 $ fromIntegral (val .&. 0xFFFFFFFF)  
+           setFunc2 $ fromIntegral (shiftR val 32)
+    (Nothing, Nothing) -> do
        let bytes = splitDouble val
        refs <- get
        forM_ (zip bytes [addr + i| i<- [0..]])  $ (\(x,addr)-> lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral x))
+    _ -> error "storeDouble half within MMIO, half without that's SOOOO wrong"
   makeReservation addr = do
        refs <- get
        lift $ writeIORef (reservation refs) (Just $ fromIntegral addr)
