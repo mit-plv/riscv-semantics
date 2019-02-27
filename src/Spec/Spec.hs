@@ -26,7 +26,6 @@ runCycle iset preDecode preCommit = do
   if continue
     then do
     setPC (vpc + 4)
-    size <- getXLEN
     execute (decode iset ((fromIntegral :: Int32 -> MachineInt) inst))
     preCommit 
     else
