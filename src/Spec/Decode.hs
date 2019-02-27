@@ -100,10 +100,10 @@ data InstructionA =
 data InstructionF =
   Flw { rd :: FPRegister, rs1 :: Register, oimm12 :: MachineInt } |
   Fsw { rs1 :: Register, rs2 :: FPRegister, simm12 :: MachineInt } |
-  Fmadd_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, r3 :: FPRegister, rm :: RoundMode } |
-  Fmsub_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, r3 :: FPRegister, rm :: RoundMode } |
-  Fnmsub_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, r3 :: FPRegister, rm :: RoundMode } |
-  Fnmadd_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, r3 :: FPRegister, rm :: RoundMode } |
+  Fmadd_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rs3 :: FPRegister, rm :: RoundMode } |
+  Fmsub_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rs3 :: FPRegister, rm :: RoundMode } |
+  Fnmsub_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rs3 :: FPRegister, rm :: RoundMode } |
+  Fnmadd_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rs3 :: FPRegister, rm :: RoundMode } |
   Fadd_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rm :: RoundMode } |
   Fsub_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rm :: RoundMode } |
   Fmul_s { rd :: FPRegister, rs1 :: FPRegister, rs2 :: FPRegister, rm :: RoundMode } |
