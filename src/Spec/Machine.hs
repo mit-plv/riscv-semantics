@@ -16,6 +16,8 @@ import Debug.Trace
 data PrivMode = User | Supervisor | Machine deriving (Eq, Ord, Show)
 data AccessType = Instruction | Load | Store deriving (Eq, Show)
 
+data SourceType = VirtualMemory | Fetch | Execute deriving (Eq,Show)
+
 decodePrivMode 0 = User
 decodePrivMode 1 = Supervisor
 decodePrivMode 3 = Machine
@@ -40,14 +42,14 @@ class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
   -- TODO: Another typeclass parameter for floating-point width?
   getFPRegister :: FPRegister -> p Int32
   setFPRegister :: FPRegister -> Int32 -> p ()
-  loadByte :: t -> p Int8
-  loadHalf :: t -> p Int16
-  loadWord :: t -> p Int32
-  loadDouble :: t -> p Int64
-  storeByte :: t -> Int8 -> p ()
-  storeHalf :: t -> Int16 -> p ()
-  storeWord :: t -> Int32 -> p ()
-  storeDouble :: t -> Int64 -> p ()
+  loadByte :: SourceType -> t -> p Int8
+  loadHalf :: SourceType -> t -> p Int16
+  loadWord :: SourceType -> t -> p Int32
+  loadDouble :: SourceType -> t -> p Int64
+  storeByte :: SourceType -> t -> Int8 -> p ()
+  storeHalf :: SourceType -> t -> Int16 -> p ()
+  storeWord :: SourceType -> t -> Int32 -> p ()
+  storeDouble :: SourceType -> t -> Int64 -> p ()
   makeReservation :: t -> p ()
   checkReservation :: t -> p Bool
   clearReservation :: t -> p ()
