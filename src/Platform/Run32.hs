@@ -54,7 +54,7 @@ helper :: Maybe Int32 -> IOState Minimal32 Int32
 helper maybeToHostAddress = do
   toHostValue <- case maybeToHostAddress of
     Nothing -> return 0 -- default value
-    Just toHostAddress -> loadWord toHostAddress
+    Just toHostAddress -> loadWord Execute toHostAddress
   if toHostValue /= 0
     then do
       -- quit running
@@ -63,7 +63,7 @@ helper maybeToHostAddress = do
         else trace ("FAILED " ++ (show $ quot toHostValue 2)) (return 1)
     else do
       pc <- getPC
-      inst <- loadWord pc
+      inst <- loadWord Fetch pc
       if inst == 0x6f -- Stop on infinite loop instruction.
         then do
             cycles <- getCSRField Field.MCycle

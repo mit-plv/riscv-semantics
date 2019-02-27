@@ -184,13 +184,13 @@ instance RiscvMachine IOState Int64 where
        npc <- lift $ readIORef (nextPC refs)
        lift $! writeIORef (pc refs) npc
 --  -- Wrap Memory instance:
-  loadByte addr = 
+  loadByte s addr = 
        case S.lookup (fromIntegral addr) memMapTable of
        Just _ -> error "loadByte on MMIO unsupported" 
        Nothing -> do
          refs <- get
          fmap fromIntegral . lift $ readArray (mem refs) (fromIntegral addr)
-  loadHalf addr = 
+  loadHalf s addr = 
        case S.lookup (fromIntegral addr) memMapTable of
        Just _ -> error "loadHalf on MMIO unsupported" 
        Nothing -> do
@@ -198,8 +198,8 @@ instance RiscvMachine IOState Int64 where
           b0 <- lift . readArray (mem refs) $ fromIntegral addr
           b1 <- lift . readArray (mem refs) $ fromIntegral (addr + 1)
           return (combineBytes [b0,b1])
-  loadWord :: forall s. (Integral s) => s -> IOState Int32
-  loadWord ad = do
+  loadWord :: forall s. (Integral s) => SourceType -> s -> IOState Int32
+  loadWord s ad = do
     val <- (case S.lookup ((fromIntegral:: s -> MachineInt) ad) memMapTable of
       Just (getFunc, _) -> getFunc
       Nothing -> do
@@ -210,27 +210,27 @@ instance RiscvMachine IOState Int64 where
        b3 <- lift . readArray (mem refs) $! fromIntegral (ad + 3)
        return (combineBytes [b0,b1,b2,b3]))
     return val
-  loadDouble addr = do
-       res_bot <- loadWord addr
-       res_top <- loadWord (addr+4)
+  loadDouble s addr = do
+       res_bot <- loadWord s addr
+       res_top <- loadWord s (addr+4)
        let bytes_bot = splitWord res_bot
        let bytes_top = splitWord res_top
        return (combineBytes $ bytes_bot ++ bytes_top)
-  storeByte addr val =
+  storeByte s addr val =
        case S.lookup (fromIntegral addr) memMapTable of
        Just _ -> error "storeByte on MMIO unsupported"
        Nothing -> do
           refs <- get
           lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral val) -- Convert from Int8 to Word8
-  storeHalf addr val =  
+  storeHalf s addr val =  
        case S.lookup (fromIntegral addr) memMapTable of
        Just _ -> error "storeHald on MMIO unsupported"
        Nothing -> do
          let bytes = splitHalf val
          refs <- get
          forM_ (zip bytes [addr + i| i<- [0..]])  $ (\(x,addr)-> lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral x))
-  storeWord :: forall s. (Integral s, Bits s) => s -> Int32 -> IOState ()
-  storeWord addr val = do
+  storeWord :: forall s. (Integral s, Bits s) => SourceType -> s -> Int32 -> IOState ()
+  storeWord s addr val = do
     refs <- get
     lift $ writeIORef (valid_addr refs) True
     lift $ writeIORef (addrPacket refs) $ fromIntegral addr
@@ -242,7 +242,7 @@ instance RiscvMachine IOState Int64 where
        let bytes = splitWord val
       -- refs <- get
        forM_ (zip bytes [addr + i| i<- [0..]])  $ (\(x,addr)-> lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral x))
-  storeDouble addr val =
+  storeDouble s addr val =
     case (S.lookup (fromIntegral addr) memMapTable,S.lookup (fromIntegral (addr+4)) memMapTable) of
     (Just (_, setFunc1 ),Just (_, setFunc2 ))  -> do
            setFunc1 $ fromIntegral (val .&. 0xFFFFFFFF)  

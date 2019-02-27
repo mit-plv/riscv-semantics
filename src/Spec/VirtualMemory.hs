@@ -41,15 +41,15 @@ loadXLEN :: (RiscvMachine p t) => t -> p MachineInt
 loadXLEN addr = do
   xlen <- getXLEN
   if xlen == 32
-    then fmap (fromIntegral:: Int32 -> MachineInt) (loadWord addr)
-    else fmap (fromIntegral:: Int64 -> MachineInt) (loadDouble addr)
+    then fmap (fromIntegral:: Int32 -> MachineInt) (loadWord VirtualMemory addr)
+    else fmap (fromIntegral:: Int64 -> MachineInt) (loadDouble VirtualMemory addr)
 
 storeXLEN :: (RiscvMachine p t) => t -> MachineInt -> p ()
 storeXLEN addr val = do
   xlen <- getXLEN
   if xlen == 32
-    then storeWord addr ((fromIntegral:: MachineInt -> Int32) val)
-    else storeDouble addr ((fromIntegral:: MachineInt -> Int64) val)
+    then storeWord VirtualMemory addr ((fromIntegral:: MachineInt -> Int32) val)
+    else storeDouble VirtualMemory addr ((fromIntegral:: MachineInt -> Int64) val)
 
 
 pageFault :: forall a p t. (RiscvMachine p t) => AccessType -> MachineInt -> p a

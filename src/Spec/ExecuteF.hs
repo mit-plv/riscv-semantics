@@ -71,13 +71,13 @@ execute :: forall p t. (RiscvMachine p t) => InstructionF -> p ()
 execute (Flw rd rs1 oimm12) = do
   a <- getRegister rs1
   addr <- translate Load 4 (a + fromImm oimm12)
-  x <- loadWord addr
+  x <- loadWord Execute addr
   setFPRegister rd x
 execute (Fsw rs1 rs2 simm12) = do
   a <- getRegister rs1
   addr <- translate Store 4 (a + fromImm simm12)
   x <- getFPRegister rs2
-  storeWord addr x
+  storeWord Execute addr x
 execute (Fmadd_s rd rs1 rs2 rs3 rm) = do
   roundMode <- getRoundMode rm
   v <- getFPRegister rs1

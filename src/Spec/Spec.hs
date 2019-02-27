@@ -21,7 +21,7 @@ runCycle :: (RiscvMachine p t) => InstructionSet -> (Int32 -> p Bool) -> p () ->
 runCycle iset preDecode preCommit = do
   vpc <- getPC
   pc <- translate Instruction 4 vpc
-  inst <- loadWord pc
+  inst <- loadWord Fetch pc
   continue <- preDecode inst
   if continue
     then do
@@ -36,7 +36,7 @@ stepHelper :: (RiscvMachine p t) => InstructionSet -> Maybe t -> (MaybeT p) Plic
 stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmpAndMtime preDecode preCommit = do
   toHostValue <- case maybeToHostAddress of
     Nothing -> return $! 0 -- default value
-    Just toHostAddress -> loadWord toHostAddress
+    Just toHostAddress -> loadWord Execute toHostAddress
   if toHostValue /= 0
     then do
       -- quit running
