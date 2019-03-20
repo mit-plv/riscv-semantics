@@ -17,7 +17,7 @@ More documentation for that class of users may be forthcoming!
 
 1. Read [the reading guide](READING.md).
 2. Read the first half of [our explanation of exception handling in the semantics](exceptions.md).
-3. Dive into the [the Spec directory](src/Spec).
+3. Dive into [the Spec directory](src/Spec).
 
 
 # Installation Guide
