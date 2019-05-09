@@ -68,27 +68,27 @@ execute (Amomax_d rd rs1 rs2 aqrl) = do
   x <- loadDouble addr
   y <- getRegister rs2
   setRegister rd (int64ToReg x)
-  storeDouble addr (regToInt64 (if x > (regToInt64 y) then x else regToInt64 y))
+  storeDouble addr (if x > (regToInt64 y) then x else regToInt64 y)
 execute (Amomaxu_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
   y <- getRegister rs2
   setRegister rd (int64ToReg x)
-  storeDouble addr (regToInt64 (if ltu (regToInt64 y) x then x else regToInt64 y))
+  storeDouble addr (if ltu (regToInt64 y) x then x else regToInt64 y)
 execute (Amomin_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
   y <- getRegister rs2
   setRegister rd (int64ToReg x)
-  storeDouble addr (regToInt64 (if x < (regToInt64 y) then x else (regToInt64 y)))
+  storeDouble addr (if x < (regToInt64 y) then x else (regToInt64 y))
 execute (Amominu_d rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadDouble addr
   y <- getRegister rs2
   setRegister rd (int64ToReg x)
-  storeDouble addr (regToInt64 (if ltu x (regToInt64 y) then x else (regToInt64 y)))
+  storeDouble addr (if ltu x (regToInt64 y) then x else (regToInt64 y))
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst

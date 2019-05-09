@@ -68,27 +68,27 @@ execute (Amomax_w rd rs1 rs2 aqrl) = do
   x <- loadWord addr
   y <- getRegister rs2
   setRegister rd (int32ToReg x)
-  storeWord addr (regToInt32 (if x > (regToInt32 y) then x else regToInt32 y))
+  storeWord addr (if x > (regToInt32 y) then x else regToInt32 y)
 execute (Amomaxu_w rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadWord addr
   y <- getRegister rs2
   setRegister rd (int32ToReg x)
-  storeWord addr (regToInt32 (if ltu (regToInt32 y) x then x else regToInt32 y))
+  storeWord addr (if ltu (regToInt32 y) x then x else regToInt32 y)
 execute (Amomin_w rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadWord addr
   y <- getRegister rs2
   setRegister rd (int32ToReg x)
-  storeWord addr (regToInt32 (if x < (regToInt32 y) then x else (regToInt32 y)))
+  storeWord addr (if x < (regToInt32 y) then x else (regToInt32 y))
 execute (Amominu_w rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadWord addr
   y <- getRegister rs2
   setRegister rd (int32ToReg x)
-  storeWord addr (regToInt32 (if ltu x (regToInt32 y) then x else (regToInt32 y)))
+  storeWord addr (if ltu x (regToInt32 y) then x else (regToInt32 y))
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst
