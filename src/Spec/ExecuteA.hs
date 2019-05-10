@@ -68,27 +68,27 @@ execute (Amomax_w rd rs1 rs2 aqrl) = do
   x <- loadWord Execute addr
   y <- getRegister rs2
   setRegister rd (int32ToReg x)
-  storeWord Execute addr (regToInt32 (if x > (regToInt32 y) then x else regToInt32 y))
+  storeWord Execute addr (if (s32 y) < (int32ToReg x) then x else regToInt32 y)
 execute (Amomaxu_w rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadWord Execute addr
   y <- getRegister rs2
   setRegister rd (int32ToReg x)
-  storeWord Execute addr (regToInt32 (if ltu (regToInt32 y) x then x else regToInt32 y))
+  storeWord Execute addr (if ltu (u32 y) (uInt32ToReg x) then x else regToInt32 y)
 execute (Amomin_w rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadWord Execute addr
   y <- getRegister rs2
   setRegister rd (int32ToReg x)
-  storeWord Execute addr (regToInt32 (if x < (regToInt32 y) then x else (regToInt32 y)))
+  storeWord Execute addr (if (int32ToReg x) < (s32 y) then x else regToInt32 y)
 execute (Amominu_w rd rs1 rs2 aqrl) = do
   a <- getRegister rs1
   addr <- translate Store 4 a
   x <- loadWord Execute addr
   y <- getRegister rs2
   setRegister rd (int32ToReg x)
-  storeWord Execute addr (regToInt32 (if ltu x (regToInt32 y) then x else (regToInt32 y)))
+  storeWord Execute addr (if ltu (uInt32ToReg x) (u32 y) then x else regToInt32 y)
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst
