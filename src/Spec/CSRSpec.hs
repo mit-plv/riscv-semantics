@@ -106,7 +106,7 @@ getCSR Time = do
     then do
     timerlo <- loadWord Execute 0x200bff8 --Hardcode for Minimal. TODO from platform. BUG it should be DOUBLE word not word. For size 64. Source a bit arbitrary to Execute
     xlen <- getXLEN
-    if xlen > 32 
+    if xlen > 32
     then do
         timerhi <- loadWord Execute 0x200bffc --Hardcode for Minimal. TODO from platform. BUG it should be DOUBLE word not word. For size 64. A bit arbitrary association to execute source
         return (fromIntegral (shiftL timerhi 32) .|. (fromIntegral timerlo))
@@ -242,7 +242,7 @@ getCSR FFlags = getCSRField Field.FFlags
 
 getCSR FRM = getCSRField Field.FRM
 
-getCSR MIP = do 
+getCSR MIP = do
  meip <- getCSRField Field.MEIP
  seip <- getCSRField Field.SEIP
  ueip <- getCSRField Field.UEIP
@@ -257,7 +257,7 @@ getCSR MIP = do
          shift ueip 8 .|. shift seip 9 .|. shift meip 11 )
 
 
-getCSR MIE = do 
+getCSR MIE = do
  meie <- getCSRField Field.MEIE
  seie <- getCSRField Field.SEIE
  ueie <- return 0 -- getCSRField Field.UEIE
@@ -276,7 +276,7 @@ getCSR FCSR = do
   frm <- getCSRField Field.FRM
   return (shift frm 5 .|. fflags)
 
- 
+
 getCSR _ = return (-1) -- Hmmm, why did I hardwire that to -1?
 
 setCSR :: (RiscvMachine p t, Integral x, Bits x) => CSR -> x -> p ()
@@ -359,7 +359,7 @@ setCSR SStatus val = do
   setCSRField Field.SPIE (bitSlice val 5 6)
   setCSRField Field.SIE (bitSlice val 1 2)
   getCSR SStatus
-  return () 
+  return ()
 
 setCSR STVec val = do
   setCSRField Field.STVecMode (bitSlice val 0 2)
@@ -387,7 +387,7 @@ setCSR SCause val = do
 setCSR STVal val = setCSRField Field.STVal val
 
 
-setCSR MIP val = do 
+setCSR MIP val = do
    let usip = bitSlice val 0 1
    let ssip = bitSlice val 1 2
    let msip = bitSlice val 3 4
@@ -396,7 +396,7 @@ setCSR MIP val = do
    let mtip = bitSlice val 7 8
    let ueip = bitSlice val 8 9
    let seip = bitSlice val 9 10
-   let meip = bitSlice val 11 12 
+   let meip = bitSlice val 11 12
    setCSRField Field.USIP usip
    setCSRField Field.SSIP ssip
    setCSRField Field.MSIP msip
@@ -409,7 +409,7 @@ setCSR MIP val = do
 
 
 
-setCSR MIE val = do 
+setCSR MIE val = do
    let usie = bitSlice val 0 1
    let ssie = bitSlice val 1 2
    let msie = bitSlice val 3 4
@@ -418,7 +418,7 @@ setCSR MIE val = do
    let mtie = bitSlice val 7 8
    let ueie = bitSlice val 8 9
    let seie = bitSlice val 9 10
-   let meie = bitSlice val 11 12 
+   let meie = bitSlice val 11 12
   -- setCSRField Field.USIE usie
    setCSRField Field.SSIE ssie
    setCSRField Field.MSIE msie
@@ -458,5 +458,3 @@ setCSR FCSR val = do
   setCSRField Field.FRM (bitSlice val 5 8)
 
 setCSR _ _ = return () -- raiseException 0 2
-
-
