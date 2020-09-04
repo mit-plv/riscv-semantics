@@ -23,75 +23,76 @@ data CSR = MHartID | MISA | MStatus | MTVec | MEDeleg | MIDeleg | MIP | MIE | MC
   deriving Eq
 
 -- For Clash's sake; otherwise, this could be an enum.
-lookupCSR :: (Integral x) => x -> CSR
-lookupCSR 0x300 = MStatus
-lookupCSR 0x301 = MISA
-lookupCSR 0x302 = MEDeleg
-lookupCSR 0x303 = MIDeleg
-lookupCSR 0x304 = MIE
-lookupCSR 0x305 = MTVec
-lookupCSR 0x306 = MCounterEn
-lookupCSR 0x340 = MScratch
-lookupCSR 0x341 = MEPC
-lookupCSR 0x342 = MCause
-lookupCSR 0x343 = MTVal
-lookupCSR 0x344 = MIP
-lookupCSR 0xB00 = MCycle
-lookupCSR 0xB02 = MInstRet
-lookupCSR 0xB03 = MHPMCounter3
-lookupCSR 0xB04 = MHPMCounter4
-lookupCSR 0xB05 = MHPMCounter5
-lookupCSR 0xB06 = MHPMCounter6
-lookupCSR 0xB07 = MHPMCounter7
-lookupCSR 0xB08 = MHPMCounter8
-lookupCSR 0xB09 = MHPMCounter9
-lookupCSR 0xB0A = MHPMCounter10
-lookupCSR 0xB0B = MHPMCounter11
-lookupCSR 0xB0C = MHPMCounter12
-lookupCSR 0xB0D = MHPMCounter13
-lookupCSR 0xB0E = MHPMCounter14
-lookupCSR 0xB0F = MHPMCounter15
-lookupCSR 0xB10 = MHPMCounter16
-lookupCSR 0xB11 = MHPMCounter17
-lookupCSR 0xB12 = MHPMCounter18
-lookupCSR 0xB13 = MHPMCounter19
-lookupCSR 0xB14 = MHPMCounter20
-lookupCSR 0xB15 = MHPMCounter21
-lookupCSR 0xB16 = MHPMCounter22
-lookupCSR 0xB17 = MHPMCounter23
-lookupCSR 0xB18 = MHPMCounter24
-lookupCSR 0xB19 = MHPMCounter25
-lookupCSR 0xB1A = MHPMCounter26
-lookupCSR 0xB1B = MHPMCounter27
-lookupCSR 0xB1C = MHPMCounter28
-lookupCSR 0xB1D = MHPMCounter29
-lookupCSR 0xB1E = MHPMCounter30
-lookupCSR 0xB1F = MHPMCounter31
-lookupCSR 0x100 = SStatus
-lookupCSR 0x102 = SEDeleg
-lookupCSR 0x103 = SIDeleg
-lookupCSR 0x104 = SIE
-lookupCSR 0x105 = STVec
-lookupCSR 0x106 = SCounterEn
-lookupCSR 0x140 = SScratch
-lookupCSR 0x141 = SEPC
-lookupCSR 0x142 = SCause
-lookupCSR 0x143 = STVal
-lookupCSR 0x144 = SIP
-lookupCSR 0x180 = SATP
-lookupCSR 0x000 = UStatus
-lookupCSR 0x001 = FFlags
-lookupCSR 0x002 = FRM
-lookupCSR 0x003 = FCSR
-lookupCSR 0x004 = UIE
-lookupCSR 0x005 = UTVec
-lookupCSR 0x040 = UScratch
-lookupCSR 0x041 = UEPC
-lookupCSR 0x042 = UCause
-lookupCSR 0x043 = UTVal
-lookupCSR 0x044 = UIP
-lookupCSR 0xC00 = Cycle
-lookupCSR 0xC01 = Time
-lookupCSR 0xC02 = InstRet
-lookupCSR 0xF14 = MHartID
-lookupCSR _ = InvalidCSR
+lookupCSR :: MachineInt -> CSR
+lookupCSR x
+  | x == 0x300 = MStatus
+  | x == 0x301 = MISA
+  | x == 0x302 = MEDeleg
+  | x == 0x303 = MIDeleg
+  | x == 0x304 = MIE
+  | x == 0x305 = MTVec
+  | x == 0x306 = MCounterEn
+  | x == 0x340 = MScratch
+  | x == 0x341 = MEPC
+  | x == 0x342 = MCause
+  | x == 0x343 = MTVal
+  | x == 0x344 = MIP
+  | x == 0xB00 = MCycle
+  | x == 0xB02 = MInstRet
+  | x == 0xB03 = MHPMCounter3
+  | x == 0xB04 = MHPMCounter4
+  | x == 0xB05 = MHPMCounter5
+  | x == 0xB06 = MHPMCounter6
+  | x == 0xB07 = MHPMCounter7
+  | x == 0xB08 = MHPMCounter8
+  | x == 0xB09 = MHPMCounter9
+  | x == 0xB0A = MHPMCounter10
+  | x == 0xB0B = MHPMCounter11
+  | x == 0xB0C = MHPMCounter12
+  | x == 0xB0D = MHPMCounter13
+  | x == 0xB0E = MHPMCounter14
+  | x == 0xB0F = MHPMCounter15
+  | x == 0xB10 = MHPMCounter16
+  | x == 0xB11 = MHPMCounter17
+  | x == 0xB12 = MHPMCounter18
+  | x == 0xB13 = MHPMCounter19
+  | x == 0xB14 = MHPMCounter20
+  | x == 0xB15 = MHPMCounter21
+  | x == 0xB16 = MHPMCounter22
+  | x == 0xB17 = MHPMCounter23
+  | x == 0xB18 = MHPMCounter24
+  | x == 0xB19 = MHPMCounter25
+  | x == 0xB1A = MHPMCounter26
+  | x == 0xB1B = MHPMCounter27
+  | x == 0xB1C = MHPMCounter28
+  | x == 0xB1D = MHPMCounter29
+  | x == 0xB1E = MHPMCounter30
+  | x == 0xB1F = MHPMCounter31
+  | x == 0x100 = SStatus
+  | x == 0x102 = SEDeleg
+  | x == 0x103 = SIDeleg
+  | x == 0x104 = SIE
+  | x == 0x105 = STVec
+  | x == 0x106 = SCounterEn
+  | x == 0x140 = SScratch
+  | x == 0x141 = SEPC
+  | x == 0x142 = SCause
+  | x == 0x143 = STVal
+  | x == 0x144 = SIP
+  | x == 0x180 = SATP
+  | x == 0x000 = UStatus
+  | x == 0x001 = FFlags
+  | x == 0x002 = FRM
+  | x == 0x003 = FCSR
+  | x == 0x004 = UIE
+  | x == 0x005 = UTVec
+  | x == 0x040 = UScratch
+  | x == 0x041 = UEPC
+  | x == 0x042 = UCause
+  | x == 0x043 = UTVal
+  | x == 0x044 = UIP
+  | x == 0xC00 = Cycle
+  | x == 0xC01 = Time
+  | x == 0xC02 = InstRet
+  | x == 0xF14 = MHartID
+  | otherwise = InvalidCSR

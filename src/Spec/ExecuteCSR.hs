@@ -29,29 +29,29 @@ execute (Csrrs rd rs1 csr12) = do
   checkPermissions (rs1 /= 0) csr12
   mask <- getRegister rs1
   val <- getCSR (lookupCSR csr12)
-  when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .|. ((fromIntegral:: t -> MachineInt) mask)))
+  when (rs1 /= 0) (setCSR (lookupCSR csr12) (((fromIntegral:: MachineInt -> t) val) .|. mask))
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
 execute (Csrrc rd rs1 csr12) = do
   checkPermissions (rs1 /= 0) csr12
   mask <- getRegister rs1
   val <- getCSR (lookupCSR csr12)
-  when (rs1 /= 0) (setCSR (lookupCSR csr12) (val .&. (complement ((fromIntegral:: t -> MachineInt) mask))))
+  when (rs1 /= 0) (setCSR (lookupCSR csr12) (((fromIntegral:: MachineInt -> t) val) .&. (complement mask)))
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
 execute (Csrrwi rd zimm csr12) = do
   checkPermissions True csr12
   val <- getCSR (lookupCSR csr12)
-  setCSR (lookupCSR csr12) zimm
+  setCSR (lookupCSR csr12) ((fromIntegral:: MachineInt -> t) zimm)
   when (rd /= 0) (do
     setRegister rd ((fromIntegral:: MachineInt -> t) val))
 execute (Csrrsi rd zimm csr12) = do
   checkPermissions (zimm /= 0) csr12
   val <- getCSR (lookupCSR csr12)
-  when (zimm /= 0) (setCSR (lookupCSR csr12) (val .|. zimm))
+  when (zimm /= 0) (setCSR (lookupCSR csr12) (((fromIntegral:: MachineInt -> t) val) .|. ((fromIntegral:: MachineInt -> t) zimm)))
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
 execute (Csrrci rd zimm csr12) = do
   checkPermissions (zimm /= 0) csr12
   val <- getCSR (lookupCSR csr12)
-  when (zimm /= 0) (setCSR (lookupCSR csr12) (val .&. (complement zimm)))
+  when (zimm /= 0) (setCSR (lookupCSR csr12) (((fromIntegral:: MachineInt -> t) val) .&. (complement ((fromIntegral:: MachineInt -> t) zimm))))
   setRegister rd ((fromIntegral:: MachineInt -> t) val)
 execute Ecall = do
   mode <- getPrivMode
