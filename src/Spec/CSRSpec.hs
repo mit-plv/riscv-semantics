@@ -279,7 +279,7 @@ getCSR FCSR = do
 
 getCSR _ = return (-1) -- Hmmm, why did I hardwire that to -1?
 
-setCSR :: (RiscvMachine p t, Integral x, Bits x) => CSR -> x -> p ()
+setCSR :: (RiscvMachine p t) => CSR -> t -> p ()
 
 setCSR MStatus val = do
   setCSR SStatus val
