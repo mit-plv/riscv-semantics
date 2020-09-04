@@ -60,7 +60,7 @@ getRiscvTests = do
 
 runProgram :: InstructionSet -> Maybe Int64 -> Minimal64 -> String -> (Int64, String)
 runProgram iset maybeToHostAddress comp input = (returnValue, output)
-  where ((returnValue, _), output) = runBufferIO (runStateT (stepHelper iset maybeToHostAddress (return DoNothing) (return (mtimecmp_addr,0)) (\inst -> return (inst /= 0x6f ))endCycle:: BufferState Minimal64 Int64) comp) input
+  where ((returnValue, _), output) = runBufferIO (runStateT (stepHelper iset maybeToHostAddress (return DoNothing) (return (mtimecmp_addr,0)) (\inst -> return (inst /= 0x6f )) (return ()):: BufferState Minimal64 Int64) comp) input
 
 runFile :: InstructionSet -> String -> String -> IO (Int64, String)
 runFile iset f input = do
