@@ -9,6 +9,28 @@ import Prelude
 import Debug.Trace
 -- Permission checks are handled in ExecuteCSR.
 
+-- helper function to make it very clear to Coq that getCSR terminates
+getCSR_SStatus :: (RiscvMachine p t) => p MachineInt
+getCSR_SStatus = do
+  mxr <- getCSRField Field.MXR
+  sum <- getCSRField Field.SUM
+  spp <- getCSRField Field.SPP
+  spie <- getCSRField Field.SPIE
+  sie <- getCSRField Field.SIE
+  let base = (shift mxr 19 .|. shift sum 18 .|. shift spp 8 .|.
+              shift spie 5 .|. shift sie 1)
+  xlen <- getXLEN
+  if xlen > 32
+    then do
+    -- SXL and UXL are currently hardwired to MXL.
+    mxl <- getCSRField Field.MXL
+    -- return (shift mxl 32 .|. shift mxl 34 .|. base)
+    vpc <- getPC
+    --return $ (\x-> trace ((show $ (fromIntegral vpc)) ++ " " ++ show x) x)(shift mxl 32 .|. base)
+    return $ (shift mxl 32 .|. base)
+    else return base
+
+
 getCSR :: (RiscvMachine p t) => CSR -> p MachineInt
 
 -- Currently ignores writes.
@@ -30,7 +52,7 @@ getCSR MStatus = do
   mie <- getCSRField Field.MIE
   -- mxl = sxl = uxl for now
   mxl <- getCSRField Field.MXL
-  sstatus <- getCSR SStatus
+  sstatus <- getCSR_SStatus
   return (shift tsr 22 .|. shift tw 21 .|. shift tvm 20 .|. shift mprv 17 .|.
           shift mpp 11 .|. shift mpie 7 .|. shift mie 3 .|. sstatus .|. shift mxl 34)
 
@@ -136,24 +158,7 @@ getCSR MTVal = getCSRField Field.MTVal
 
 -- Supervisor-level CSRs:
 
-getCSR SStatus = do
-  mxr <- getCSRField Field.MXR
-  sum <- getCSRField Field.SUM
-  spp <- getCSRField Field.SPP
-  spie <- getCSRField Field.SPIE
-  sie <- getCSRField Field.SIE
-  let base = (shift mxr 19 .|. shift sum 18 .|. shift spp 8 .|.
-              shift spie 5 .|. shift sie 1)
-  xlen <- getXLEN
-  if xlen > 32
-    then do
-    -- SXL and UXL are currently hardwired to MXL.
-    mxl <- getCSRField Field.MXL
-    -- return (shift mxl 32 .|. shift mxl 34 .|. base)
-    vpc <- getPC
-    --return $ (\x-> trace ((show $ (fromIntegral vpc)) ++ " " ++ show x) x)(shift mxl 32 .|. base)
-    return $ (shift mxl 32 .|. base)
-    else return base
+getCSR SStatus = getCSR_SStatus
 
 getCSR STVec = do
   base <- getCSRField Field.STVecBase
