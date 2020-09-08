@@ -2,6 +2,9 @@ elf2hex/elf2hex
 *.o
 *.hi
 *.hex
+*~
 test/build/
 .stack-work
+# no need to put under version control because stack.yaml already hardcodes all versions precisely
+stack.yaml.lock
 gnu-mcu-eclipse
