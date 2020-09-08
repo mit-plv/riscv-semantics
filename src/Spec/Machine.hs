@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, UndecidableInstances, ScopedTypeVariables, Rank2Types #-}
 module Spec.Machine where
 import Spec.CSRField
+import qualified Spec.CSR as CSR
 import Spec.Decode
 import Utility.Utility
 import Data.Int
@@ -32,6 +33,7 @@ data Platform = Platform {
   -- Platform, both for semantic clarity and because Having it as a type
   -- variable of Platform would break lifting.
   dirtyHardware :: forall p t. (RiscvMachine p t) => p Bool,
+  readPlatformCSR :: forall p t. (RiscvMachine p t) => CSR.CSR -> p MachineInt,
   writePlatformCSRField :: forall p t. (RiscvMachine p t) => CSRField -> MachineInt -> p MachineInt
   -- writeMISA :: forall p t. (RiscvMachine p t) => MachineInt -> p MachineInt
 }
@@ -90,6 +92,22 @@ hardwareDirtyBit = do
   p <- getPlatform
   r <- dirtyHardware p
   return r
+
+getCSR_InstRet :: (RiscvMachine p t) => p MachineInt
+getCSR_InstRet = do
+  p <- getPlatform
+  r <- readPlatformCSR p CSR.InstRet
+  return r
+
+getCSR_Time :: (RiscvMachine p t) => p MachineInt
+getCSR_Time = do
+  p <- getPlatform
+  readPlatformCSR p CSR.Time
+
+getCSR_Cycle :: (RiscvMachine p t) => p MachineInt
+getCSR_Cycle = do
+  p <- getPlatform
+  readPlatformCSR p CSR.Cycle
 
 setCSRField :: (RiscvMachine p t, Integral s) => CSRField -> s -> p ()
 setCSRField field value = do
@@ -159,7 +177,7 @@ raiseExceptionWithInfo isInterrupt exceptionCode info =  do
     setCSRField MPP (encodePrivMode mode)
     mie <- getCSRField MIE
     setCSRField MPIE mie
-    setCSRField MIE 0 
+    setCSRField MIE 0
     setCSRField MEPC pc
     setCSRField MCauseInterrupt isInterrupt
     setCSRField MCauseCode exceptionCode
@@ -168,4 +186,3 @@ raiseExceptionWithInfo isInterrupt exceptionCode info =  do
 
 raiseException :: forall a p t. (RiscvMachine p t) => MachineInt -> MachineInt -> p a
 raiseException isInterrupt exceptionCode = raiseExceptionWithInfo isInterrupt exceptionCode 0
-
