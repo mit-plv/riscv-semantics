@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Spec.Spec where
 import Spec.Machine
 import Spec.VirtualMemory
@@ -27,12 +28,12 @@ runCycle iset preDecode preCommit = do
     then do
     setPC (vpc + 4)
     execute (decode iset ((fromIntegral :: Int32 -> MachineInt) inst))
-    preCommit 
+    preCommit
     else
     return $! ()
 
 -- Useful helper, not actually part of spec.
-stepHelper :: (RiscvMachine p t) => InstructionSet -> Maybe t -> (MaybeT p) Plic.ChangeMIP -> (MaybeT p) (t,t) -> (Int32 -> (MaybeT p) Bool ) -> (p) () -> p t
+stepHelper :: forall p t . (RiscvMachine p t) => InstructionSet -> Maybe t -> (MaybeT p) Plic.ChangeMIP -> (MaybeT p) (t,t) -> (Int32 -> (MaybeT p) Bool ) -> (p) () -> p t
 stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmpAndMtime preDecode preCommit = do
   toHostValue <- case maybeToHostAddress of
     Nothing -> return $! 0 -- default value
@@ -53,7 +54,7 @@ stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmpAndMtime preDe
     checkInterrupt = do
              interrupt <- checkExternalInterrupt
              when (interrupt == Plic.Set) $! (do
-                             
+
                           trace "Set meip" $ setCSRField Field.MEIP 1)
              when (interrupt == Plic.Reset) $! (do --SHOULD NOT BE POSSIBLE
                           trace "Reset meip" $ setCSRField Field.MEIP 0)
@@ -61,7 +62,7 @@ stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmpAndMtime preDe
              (mtimecmp, mtime) <- mtimecmpAndMtime
              setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
              --setCSRField Field.STIP (fromEnum (mtime >= mtimecmp))
-                          
+
              --when (mtime >= mtimecmp) . return $! ()
              -- Check for interrupts before updating PC.
              miefield <- getCSRField Field.MIE
@@ -71,16 +72,16 @@ stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmpAndMtime preDe
              mtip <- getCSRField Field.MTIP
              nPC <- getPC
              priv <- getPrivMode
-             mip <- fmap (fromIntegral :: MachineInt -> Int32)$ getCSR MIP
-             mie <- fmap (fromIntegral :: MachineInt -> Int32)$ getCSR MIE
+             mip <- fmap (fromIntegral :: t -> Int32)$ getCSR MIP
+             mie <- fmap (fromIntegral :: t -> Int32)$ getCSR MIE
              siefield <- getCSRField Field.SIE
              let readyInterrupts = mip .&. mie
-             mideleg <- fmap (fromIntegral :: MachineInt -> Int32) $ getCSR MIDeleg 
+             mideleg <- fmap (fromIntegral :: t -> Int32) $ getCSR MIDeleg
              let readyMachineInterrupts = readyInterrupts .&. (complement mideleg)
              let machineInterruptsEnabled = (miefield == 1) || (priv < Machine)
              let readySupervisorInterrupts = readyInterrupts .&. mideleg
              let supervisorInterruptsEnabled = ((siefield == 1) && (priv == Supervisor)) || (priv < Supervisor);
-             let realReadyInterrupts = (if machineInterruptsEnabled then readyMachineInterrupts else 0) .|. (if supervisorInterruptsEnabled then readySupervisorInterrupts else  0) 
+             let realReadyInterrupts = (if machineInterruptsEnabled then readyMachineInterrupts else 0) .|. (if supervisorInterruptsEnabled then readySupervisorInterrupts else  0)
              k <- if (realReadyInterrupts /=0)
                               then do
                        -- Disable interrupts
@@ -110,17 +111,16 @@ stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmpAndMtime preDe
                                     setCSRField Field.MTIP 0
                                     raiseException 1 7 -- Machine timer interrupt.
                                     return $! True
-                                    else 
+                                    else
                                     return $! False --Impossible path
                        -- Save the PC of the next (unexecuted) instruction.
 --                       setCSRField Field.MEPC nPC
                        return $! interruptHappen
                   else return $! False
              if (k) then do
-                  endCycle 
+                  endCycle
              else do
 --                  (mtimecmp, mtime) <- mtimecmpAndMtime
 --                  setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
 --                  setCSRField Field.STIP (fromEnum (mtime >= mtimecmp))
                   return $! ()
-
