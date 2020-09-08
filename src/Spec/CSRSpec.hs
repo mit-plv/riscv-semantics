@@ -81,55 +81,11 @@ getCSR MEPC = getCSRField Field.MEPC
 
 getCSR MScratch = getCSRField Field.MScratch
 
-getCSR InstRet = do
-  permS <- getCSRField Field.MIR
-  permU <- getCSRField Field.SIR
-  priv <- getPrivMode
--- TODO here we hardcode that user mode is supported.
-  if (priv == Machine ||
-      (priv == Supervisor && permS == 1) ||
-      (priv == User && permS == 1 && permU == 1))
-    then
-    getCSRField Field.MInstRet
-    else
-    raiseException 0 2
+getCSR InstRet = getCSR_InstRet
 
-getCSR Time = do
-  permS <- getCSRField Field.MTM
-  permU <- getCSRField Field.STM
-  priv <- getPrivMode
---  _ <- trace (show priv ++ show permS ++ show permU) (return ())
--- TODO here we hardcode that user mode is supported.
-  if (priv == Machine ||
-      (priv == Supervisor && permS == 1)||
-      (priv == User && permS == 1 && permU == 1))
-    then do
-    timerlo <- loadWord Execute 0x200bff8 --Hardcode for Minimal. TODO from platform. BUG it should be DOUBLE word not word. For size 64. Source a bit arbitrary to Execute
-    xlen <- getXLEN
-    if xlen > 32
-    then do
-        timerhi <- loadWord Execute 0x200bffc --Hardcode for Minimal. TODO from platform. BUG it should be DOUBLE word not word. For size 64. A bit arbitrary association to execute source
-        return (fromIntegral (shiftL timerhi 32) .|. (fromIntegral timerlo))
-    else
-        return (fromIntegral timerlo)
- -- getCSRField timer -- TODO FIX BUG here
-    else
-    raiseException 0 2
+getCSR Time = getCSR_Time
 
-
-getCSR Cycle = do
-  permS <- getCSRField Field.MCY
-  permU <-  getCSRField Field.SCY
-  priv <- getPrivMode
--- TODO here we hardcode that user mode is supported.
-  if (priv == Machine ||
-      (priv == Supervisor && permS == 1) ||
-      (priv == User && permS == 1 && permU == 1))
-     -- (priv == User &&  permU == 1))
-    then
-    getCSRField Field.MCycle -- TODO FIX BUG here
-    else
-    raiseException 0 2
+getCSR Cycle = getCSR_Cycle
 
 getCSR MHPMCounter3 = undefined
 getCSR MHPMCounter4 = undefined
