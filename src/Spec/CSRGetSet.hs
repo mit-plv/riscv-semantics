@@ -30,6 +30,17 @@ getCSR_SStatus = do
     return $ (shift mxl 32 .|. base)
     else return base
 
+-- helper function to make it very clear to Coq that setCSR terminates
+setCSR_SStatus :: (RiscvMachine p t) => MachineInt -> p ()
+setCSR_SStatus val = do
+  setCSRField Field.MXR (bitSlice val 19 20)
+  setCSRField Field.SUM (bitSlice val 18 19)
+  setCSRField Field.SPP (bitSlice val 8 9)
+  setCSRField Field.SPIE (bitSlice val 5 6)
+  setCSRField Field.SIE (bitSlice val 1 2)
+  getCSR_SStatus
+  return ()
+
 
 getCSR :: (RiscvMachine p t) => CSR -> p MachineInt
 
@@ -243,7 +254,7 @@ getCSR _ = return (-1) -- Hmmm, why did I hardwire that to -1?
 setCSR :: (RiscvMachine p t) => CSR -> MachineInt -> p ()
 
 setCSR MStatus val = do
-  setCSR SStatus val
+  setCSR_SStatus val
   setCSRField Field.TSR (bitSlice val 22 23)
   setCSRField Field.TW (bitSlice val 21 22)
   setCSRField Field.TVM (bitSlice val 20 21)
@@ -313,14 +324,7 @@ setCSR MTVal val = setCSRField Field.MTVal val
 
 -- Supervisor-level CSRs:
 
-setCSR SStatus val = do
-  setCSRField Field.MXR (bitSlice val 19 20)
-  setCSRField Field.SUM (bitSlice val 18 19)
-  setCSRField Field.SPP (bitSlice val 8 9)
-  setCSRField Field.SPIE (bitSlice val 5 6)
-  setCSRField Field.SIE (bitSlice val 1 2)
-  getCSR SStatus
-  return ()
+setCSR SStatus val = setCSR_SStatus val
 
 setCSR STVec val = do
   setCSRField Field.STVecMode (bitSlice val 0 2)
