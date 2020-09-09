@@ -10,6 +10,7 @@ import Data.Bits
 import Control.Monad
 import Prelude
 
+checkPermissions :: forall p t. (RiscvMachine p t) => Bool -> MachineInt -> p ()
 checkPermissions isWrite csr = do
   let readOnly = bitSlice csr 10 12 == 3
   let minMode = decodePrivMode (bitSlice csr 8 10)

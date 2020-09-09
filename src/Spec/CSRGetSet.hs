@@ -401,7 +401,7 @@ setCSR SATP val = do
   xlen <- getXLEN
   let mode = if xlen == 32 then bitSlice val 31 32 else bitSlice val 60 64
   -- If the mode is unsupported, the write has no effect.
-  when (mode `elem` [1, 8, 9]) $ do
+  when (mode == 1 || mode == 8 || mode == 9) $ do
     if xlen == 32
       then do
       setCSRField Field.MODE mode
