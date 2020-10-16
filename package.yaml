@@ -1,0 +1,45 @@
+name:                riscv-semantics
+version:             0.1.0.0
+license-file:        BSD3
+author:              MIT
+maintainer:          ijc@mit.edu bthom@mit.edu adamc@mit.edu
+build-type:          Simple
+extra-source-files:  
+- ChangeLog.md
+- README.md
+#ghc-options: -Wall
+
+dependencies:
+- base >=4.9 && <5
+- mtl >=2.2 && <2.4
+- transformers >=0.5 && <0.6
+- bytestring
+- containers 
+- elf >=0.30
+- nondeterminism >=1.4
+- ilist >=0.3
+- softfloat-hs ==0.1.0
+- array >=0.5.2
+- unix >=2.7
+- async >=2.2
+
+
+
+executables:
+  riscv-semantics:
+    main:             Platform/MainRun.hs
+    ghc-options:         -fexpose-all-unfoldings -fspecialise-aggressively -funfolding-use-threshold=50 -funfolding-creation-threshold=100 -fstatic-argument-transformation -O2 -optc-O3 -threaded 
+    source-dirs:      src
+ 
+  riscv-semantics-rv32im-compliance:
+    main:             Platform/MainCompliance.hs
+    ghc-options:         -threaded
+    source-dirs:      src
+  
+  riscv-semantics-tests:
+    main:             Platform/MainTest.hs
+    ghc-options:         -threaded
+    source-dirs:      src
+
+
+
