@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf #-}
-module MMGFX32 where
+module Platform.MMGFX32 where
 import Prelude
 import Spec.Machine
 import Utility.Utility

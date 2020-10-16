@@ -1,4 +1,4 @@
-module TestTLB where
+module Platform.TestTLB where
 import Data.Int
 import Data.List
 import qualified Data.Map as S

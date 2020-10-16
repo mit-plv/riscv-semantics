@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
-module Logger where
+module Utility.Logger where
 import Control.Monad.Writer hiding (tell)
 import Numeric
 import Spec.Machine
@@ -35,7 +35,7 @@ liftTellBool s op = do
   tell (s ++ " = " ++ (show m))
   return m
 
-instance (RiscvProgram p t) => RiscvProgram (WriterT String p) t where
+instance (RiscvMachine p t) => RiscvMachine (WriterT String p) t where
   getRegister r = do
     liftTellInt ("getRegister " ++ (show (fromIntegral r))) (getRegister r)
   setRegister r v = do

@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf #-}
-module Platform.Clash where
+module Platform.ClashAccelerator where
 --import qualified Prelude as P
 import Spec.Machine
 import Utility.Utility

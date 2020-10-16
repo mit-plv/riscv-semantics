@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+module Platform.RunGFX where
 import System.IO
 import System.Environment
 import System.Exit

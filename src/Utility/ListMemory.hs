@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, InstanceSigs #-}
-module ListMemory where
+module Utility.ListMemory where
 import Spec.Memory
 import Utility.Utility
 import Data.Word
