@@ -1,0 +1,3 @@
+cradle:
+  stack:
+    component: "riscv-semantics:exe:riscv-mm"
