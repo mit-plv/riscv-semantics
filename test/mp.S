@@ -17,7 +17,8 @@ _startTh0:
   li a4, 1
   sw a4, 0(a0)
   sw a4, 0(a1)
-  j 1f
+  lw a2, 0(a0)
+  j out1
 _startTh1:
   la a0, val
   la a1, flag
@@ -33,3 +34,6 @@ val:
   .word 0x0
 flag:
   .word 0x0
+out1:
+1:
+  j 1b

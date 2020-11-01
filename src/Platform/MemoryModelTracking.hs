@@ -116,7 +116,7 @@ instance Pretty Execution where
                                     parens (sep $ punctuate " or" $ map (\el -> "im = " <+> "i" <> el) addressesEvent))
                             ,parens ("m in NonInit => " <+>
                                     parens (sep $ punctuate " or" $ map (\el -> "m = " <+> el) memoryEvents))]
-        threadStarts = ["e_0_0 in h1.start", "e_1_0 in h2.start"] 
+        threadStarts = "e_0_0 in h1.start":if poThread 1 == [] then [] else ["e_1_0 in h2.start"] --TODO FIXME hardcoded for 2 threads 
         helperLdSt sMem mem = fmap (\((tid,iid),addr) ->
                                           hcat ["e_", pretty tid, "_", pretty iid]
                                           <+> "in" <+> sMem <+>"&" <+> "a_" <> pretty addr <>".~address") $ mem
@@ -186,52 +186,53 @@ data Ptrs = Ptrs {
   r_alternativeExplorations :: IORef ([(Event, Event, Execution)]),
   r_revisitSet :: IORef (Set.Set Event),
   r_return :: IORef ([Execution]),
-  r_mem :: IORef (MapMemory Int) 
+  r_mem :: IORef (MapMemory Int)--,
+ -- r_end :: MaybeT IORef () 
 }
 
 
-instance RiscvMachine IORead Int64 where
+instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
   getPC = do
       refs <- ask
       --tid <- lift $ readIORef (r_currentThread refs)
-      machine <- lift $! readIORef (r_threads refs)
+      machine <- lift . lift $! readIORef (r_threads refs)
       return (pc machine)
   setPC npc = do
       refs <- ask 
-      machine <- lift $! readIORef (r_threads refs)
-      lift $! writeIORef (r_threads refs) (machine{nextPC = npc})
+      machine <- lift . lift $! readIORef (r_threads refs)
+      lift . lift $! writeIORef (r_threads refs) (machine{nextPC = npc})
   getPrivMode = do
       refs <- ask
-      machine <- lift $! readIORef (r_threads refs)
+      machine <- lift . lift $! readIORef (r_threads refs)
       return (privMode machine) 
   setPrivMode val = do
       refs <- ask
-      machine <- lift $! readIORef (r_threads refs)
-      lift $! writeIORef (r_threads refs) (machine{privMode = val})
+      machine <- lift . lift $! readIORef (r_threads refs)
+      lift . lift $! writeIORef (r_threads refs) (machine{privMode = val})
   commit = do
       refs <- ask
-      machine <- lift $! readIORef (r_threads refs)
-      lift $! writeIORef (r_threads refs) (machine{pc = nextPC machine})
+      machine <- lift . lift $! readIORef (r_threads refs)
+      lift . lift $! writeIORef (r_threads refs) (machine{pc = nextPC machine})
   getRegister reg = do
       refs <- ask
-      machine <- lift $! readIORef (r_threads refs)
+      machine <- lift . lift $! readIORef (r_threads refs)
       return (if reg == 0 then 0 else fromMaybe 0 (S.lookup reg (registers machine)))
   setRegister reg val = do
       refs <- ask
-      machine <- lift $! readIORef (r_threads refs)
+      machine <- lift . lift $! readIORef (r_threads refs)
       let newmachine = if reg == 0 then machine else machine { registers = S.insert reg (fromIntegral val) (registers machine) }
-      lift $! writeIORef (r_threads refs) newmachine 
-  loadWord :: forall s. (Integral s) => SourceType -> s -> IORead Int32
+      lift . lift $! writeIORef (r_threads refs) newmachine 
+  loadWord :: forall s. (Integral s) => SourceType -> s -> (MaybeT IORead) Int32
   loadWord Fetch ad = do
        refs <-  ask
-       b0 <- lift $ readIORef (r_mem refs) 
+       b0 <- lift . lift $ readIORef (r_mem refs) 
        return $  (fromIntegral:: Word32 -> Int32) $ M.loadWord b0 ((fromIntegral :: s -> Int) ad)
   loadWord Execute ad = do
       refs <- ask
-      tid <- lift $ readIORef (r_currentThread refs)
-      iid <- lift $ readIORef (r_currentIid refs)
-      lift $ writeIORef (r_currentIid refs) (iid + 1)
-      execution <- lift $ readIORef (r_currentExecution refs)
+      tid <- lift . lift $ readIORef (r_currentThread refs)
+      iid <- lift . lift $ readIORef (r_currentIid refs)
+      lift . lift $ writeIORef (r_currentIid refs) (iid + 1)
+      execution <- lift . lift $ readIORef (r_currentExecution refs)
       if ( Set.member (Node (tid, iid)) (domain execution))
         then do
             let rf' = fromJust $ S.lookup  (Node (tid, iid)) (rf execution)
@@ -244,8 +245,8 @@ instance RiscvMachine IORead Int64 where
                   _ -> error "Not a write in rf"
         else do
           -- Update the revisit set to add this reads
-          t <- lift $ readIORef (r_revisitSet refs)
-          lift $ writeIORef (r_revisitSet refs)
+          t <- lift . lift $ readIORef (r_revisitSet refs)
+          lift . lift $ writeIORef (r_revisitSet refs)
             (Set.union (Set.singleton (Node(tid,iid))) t)
           let all_write_same_loc = fmap fst . S.toList $ S.filter (\l -> case l of
                         EWrite a _b -> a == fromIntegral ad 
@@ -261,10 +262,11 @@ instance RiscvMachine IORead Int64 where
                 })
               -- add the alternative executions
               foldM (\_acc el -> do 
-                        expls <- lift $ readIORef (r_alternativeExplorations refs)
-                        lift $ writeIORef (r_alternativeExplorations refs) ((Node (tid,iid),el, newexecution):expls)) () q 
+                        expls <- lift . lift $ readIORef (r_alternativeExplorations refs)
+                        T.trace ("One more exploration: " ++ (show $ ((Node (tid,iid),el, newexecution):expls))) return ()
+                        lift. lift $ writeIORef (r_alternativeExplorations refs) ((Node (tid,iid),el, newexecution):expls)) () q 
               -- update the current execution
-              lift $ writeIORef (r_currentExecution refs) newexecution 
+              lift. lift $ writeIORef (r_currentExecution refs) newexecution 
               -- finally check the memory model 
               mmOk <- liftIO $ checkGraph newexecution 
               if mmOk
@@ -273,17 +275,18 @@ instance RiscvMachine IORead Int64 where
                     case lab' of
                       EWrite _ d -> return d
                       _ -> error "Not a write in rf"
-              else
-                endCycle
+              else do
+                T.trace (show "Failed Load") $ MaybeT (return Nothing) -- b is of type (MaybeT p) a
+                
 
-  storeWord :: forall s. (Integral s, Bits s) => SourceType -> s -> Int32 -> IORead ()
+  storeWord :: forall s. (Integral s, Bits s) => SourceType -> s -> Int32 -> (MaybeT IORead) ()
   storeWord Execute addr val = do
       refs <- ask
-      tid <- lift $ readIORef (r_currentThread refs)
-      iid <- lift $ readIORef (r_currentIid refs)
-      lift $ writeIORef (r_currentIid refs) (iid + 1)
-      execution <- lift $ readIORef (r_currentExecution refs)
-      revisitSet <- lift $ readIORef (r_revisitSet refs)
+      tid <- lift. lift $ readIORef (r_currentThread refs)
+      iid <- lift . lift $ readIORef (r_currentIid refs)
+      lift.lift $ writeIORef (r_currentIid refs) (iid + 1)
+      execution <- lift . lift $ readIORef (r_currentExecution refs)
+      revisitSet <- lift . lift $ readIORef (r_revisitSet refs)
       if ( Set.member (Node (tid, iid)) (domain execution))
         then do
           return ()
@@ -302,10 +305,10 @@ instance RiscvMachine IORead Int64 where
           let all_read_not_prefix = all_read_same_loc Set.\\ (domain prefixexecution)
               -- add the alternative executions 
           foldM (\_acc el -> do 
-                    expls <- lift $ readIORef (r_alternativeExplorations refs)
-                    lift $ writeIORef (r_alternativeExplorations refs) ((el,Node (tid,iid), prefixexecution):expls)) () all_read_not_prefix 
+                    expls <- lift .lift $ readIORef (r_alternativeExplorations refs)
+                    lift. lift $ writeIORef (r_alternativeExplorations refs) ((el,Node (tid,iid), prefixexecution):expls)) () all_read_not_prefix 
           -- update the current execution
-          lift $ writeIORef (r_currentExecution refs) newexecution 
+          lift .lift $ writeIORef (r_currentExecution refs) newexecution 
 
 
 checkGraph :: Execution -> IO Bool 
@@ -313,10 +316,17 @@ checkGraph g = do
   putStrLn "New load event, assume an RF, check mem model by calling alloy. Press enter to continue"
   _wait <- getLine
   let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty g 
-  T.writeFile "temporary.als" alloyFile
+  T.trace "Alloy grpah to check:" $ return ()
+  T.putStr alloyFile
+  T.writeFile "temporary.als" $! alloyFile
   let callAlloy = proc "java"
         $ ["-cp", "riscv-memory-model/riscvSemantics.jar:riscv-memory-model/alloy4.2_2015-02-22.jar", "RiscvSemantics", "temporary.als" ]
-  (exitCode, _stdout, _stderr) <- readCreateProcessWithExitCode callAlloy "stdin"
+  (exitCode, stdout, stderr) <- readCreateProcessWithExitCode callAlloy "stdin"
+  T.trace ("Alloy returned:\n" ++ show (exitCode ) ++ "\n stdOut: " ++ stdout ++ "\n stderr:"++stderr) $ return ()
+  let rmTemp= proc "rm"
+        $ ["temporary.als"]
+  (exitCodeRm, _stdout, _stderr) <- readCreateProcessWithExitCode rmTemp "stdin"
+  T.trace ("rm returned:" ++ show (exitCodeRm == ExitSuccess)) $ return ()
   return (exitCode == ExitSuccess)
 
 
@@ -380,7 +390,7 @@ removeMax = do
 
 
 
-interpThread :: (RiscvMachine p t) => t -> t  -> (MaybeT p) () 
+interpThread :: (RiscvMachine p t) => t -> t  -> (p) () 
 interpThread pcStart pcStop = do
     setPC pcStart
     commit
@@ -485,7 +495,7 @@ runTime init threads = do
 
 ok = Platform.MemoryModelTracking.runFile
  "/home/bthom/git/riscv-semantics/test/build/mp64" 
- [(0x10078,0x10094),(0x10098,0x100b0)]
+ [(0x10078,0x10098),(0x1009c,0x100b4)]
 
 --readerRead :: IO()
 readerRead = do
@@ -497,7 +507,6 @@ readerRead = do
             addr= S.empty,
             ctrl= S.empty,
             depdata= S.empty}
-
   tid <- newIORef 0 
   iid <- newIORef 0 
   alternatives <- newIORef []
