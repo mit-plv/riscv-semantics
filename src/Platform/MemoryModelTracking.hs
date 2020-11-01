@@ -70,7 +70,7 @@ instance Pretty Execution where
           ,indent 2 . vsep . punctuate " and" $ concat [forallConstraints
                                                ,threadStarts
                                                ,loadsAndStores
-                                               ,[relPo] 
+                                               ,relPo 
                                                ,[relRf] 
                                                ,["RISCV_mm"]]]
         poThread ith =
@@ -91,8 +91,9 @@ instance Pretty Execution where
                     Init addr -> Set.insert ((tid,iid),(-1,addr)) acc
                     Node (tidw, iidw) -> Set.insert ((tid,iid),(tidw,iidw)) acc) Set.empty $ rf e
         relRf = "rf =" <+> (sep . punctuate "+" . map pair2Doc $ rfHelper) 
-        relPo = "po =" <+> (sep . punctuate "+" $ (helpPo 0 . wrapHelper $ T.trace (show$ poThread 0) $poThread 0)
-                                                  ++ (helpPo 1 . wrapHelper $ poThread 1))
+        poList = (helpPo 0 . wrapHelper $ T.trace (show$ poThread 0) $poThread 0)
+                 ++ (helpPo 1 . wrapHelper $ poThread 1)
+        relPo = if length poList == 0 then [] else ["po =" <+> (sep . punctuate "+" $ poList)]
         wrapHelper (h:t) =
           (h,t) 
         wrapHelper [] = (0,[])
@@ -495,7 +496,7 @@ runTime init threads = do
 
 ok = Platform.MemoryModelTracking.runFile
  "/home/bthom/git/riscv-semantics/test/build/mp64" 
- [(0x10078,0x10098),(0x1009c,0x100b4)]
+ $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b4)]
 
 --readerRead :: IO()
 readerRead = do
