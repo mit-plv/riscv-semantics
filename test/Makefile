@@ -21,6 +21,10 @@ all64: $(HEX64)
 $(ELF2HEX)/elf2hex:
 	$(MAKE) -C $(ELF2HEX)
 
+mp: mp.S
+	$(RISCVCC64) -c mp.S -o $(BUILDDIR)/mp64.o
+	$(RISCVCC64) -o $(BUILDDIR)/mp64 $(BUILDDIR)/mp64.o
+
 init32.o: init.S
 	$(RISCVCC32) -c init.S -o init32.o
 

@@ -1,20 +1,23 @@
 name:                riscv-semantics
 version:             0.1.0.0
-license-file:        BSD3
+license-file:        LICENSE
 author:              MIT
 maintainer:          ijc@mit.edu bthom@mit.edu adamc@mit.edu
 build-type:          Simple
 extra-source-files:  
 - ChangeLog.md
 - README.md
-#ghc-options: -Wall
+#ghc-options: -haddock
 
 dependencies:
+#- sbv >=8.8
 - base >=4.9 && <5
 - mtl >=2.2 && <2.4
 - transformers >=0.5 && <0.6
 - bytestring
 - containers 
+- directory
+- filepath
 - elf >=0.30
 - nondeterminism >=1.4
 - ilist >=0.3
@@ -22,24 +25,181 @@ dependencies:
 - array >=0.5.2
 - unix >=2.7
 - async >=2.2
-
+- prettyprinter >=1.2
+- text >=1.2
+- process >=1.6
 
 
 executables:
+  riscv-mm:
+    main:             Platform/MainMM.hs
+    ghc-options:         -fexpose-all-unfoldings -fspecialise-aggressively -funfolding-use-threshold=50 -funfolding-creation-threshold=100 -fstatic-argument-transformation -O2 -optc-O3 -threaded 
+    source-dirs:      src
+    other-modules:
+      - Platform.Plic
+      - Platform.MemoryModelTracking
+      - Platform.RunMM
+      - Spec.CSR
+      - Spec.CSRField
+      - Spec.CSRFile
+      - Spec.CSRSpec
+      - Spec.Decode
+      - Spec.Execute
+      - Spec.ExecuteA
+      - Spec.ExecuteA64
+      - Spec.ExecuteCSR
+      - Spec.ExecuteF
+      - Spec.ExecuteF64
+      - Spec.ExecuteI
+      - Spec.ExecuteI64
+      - Spec.ExecuteM
+      - Spec.ExecuteM64
+      - Spec.Machine
+      - Spec.Memory
+      - Spec.Spec
+      - Spec.VirtualMemory
+      - Utility.Elf
+      - Utility.ListMemory
+      - Utility.MapMemory
+      - Utility.Utility
+ 
+
   riscv-semantics:
     main:             Platform/MainRun.hs
     ghc-options:         -fexpose-all-unfoldings -fspecialise-aggressively -funfolding-use-threshold=50 -funfolding-creation-threshold=100 -fstatic-argument-transformation -O2 -optc-O3 -threaded 
     source-dirs:      src
+    other-modules:
+      - Platform.BufferMMIO
+      - Platform.Clint
+      - Platform.CleanTest
+      - Platform.MemoryModelTracking
+      - Platform.Minimal32
+      - Platform.Minimal64
+      - Platform.MMIO
+      - Platform.Plic
+      - Platform.Pty
+      - Platform.Run
+      - Platform.Run32
+      - Platform.RunCompliance
+      - Platform.RunFast
+      - Platform.RunMM
+      - Platform.Test
+      - Spec.CSR
+      - Spec.CSRField
+      - Spec.CSRFile
+      - Spec.CSRFileIO
+      - Spec.CSRSpec
+      - Spec.Decode
+      - Spec.Execute
+      - Spec.Execute32
+      - Spec.ExecuteA
+      - Spec.ExecuteA64
+      - Spec.ExecuteCSR
+      - Spec.ExecuteF
+      - Spec.ExecuteF64
+      - Spec.ExecuteI
+      - Spec.ExecuteI64
+      - Spec.ExecuteM
+      - Spec.ExecuteM64
+      - Spec.Machine
+      - Spec.Memory
+      - Spec.Spec
+      - Spec.VirtualMemory
+      - Utility.Elf
+      - Utility.ListMemory
+      - Utility.MapMemory
+      - Utility.Utility
  
   riscv-semantics-rv32im-compliance:
     main:             Platform/MainCompliance.hs
     ghc-options:         -threaded
     source-dirs:      src
+    other-modules:
+      - Platform.BufferMMIO
+      - Platform.Clint
+      - Platform.CleanTest
+      - Platform.MemoryModelTracking
+      - Platform.Minimal32
+      - Platform.Minimal64
+      - Platform.MMIO
+      - Platform.Plic
+      - Platform.Pty
+      - Platform.Run
+      - Platform.Run32
+      - Platform.RunCompliance
+      - Platform.RunFast
+      - Platform.RunMM
+      - Platform.Test
+      - Spec.CSR
+      - Spec.CSRField
+      - Spec.CSRFile
+      - Spec.CSRFileIO
+      - Spec.CSRSpec
+      - Spec.Decode
+      - Spec.Execute
+      - Spec.Execute32
+      - Spec.ExecuteA
+      - Spec.ExecuteA64
+      - Spec.ExecuteCSR
+      - Spec.ExecuteF
+      - Spec.ExecuteF64
+      - Spec.ExecuteI
+      - Spec.ExecuteI64
+      - Spec.ExecuteM
+      - Spec.ExecuteM64
+      - Spec.Machine
+      - Spec.Memory
+      - Spec.Spec
+      - Spec.VirtualMemory
+      - Utility.Elf
+      - Utility.ListMemory
+      - Utility.MapMemory
+      - Utility.Utility
   
   riscv-semantics-tests:
     main:             Platform/MainTest.hs
     ghc-options:         -threaded
     source-dirs:      src
-
+    other-modules:
+      - Platform.BufferMMIO
+      - Platform.Clint
+      - Platform.CleanTest
+      - Platform.MemoryModelTracking
+      - Platform.Minimal32
+      - Platform.Minimal64
+      - Platform.MMIO
+      - Platform.Plic
+      - Platform.Pty
+      - Platform.Run
+      - Platform.Run32
+      - Platform.RunCompliance
+      - Platform.RunFast
+      - Platform.RunMM
+      - Platform.Test
+      - Spec.CSR
+      - Spec.CSRField
+      - Spec.CSRFile
+      - Spec.CSRFileIO
+      - Spec.CSRSpec
+      - Spec.Decode
+      - Spec.Execute
+      - Spec.Execute32
+      - Spec.ExecuteA
+      - Spec.ExecuteA64
+      - Spec.ExecuteCSR
+      - Spec.ExecuteF
+      - Spec.ExecuteF64
+      - Spec.ExecuteI
+      - Spec.ExecuteI64
+      - Spec.ExecuteM
+      - Spec.ExecuteM64
+      - Spec.Machine
+      - Spec.Memory
+      - Spec.Spec
+      - Spec.VirtualMemory
+      - Utility.Elf
+      - Utility.ListMemory
+      - Utility.MapMemory
+      - Utility.Utility
 
 
