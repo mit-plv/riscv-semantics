@@ -71,6 +71,12 @@ instance Pretty Execution where
                                                ,threadStarts
                                                ,loadsAndStores
                                                ,relPo 
+                                               ,let a = helperRel helpAddrDep in
+                                                 if length a == 0 then [] else ["addrdep =" <+> (sep.punctuate "+" $ a)]
+                                               ,let a = helperRel helpDataDep in
+                                                 if length a == 0 then [] else ["datadep =" <+> (sep.punctuate "+" $ a)]
+                                               ,let a = helperRel helpCtrlDep in
+                                                 if length a == 0 then [] else ["ctrldep =" <+> (sep.punctuate "+" $ a)]
                                                ,[relRf] 
                                                ,["RISCV_mm"]]]
         poThread ith =
@@ -94,10 +100,23 @@ instance Pretty Execution where
         poList = (helpPo 0 . wrapHelper $ T.trace (show$ poThread 0) $poThread 0)
                  ++ (helpPo 1 . wrapHelper $ poThread 1)
         relPo = if length poList == 0 then [] else ["po =" <+> (sep . punctuate "+" $ poList)]
+        helpAddrDep = Set.toList $ (S.foldlWithKey (\acc key el ->
+                                                   Set.union acc (Set.map (\x -> (x,key)) el))
+                                                 Set.empty
+                                                 (addr e))
+        helpDataDep = Set.toList $ (S.foldlWithKey (\acc key el ->
+                                                   Set.union acc (Set.map (\x -> (x,key)) el))
+                                                 Set.empty
+                                                 (depdata e))
+        helpCtrlDep = Set.toList $ (S.foldlWithKey (\acc key el ->
+                                                   Set.union acc (Set.map (\x -> (x,key)) el))
+                                                 Set.empty
+                                                 (ctrl e))
+        helperRel = fmap (\(a,b)-> pretty a <> "->" <> pretty b) :: [(Event,Event)]-> [Doc ann] 
         wrapHelper (h:t) =
-          (h,t) 
+          (h,t)
         wrapHelper [] = (0,[])
-        helpPo _th (_last,[]) =
+        helpPo _th (_last, []) =
           []
         helpPo th (last,(next:t)) =
           ((pretty $ Node(th,last)) <> "->" <> (pretty $ Node (th,next))): helpPo th (next,t) 
@@ -117,7 +136,13 @@ instance Pretty Execution where
                                     parens (sep $ punctuate " or" $ map (\el -> "im = " <+> "i" <> el) addressesEvent))
                             ,parens ("m in NonInit => " <+>
                                     parens (sep $ punctuate " or" $ map (\el -> "m = " <+> el) memoryEvents))]
-        threadStarts = "e_0_0 in h1.start":if poThread 1 == [] then [] else ["e_1_0 in h2.start"] --TODO FIXME hardcoded for 2 threads 
+        threadStarts = 
+          (case (poThread 0) of
+            h:_t -> ["e_0_"<> pretty h<+> "in h1.start"]
+            _ -> []) ++
+          (case (poThread 1) of
+            h:_t -> ["e_1_"<> pretty h<+> "in h2.start"]
+            _ -> [])
         helperLdSt sMem mem = fmap (\((tid,iid),addr) ->
                                           hcat ["e_", pretty tid, "_", pretty iid]
                                           <+> "in" <+> sMem <+>"&" <+> "a_" <> pretty addr <>".~address") $ mem
@@ -173,9 +198,57 @@ data Minimal64 = Minimal64 {
             pc :: Int64,
             nextPC :: Int64,
             privMode :: PrivMode,
-            dependencies :: S.Map Register Events,
-            ctrlDependency :: Events
+            dep_ctrl:: Events,
+            dep_addr:: Events,
+            dep_data:: Events,
+            dependencies :: (S.Map Register Events, Events) -- Registers, Ctrl dependencies
 } deriving (Show) 
+
+-- Translated from Karl Samuel Gruetter's experimentation with our idea to implement dependency tracking with monads
+-- based on the remark that the tracking is not dynamic (github.com/mit-plv/riscv-coq)
+updateDepsI :: InstructionI -> (S.Map Register Events, Events) -> (S.Map Register Events, Events)
+updateDepsI inst d =
+  case inst of 
+     Auipc rd _oimm20 -> (insert rd pc dep,pc)
+     Jal rd _jimm20 -> (insert rd pc dep,pc)
+     Jalr rd rs1 _oimm12 -> (insert rd pc dep, Set.union pc . fromJust $ S.lookup rs1 dep)
+     Beq  rs1 rs2 _sbimm12 -> branchDep rs1 rs2
+     Bne  rs1 rs2 _sbimm12 -> branchDep rs1 rs2
+     Blt  rs1 rs2 _sbimm12 -> branchDep rs1 rs2
+     Bge  rs1 rs2 _sbimm12 -> branchDep rs1 rs2
+     Bltu rs1 rs2 _sbimm12 -> branchDep rs1 rs2
+     Bgeu rs1 rs2 _sbimm12 -> branchDep rs1 rs2
+     Addi  rd rs1 _ -> immArithDep rs1 rd
+     Slti  rd rs1 _ -> immArithDep rs1 rd
+     Sltiu rd rs1 _ -> immArithDep rs1 rd
+     Xori  rd rs1 _ -> immArithDep rs1 rd
+     Ori   rd rs1 _ -> immArithDep rs1 rd
+     Andi  rd rs1 _ -> immArithDep rs1 rd
+     Slli  rd rs1 _ -> immArithDep rs1 rd
+     Srli  rd rs1 _ -> immArithDep rs1 rd
+     Srai  rd rs1 _ -> immArithDep rs1 rd
+     Add  rd rs1 rs2 -> arithDep rs1 rs2 rd
+     Sub  rd rs1 rs2 -> arithDep rs1 rs2 rd
+     Sll  rd rs1 rs2 -> arithDep rs1 rs2 rd
+     Slt  rd rs1 rs2 -> arithDep rs1 rs2 rd
+     Sltu rd rs1 rs2 -> arithDep rs1 rs2 rd
+     Xor  rd rs1 rs2 -> arithDep rs1 rs2 rd
+     Or   rd rs1 rs2 -> arithDep rs1 rs2 rd
+     Srl  rd rs1 rs2 -> arithDep rs1 rs2 rd
+     Sra  rd rs1 rs2 -> arithDep rs1 rs2 rd
+     And  rd rs1 rs2 -> arithDep rs1 rs2 rd
+     Lui rd _imm20 -> memDep 
+     Lw  rd rs1 _oimm12 -> memDep 
+     Sw rs1 rs2 _simm12 -> memDep 
+     Fence _pred _succ -> memDep 
+     _ -> error "Dependency tracking for an instruction unsupported"
+  where 
+     (dep,pc) = d
+     memDep = d
+     branchDep rs1 rs2 = (dep, Set.union pc (Set.union (fromJust $ S.lookup rs1 dep) (fromJust $ S.lookup rs2 dep)))
+     arithDep rs1 rs2 rd = (insert rd (Set.union (fromJust $ S.lookup rs1 dep) (fromJust $ S.lookup rs2 dep)) dep, pc)
+     immArithDep rs1 rd = (insert rd (fromJust $ S.lookup rs1 dep) dep , pc)
+     insert (k::Register) v map = if k /= 0 then S.insert k v map else map
 
 type IORead= ReaderT Ptrs IO
 
@@ -255,17 +328,24 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
           case all_write_same_loc of
             [] -> error "reading uninitialized location"
             w0:q -> do -- q are the alternative writes to push in the alternativeExploration structure 
+              m <- lift . lift $ readIORef (r_threads refs)
+              let ctrlDep = dep_ctrl m
+              let dataDep = dep_data m
+              let addrDep = dep_addr m
               let newexecution = (execution{
                   domain = Set.union (domain execution) (Set.singleton (Node(tid,iid))),
                   lab = S.insert (Init $ fromIntegral ad) (EWrite (fromIntegral ad) 0) (S.insert (Node(tid,iid)) (ERead $ fromIntegral ad) (lab execution)),
-                  rf = S.insert (Node(tid,iid)) w0 (rf execution)
-                -- update addr ctrl data dependencies
+                  rf = S.insert (Node(tid,iid)) w0 (rf execution),
+                  addr = S.insert (Node(tid,iid)) addrDep (addr execution),
+                  ctrl = S.insert (Node(tid,iid)) ctrlDep (ctrl execution),
+                  depdata = S.insert (Node(tid,iid)) dataDep (depdata execution)
                 })
               -- add the alternative executions
+              --let prefixexecution = prefix (Set.singleton (Node (tid,iid) )) newexecution
               foldM (\_acc el -> do 
                         expls <- lift . lift $ readIORef (r_alternativeExplorations refs)
-                        T.trace ("One more exploration: " ++ (show $ ((Node (tid,iid),el, newexecution):expls))) return ()
-                        lift. lift $ writeIORef (r_alternativeExplorations refs) ((Node (tid,iid),el, newexecution):expls)) () q 
+                        T.trace ("One more load exploration: " ++ (show $ ((Node (tid,iid),el, emptyEx):expls))) return ()
+                        lift. lift $ writeIORef (r_alternativeExplorations refs) ((Node (tid,iid),el, emptyEx):expls)) () q 
               -- update the current execution
               lift. lift $ writeIORef (r_currentExecution refs) newexecution 
               -- finally check the memory model 
@@ -281,7 +361,7 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
                 
 
   storeWord :: forall s. (Integral s, Bits s) => SourceType -> s -> Int32 -> (MaybeT IORead) ()
-  storeWord Execute addr val = do
+  storeWord Execute ad val = do
       refs <- ask
       tid <- lift. lift $ readIORef (r_currentThread refs)
       iid <- lift . lift $ readIORef (r_currentIid refs)
@@ -295,21 +375,53 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
           -- find all the reads which are not in the prefix of a which
           let all_read_same_loc =  Set.filter 
                                 (\l -> case S.lookup l (lab execution) of
-                                                 Just (ERead a) -> a == fromIntegral addr 
+                                                 Just (ERead a) -> a == fromIntegral ad 
                                                  _ -> False) revisitSet
+          T.trace ("Revisit set on store: " ++ show all_read_same_loc) $ return()
+          m <- lift . lift $ readIORef (r_threads refs)
+          let ctrlDep = dep_ctrl m
+          let dataDep = dep_data m
+          let addrDep = dep_addr m
           let newexecution = (execution{
                   domain = Set.union (domain execution) (Set.singleton (Node(tid, iid))),
-                  lab = S.insert (Init $ fromIntegral addr) (EWrite (fromIntegral addr) 0) $ S.insert (Node(tid, iid)) (EWrite (fromIntegral addr) (fromIntegral val)) (lab execution)
-                -- update addr ctrl data dependencies
+                  lab = S.insert (Init $ fromIntegral ad) (EWrite (fromIntegral ad) 0) $ S.insert (Node(tid, iid)) (EWrite (fromIntegral ad) (fromIntegral val)) (lab execution),
+                  addr = S.insert (Node(tid,iid)) addrDep (addr execution),
+                  ctrl = S.insert (Node(tid,iid)) ctrlDep (ctrl execution),
+                  depdata = S.insert (Node(tid,iid)) dataDep (depdata execution)
                 })
           let prefixexecution = prefix (Set.singleton (Node (tid,iid) )) newexecution
+
+          T.trace ("Prefix exec: " ++ show prefixexecution) $ return()
           let all_read_not_prefix = all_read_same_loc Set.\\ (domain prefixexecution)
               -- add the alternative executions 
           foldM (\_acc el -> do 
                     expls <- lift .lift $ readIORef (r_alternativeExplorations refs)
+                    T.trace ("One more store exploration: " ++ (show $ ((el,Node (tid,iid), prefixexecution):expls))) return ()
                     lift. lift $ writeIORef (r_alternativeExplorations refs) ((el,Node (tid,iid), prefixexecution):expls)) () all_read_not_prefix 
           -- update the current execution
           lift .lift $ writeIORef (r_currentExecution refs) newexecution 
+  fence _start  _end= do --FIXME Todo, for now only supports full fence
+      refs <- ask
+      tid <- lift. lift $ readIORef (r_currentThread refs)
+      iid <- lift . lift $ readIORef (r_currentIid refs)
+      lift.lift $ writeIORef (r_currentIid refs) (iid + 1)
+      execution <- lift . lift $ readIORef (r_currentExecution refs)
+      if ( Set.member (Node (tid, iid)) (domain execution))
+        then do
+          return ()
+        else do
+          -- find all the reads which are not in the prefix of a which
+          m <- lift . lift $ readIORef (r_threads refs)
+          let ctrlDep = dep_ctrl m
+          let newexecution = (execution{
+                  domain  = Set.union (domain execution) (Set.singleton (Node(tid, iid))),
+                  lab     = S.insert (Node(tid, iid)) EFence (lab execution),
+                  addr    = (addr execution),
+                  ctrl    = S.insert (Node(tid,iid)) ctrlDep (ctrl execution),
+                  depdata = (depdata execution)
+                })
+          lift .lift $ writeIORef (r_currentExecution refs) newexecution 
+
 
 
 checkGraph :: Execution -> IO Bool 
@@ -317,7 +429,7 @@ checkGraph g = do
   putStrLn "New load event, assume an RF, check mem model by calling alloy. Press enter to continue"
   _wait <- getLine
   let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty g 
-  T.trace "Alloy grpah to check:" $ return ()
+  T.trace "Alloy graph to check:" $ return ()
   T.putStr alloyFile
   T.writeFile "temporary.als" $! alloyFile
   let callAlloy = proc "java"
@@ -332,13 +444,18 @@ checkGraph g = do
 
 
   
-prefix1 :: Execution -> Events -> Execution
+prefix1 :: Execution -> Events -> Events
 prefix1 ex events =
-  let rf_set = S.foldl (\newset el -> Set.union newset (Set.singleton el)) Set.empty (rf ex) in
-  let ctrl_set = S.foldl (\newset el -> Set.union newset el) Set.empty (ctrl ex) in
-  let addr_set = S.foldl (\newset el -> Set.union newset el) Set.empty (addr ex) in
-  let data_set = S.foldl (\newset el -> Set.union newset el) Set.empty (depdata ex) in
-  restrictExec ex $ Set.union events (Set.union (Set.union (rf_set) ctrl_set) (Set.union addr_set data_set))
+  let rf_set = Set.foldl (\newset el -> Set.union newset $ case  (S.lookup el (rf ex)) of
+                                                              Just l -> Set.singleton l
+                                                              Nothing -> Set.empty) Set.empty events in
+  T.trace (show rf_set) $                                                                             
+  let ctrl_set = Set.foldl (\newset el -> Set.union newset $ fromMaybe Set.empty (S.lookup el (ctrl ex))) Set.empty events in
+  let addr_set = Set.foldl (\newset el -> Set.union newset $ fromMaybe Set.empty (S.lookup el (addr ex))) Set.empty events in
+  let data_set = Set.foldl (\newset el -> Set.union newset $ fromMaybe Set.empty (S.lookup el (depdata ex))) Set.empty events in
+  (\x -> T.trace ("Domain prefix1:" ++ show x ++" Domain prefix ex:" ++ show ex) x) $ Set.union events (Set.union 
+                                            (Set.union (rf_set) ctrl_set)
+                                            (Set.union addr_set data_set))
 
 restrictExec :: Execution -> Events -> Execution
 restrictExec ex newdomain =
@@ -349,24 +466,25 @@ restrictExec ex newdomain =
      addr = S.restrictKeys (addr ex) newdomain,
      lab = S.restrictKeys (lab ex) newdomain  } 
 
-prefix_ :: Events -> Execution -> Execution
-prefix_ stableSet ex = 
-  let newacc = prefix1 ex stableSet in
-    if (domain newacc) == stableSet 
-      then newacc 
-      else prefix_ (domain newacc) ex
-
 prefix :: Events -> Execution -> Execution
 prefix stableSet ex = 
-  let newex = prefix_ stableSet ex in
-    restrictExec newex (domain newex)
+  T.trace ("prefix widening:" ++ show stableSet) $
+  let newacc = prefix1 ex stableSet in
+    if newacc == stableSet 
+      then restrictExec ex newacc
+      else prefix newacc ex
+
+--prefix :: Events -> Execution -> Execution
+--prefix stableSet ex = 
+--  let newex = prefix_ stableSet ex in
+--    restrictExec newex (domain newex)
 
 
 unionEx :: Execution -> Execution -> Execution
 unionEx u1 u2 = 
 --  if Set.disjoint (domain u1) (domain u2)
 --    then 
-      Execution{domain = Set.union (domain u1) (domain u2),
+      emptyEx{domain = Set.union (domain u1) (domain u2),
        rf = S.union (rf u1) (rf u2),
        lab = S.union (lab u1) (lab u2),
        addr = S.union (addr u1) (addr u2),
@@ -378,6 +496,7 @@ removeMax :: IORead (Maybe (Event, Event, Execution))
 removeMax = do
     refs <- ask
     expls <- lift $ readIORef (r_alternativeExplorations refs)
+    T.trace ("Remove max new:" ++ (show $ length expls)) $ return ()
     case expls of
       [] -> return Nothing
       _ -> do
@@ -387,12 +506,14 @@ removeMax = do
          let start = take posReturn expls
          let (retVal:end) = drop posReturn expls
          lift $ writeIORef (r_alternativeExplorations refs) (start++end)
+         test <- lift $ readIORef (r_alternativeExplorations refs)
+         T.trace ("Remove max new:" ++ (show $ length test)) $ return ()
          return $ Just retVal
 
 
 
-interpThread :: (RiscvMachine p t) => t -> t  -> (p) () 
-interpThread pcStart pcStop = do
+interpThread :: (RiscvMachine p t) => t -> t -> (Instruction -> p ())  -> (p) () 
+interpThread pcStart pcStop preExecute = do
     setPC pcStart
     commit
     loop
@@ -403,27 +524,101 @@ interpThread pcStart pcStop = do
               if not (vpc == pcStop)
                 then do
                   setPC (vpc + 4)
-                  execute (decode RV64I ((fromIntegral :: Int32 -> MachineInt) inst))
+                  preExecute $ dInst inst
+                  execute $ dInst inst 
                   commit
                   loop
                 else
                 return $! ()
+          dInst inst = decode RV64I ((fromIntegral :: Int32 -> MachineInt) inst)
           execute inst =
             case inst of
               IInstruction   i     -> I.execute   i
-              _ -> T.trace (show inst) $ error "invalid riscv instruction encountered"
+              _ -> T.trace (show inst) $ error "instruction not supported (not I Instruction)"
 
-  
+
+instGenAddrCtrlData :: InstructionI -> (MaybeT IORead) ()
+instGenAddrCtrlData inst =
+  case inst of 
+    Auipc rd _oimm20      -> noDep
+    Jal rd _jimm20        -> noDep 
+    Jalr rd rs1 _oimm12   -> noDep 
+    Beq  rs1 rs2 _sbimm12 -> noDep
+    Bne  rs1 rs2 _sbimm12 -> noDep
+    Blt  rs1 rs2 _sbimm12 -> noDep
+    Bge  rs1 rs2 _sbimm12 -> noDep
+    Bltu rs1 rs2 _sbimm12 -> noDep
+    Bgeu rs1 rs2 _sbimm12 -> noDep
+    Addi  rd rs1 _        -> noDep
+    Slti  rd rs1 _        -> noDep
+    Sltiu rd rs1 _        -> noDep
+    Xori  rd rs1 _        -> noDep
+    Ori   rd rs1 _        -> noDep
+    Andi  rd rs1 _        -> noDep
+    Slli  rd rs1 _        -> noDep
+    Srli  rd rs1 _        -> noDep
+    Srai  rd rs1 _        -> noDep
+    Add  rd rs1 rs2       -> noDep
+    Sub  rd rs1 rs2       -> noDep
+    Sll  rd rs1 rs2       -> noDep
+    Slt  rd rs1 rs2       -> noDep
+    Sltu rd rs1 rs2       -> noDep
+    Xor  rd rs1 rs2       -> noDep
+    Or   rd rs1 rs2       -> noDep
+    Srl  rd rs1 rs2       -> noDep
+    Sra  rd rs1 rs2       -> noDep
+    And  rd rs1 rs2       -> noDep
+    Lui rd _imm20         -> noDep
+    Fence _pred _succ     -> noDep
+    Lw  rd rs1 _oimm12    -> do
+      refs <- ask
+      m <- lift . lift $! readIORef (r_threads refs) 
+      let (dep,pcDepOld) = dependencies m
+      tid <- lift. lift $ readIORef (r_currentThread refs)
+      iid <- lift . lift $ readIORef (r_currentIid refs)
+      let newdep = insert rd (Set.singleton $ Node(tid,iid)) dep
+      let (reg_dep, pc_dep) = dependencies m
+      lift . lift . writeIORef (r_threads refs) $! 
+          m{dep_addr = fromJust $! S.lookup rs1 reg_dep 
+           ,dep_data = Set.empty 
+           ,dep_ctrl = pc_dep
+           ,dependencies= (newdep,pcDepOld)}
+    Sw rs1 rs2 _simm12 -> do -- rs1 is address, rs2 is data
+      refs <- ask
+      m <- lift . lift $! readIORef (r_threads refs) 
+      let (reg_dep, pc_dep) = dependencies m
+      lift . lift . writeIORef (r_threads refs) $! 
+          m{dep_addr = fromJust $! S.lookup rs1 reg_dep 
+           ,dep_data = fromJust $! S.lookup rs2 reg_dep 
+           ,dep_ctrl = pc_dep}
+    _ -> error "instruction not supported in this memory model exploration"
+  where 
+     noDep = return () 
+     insert (k::Register) v map = if k /= 0 then S.insert k v map else map
+
+
+ 
+
+updateDeps :: Instruction -> (MaybeT IORead) ()
+updateDeps inst =
+            case inst of
+              IInstruction   i     -> do
+                instGenAddrCtrlData i
+                refs <- lift $ ask
+                m <- lift . lift $! readIORef (r_threads refs) 
+                lift . lift .writeIORef (r_threads refs) $ m{dependencies = updateDepsI i (dependencies m)}
+              _ -> error "instruction not supported (not I Instruction)"
+
+
 interpThreads :: Minimal64 -> [(Int64,Int64)] -> (MaybeT IORead) ()
 interpThreads initMachine ((start,stop):q) = do
     refs <- lift $ ask
     -- inc thread, restart iid to 0, run thread
     lift . lift $! writeIORef (r_threads refs) initMachine 
     tid <- lift . lift $ readIORef (r_currentThread refs)
-    interpThread start stop
+    interpThread start stop updateDeps
     lift . lift $ writeIORef (r_currentIid refs) (0)
     lift . lift $ writeIORef (r_currentThread refs) (tid+1)
- 
     -- keeps going
     interpThreads initMachine q
 interpThreads _initMachine [] = 
@@ -447,12 +642,15 @@ runFile f threads = do
                       pc = 0x80000000, -- useless will be overwritten
                       nextPC = 0,
                       privMode = Machine,
-                      dependencies = S.empty,
-                      ctrlDependency = Set.empty
+                      dep_addr = Set.empty,
+                      dep_data = Set.empty,
+                      dep_ctrl= Set.empty,
+                      dependencies = (S.fromList initList, Set.empty)
                       }
   refs <- ask
   lift  $ writeIORef (r_mem refs) (MapMemory { bytes = mem, reservation = Nothing }) 
   runTime c threads
+  where initList = [(i,Set.empty) | i <- [0..31]]:: [(Register,Events)] 
 
 
 runTime :: Minimal64 -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
@@ -466,11 +664,16 @@ runTime init threads = do
       lift $ putStrLn "Found a new execution"
       refs <- ask
       oldexpl <- lift $ readIORef (r_currentExecution refs)
-      ret <- lift $ readIORef (r_return refs)
-      let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty oldexpl 
-      lift $ T.writeFile ("execution"++ (show $ length ret ) ++".als") alloyFile 
-      lift $ writeIORef (r_return refs) (oldexpl:ret) 
-      nextRound
+      -- Final mm check because we don't check on stores. Maybe we should check earlier in stores?
+      mmOk <- liftIO $ checkGraph oldexpl 
+      if mmOk then do
+        ret <- lift $ readIORef (r_return refs)
+        let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty oldexpl 
+        lift $ T.writeFile ("execution"++ (show $ length ret ) ++".als") alloyFile 
+        lift $ writeIORef (r_return refs) (oldexpl:ret) 
+        nextRound
+      else 
+        nextRound
     Nothing -> do 
       lift $ putStrLn "Dead execution path, restart interpreter"
       nextRound
@@ -482,39 +685,59 @@ runTime init threads = do
         Just (r,w,nex) -> do
             t <- lift $ readIORef (r_revisitSet refs)
             oldexpl <- lift $ readIORef (r_currentExecution refs)
-            T.trace (show $ prefix (Set.singleton r) oldexpl) $ return ()
-            T.trace (show nex) $ return ()
-            let newexp = unionEx (prefix (Set.singleton r) oldexpl) nex
+            let beforeR = restrict (domain oldexpl) r
+            let newexp = unionEx ( restrictExec oldexpl (domain $ prefix beforeR oldexpl)) nex
+            T.trace ("new exec after removeMax:" ++ show (newexp) ++ show (lab newexp)) $ return ()
             let newexpWithRf = newexp {rf = S.insert r w (rf newexp)} 
-            let newrevisit = Set.intersection t (domain $ prefix (Set.singleton r) oldexpl)
+            let newrevisit = restrict t r 
             lift $ writeIORef (r_currentIid refs) (0)
             lift $ writeIORef (r_currentThread refs) (0)
             lift $ writeIORef (r_revisitSet refs) newrevisit 
             lift $ writeIORef (r_currentExecution refs) newexpWithRf 
             runTime init threads
         Nothing -> lift $ readIORef (r_return refs)
+    restrict domain elem =
+      Set.filter (\el -> case el of
+                    Init _ -> True
+                    Node(tid',iid') -> case elem of
+                      Init _ -> error "restrict to init elem does not make sense"
+                      Node(tid,iid) -> tid' < tid || (tid == tid' && iid' <= iid)) domain
 
-ok = Platform.MemoryModelTracking.runFile
+mpRev = Platform.MemoryModelTracking.runFile
  "/home/bthom/git/riscv-semantics/test/build/mp64" 
  $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b4)]
+mp = Platform.MemoryModelTracking.runFile
+ "/home/bthom/git/riscv-semantics/test/build/mp64" 
+ $ [(0x10078,0x10098),(0x1009c,0x100b4)]
 
---readerRead :: IO()
-readerRead = do
-  threads <- newIORef Minimal64{}
-  execution <- newIORef Execution {
+sbData = Platform.MemoryModelTracking.runFile
+ "/home/bthom/git/riscv-semantics/test/build/sbData64" 
+ $ [(0x10078,0x10098),(0x1009c,0x100b4)]
+
+sbDataRev = Platform.MemoryModelTracking.runFile
+ "/home/bthom/git/riscv-semantics/test/build/sbData64" 
+ $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b4)]
+
+
+emptyEx = Execution {
             domain= Set.empty, 
             lab= S.empty,
             rf= S.empty,
             addr= S.empty,
             ctrl= S.empty,
             depdata= S.empty}
+ 
+--readerRead :: IO()
+readerRead prog = do
+  threads <- newIORef Minimal64{}
+  execution <- newIORef emptyEx
   tid <- newIORef 0 
   iid <- newIORef 0 
   alternatives <- newIORef []
   revisit <- newIORef Set.empty
   returnEx <- newIORef []
   mem <- newIORef $ MapMemory S.empty Nothing
-  runReaderT ok Ptrs{ r_threads= threads,
+  runReaderT prog Ptrs{ r_threads= threads,
                       r_currentExecution= execution, 
                       r_currentThread=tid, 
                       r_currentIid= iid,
