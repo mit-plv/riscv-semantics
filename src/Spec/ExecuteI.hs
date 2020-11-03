@@ -199,7 +199,7 @@ execute (And rd rs1 rs2) = do
   x <- getRegister rs1
   y <- getRegister rs2
   setRegister rd (x .&. y)
-execute (Fence pred succ) = return () -- TODO
+execute (Fence pred succ) = fence pred succ -- TODO
 execute Fence_i = return () -- TODO
 -- end ast
 execute inst = error $ "dispatch bug: " ++ show inst

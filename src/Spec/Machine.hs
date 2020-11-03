@@ -64,6 +64,7 @@ class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
   inTLB :: AccessType -> MachineInt -> p (Maybe MachineInt)
   addTLB :: MachineInt -> MachineInt -> Int -> p ()
   flushTLB :: p ()
+  fence :: MachineInt -> MachineInt -> p ()
   getPlatform :: p Platform
 
 cacheAccess :: forall p t. (RiscvMachine p t) => AccessType -> MachineInt -> p (MachineInt, MachineInt,  Int) -> p MachineInt

@@ -126,6 +126,9 @@ instance Pretty Execution where
                 [sep ["disj"
                      ,sep $ punctuate comma (memoryEvents ++ (map (\el -> "i"<> el) addressesEvent))
                      ,": MemoryEvent,"]
+                ,let a = punctuate comma fenceEvents
+                 in
+                    if length a /= 0 then sep ["disj", sep a, ": FenceTSO,"] else emptyDoc
                 ,sep ["disj"
                      ,sep $ punctuate comma addressesEvent
                      ,": Address,"]
@@ -143,13 +146,27 @@ instance Pretty Execution where
           (case (poThread 1) of
             h:_t -> ["e_1_"<> pretty h<+> "in h2.start"]
             _ -> [])
+        _helperFence sMem mem = fmap (\(tid,iid) ->
+                                          hcat ["e_", pretty tid, "_", pretty iid]
+                                          <+> "in" <+> sMem) $ mem
         helperLdSt sMem mem = fmap (\((tid,iid),addr) ->
                                           hcat ["e_", pretty tid, "_", pretty iid]
                                           <+> "in" <+> sMem <+>"&" <+> "a_" <> pretty addr <>".~address") $ mem
+
         loadsAndStores = concat 
                               [helperLdSt "LoadNormal" loads
                               ,helperLdSt "StoreNormal" stores
+                              --,helperFence "FenceTSO" fences
                               ,initAddresses]
+        _fences = 
+          Set.toList . S.foldlWithKey 
+            (\acc k el -> 
+              case k of
+                Init _ -> acc
+                Node(tid,iid) -> 
+                  case el of
+                    EFence-> Set.insert (tid,iid) acc
+                    _ -> acc) Set.empty $ lab e
         loads = 
           Set.toList . S.foldlWithKey 
             (\acc k el -> 
@@ -169,11 +186,32 @@ instance Pretty Execution where
                     EWrite addr _ -> Set.insert ((tid,iid),addr) acc
                     _ -> acc) Set.empty $ lab e
         memoryEvents =
-          fmap
-            (\el -> case el of
-                      Node(t,i) -> "e_" <> pretty t <> "_" <> pretty i
-                      Init r -> "i_" <> pretty r) 
-            . Set.toList $ domain e
+          S.foldlWithKey
+            (\acc key el -> 
+                  let aux = case key of
+                        Node(_a,_b) -> pretty key : acc 
+                        Init _ -> acc
+                  in
+                  case el of
+                    ERead _  -> aux
+                    EWrite _ _ -> aux 
+                    EFence -> acc
+                  ) 
+             [] $ lab e
+        fenceEvents =
+          S.foldlWithKey
+            (\acc key el -> 
+                  let aux = case key of
+                        Node(_a,_b) -> pretty key : acc 
+                        Init _ -> acc
+                  in
+                  case el of
+                    ERead _  -> acc 
+                    EWrite _ _ -> acc
+                    EFence -> aux
+                  ) 
+             [] $ lab e
+
         addressesEvent = 
           fmap (\el -> "a_" <> pretty el) . Set.toList . S.foldl 
             (\acc el -> case el of
@@ -709,6 +747,16 @@ mpRev = Platform.MemoryModelTracking.runFile
 mp = Platform.MemoryModelTracking.runFile
  "/home/bthom/git/riscv-semantics/test/build/mp64" 
  $ [(0x10078,0x10098),(0x1009c,0x100b4)]
+
+mpFence = Platform.MemoryModelTracking.runFile
+ "/home/bthom/git/riscv-semantics/test/build/mpFence64" 
+ $ [(0x10078,0x10098),(0x1009c,0x100b8)]
+
+mpFenceRev = Platform.MemoryModelTracking.runFile
+ "/home/bthom/git/riscv-semantics/test/build/mpFence64" 
+ $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b8)]
+
+
 
 sbData = Platform.MemoryModelTracking.runFile
  "/home/bthom/git/riscv-semantics/test/build/sbData64" 
