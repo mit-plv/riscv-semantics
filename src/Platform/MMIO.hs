@@ -43,22 +43,22 @@ instance (RiscvMachine (State s) t, MachineWidth t) => RiscvMachine (IOState s) 
   setRegister r v = liftState (setRegister r v)
   getFPRegister r = liftState (getFPRegister r)
   setFPRegister r v = liftState (setFPRegister r v)
-  loadByte a = liftState (loadByte a)
-  loadHalf a = liftState (loadHalf a)
-  loadWord :: t -> IOState s Int32
-  loadWord addr =
+  loadByte s a = liftState (loadByte s a)
+  loadHalf s a = liftState (loadHalf s a)
+  loadWord :: SourceType -> t -> IOState s Int32
+  loadWord s addr =
     case S.lookup ((fromIntegral:: t -> MachineInt) addr) mmioTable of
       Just (getFunc, _) -> getFunc
-      Nothing -> liftState (loadWord addr)
-  loadDouble a = liftState (loadDouble a)
-  storeByte a v = liftState (storeByte a v)
-  storeHalf a v = liftState (storeHalf a v)
-  storeWord :: t -> Int32 -> IOState s ()
-  storeWord addr val =
+      Nothing -> liftState (loadWord s addr)
+  loadDouble s a = liftState (loadDouble s a)
+  storeByte s a v = liftState (storeByte s a v)
+  storeHalf s a v = liftState (storeHalf s a v)
+  storeWord :: SourceType -> t -> Int32 -> IOState s ()
+  storeWord s addr val =
     case S.lookup ((fromIntegral:: t -> MachineInt) addr) mmioTable of
       Just (_, setFunc) -> setFunc val
-      Nothing -> liftState (storeWord addr val)
-  storeDouble a v = liftState (storeDouble a v)
+      Nothing -> liftState (storeWord s addr val)
+  storeDouble s a v = liftState (storeDouble s a v)
   makeReservation a = liftState (makeReservation a)
   checkReservation a = liftState (checkReservation a)
   clearReservation a = liftState (clearReservation a)

@@ -8,13 +8,13 @@
   cpus {
     #address-cells = <1>;
     #size-cells = <0>;
-    timebase-frequency = <10000000>;
+    timebase-frequency = <1000000>;
     CPU0: cpu@0 {
       device_type = "cpu";
       reg = <0>;
       status = "okay";
       compatible = "riscv";
-      riscv,isa = "rv64imafdc";
+      riscv,isa = "rv64ima";
       mmu-type = "riscv,sv48";
       clock-frequency = <1000000000>;
       CPU0_intc: interrupt-controller {
@@ -26,7 +26,7 @@
   };
   memory@80000000 {
     device_type = "memory";
-    reg = <0x0 0x80000000 0x0 0x80000000>;
+    reg = <0x0 0x80000000 0x0 0x04000000>;
   };
   soc {
     #address-cells = <2>;
@@ -38,9 +38,25 @@
       interrupts-extended = <&CPU0_intc 3 &CPU0_intc 7 >;
       reg = <0x0 0x2000000 0x0 0xc0000>;
     };
-  };
-  uart@fff0 {
+    PLIC: interrupt-controller@4000000 {
+      compatible = "riscv,plic0";
+      riscv,ndev = <0x0000008>;
+      riscv,max-priority = <0x00000008>;
+      reg = <0x0 0x04000000 0x0 0x04000000>;
+      interrupts-extended = <&CPU0_intc 0xb &CPU0_intc 0x9>;
+      interrupt-controller;
+      interrupt-parent = <&CPU0_intc>;
+      #interrupt-cells = <0x1>;
+    };
+    UART: uart@fff0 {
     compatible = "sifive,uart0";
+    interrupt-parent = <&PLIC>;
+    interrupts = <0x00000001>;
     reg = <0x0 0xfff0 0x0 0x0>;
+    };
   };
-};
+
+  aliases {
+    serial0 = &UART;
+  };
+  };

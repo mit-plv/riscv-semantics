@@ -67,22 +67,22 @@ instance RiscvMachine MState Int64 where
   setPrivMode val = state $ \comp -> ((), comp { privMode = val })
   commit = state $ \comp -> ((), comp { pc = nextPC comp })
   -- Wrap Memory instance:
-  loadByte = wrapLoad M.loadByte
-  loadHalf = wrapLoad M.loadHalf
-  loadWord :: forall s. (Integral s) => s -> MState Int32
-  loadWord addr =
+  loadByte s = wrapLoad M.loadByte
+  loadHalf s = wrapLoad M.loadHalf
+  loadWord :: forall s. (Integral s) => SourceType -> s -> MState Int32
+  loadWord s addr =
     case S.lookup ((fromIntegral:: s -> MachineInt) addr) memMapTable of
       Just (getFunc, _) -> getFunc
       Nothing -> wrapLoad M.loadWord addr
-  loadDouble = wrapLoad M.loadDouble
-  storeByte = wrapStore M.storeByte
-  storeHalf = wrapStore M.storeHalf
-  storeWord :: forall s. (Integral s, Bits s) => s -> Int32 -> MState ()
-  storeWord addr val =
+  loadDouble s  = wrapLoad M.loadDouble
+  storeByte s = wrapStore M.storeByte
+  storeHalf s = wrapStore M.storeHalf
+  storeWord :: forall s. (Integral s, Bits s) => SourceType -> s -> Int32 -> MState ()
+  storeWord s addr val =
     case S.lookup ((fromIntegral:: s -> MachineInt) addr) memMapTable of
       Just (_, setFunc) -> setFunc val
       Nothing -> wrapStore M.storeWord addr val
-  storeDouble = wrapStore M.storeDouble
+  storeDouble s = wrapStore M.storeDouble
   makeReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)) })
   checkReservation addr = state $ \comp -> (M.checkReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)), comp)
   clearReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)) })

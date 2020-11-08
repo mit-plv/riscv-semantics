@@ -28,6 +28,7 @@ import qualified Data.ByteString as B
 import Debug.Trace
 import Numeric (showHex, readHex)
 import Text.Printf
+import Platform.Plic
 
 processLine :: String -> (Int, [(Int, Word8)]) -> (Int, [(Int, Word8)])
 processLine ('@':xs) (p, l) = ((fst $ head $ readHex xs) * 4, l)
@@ -46,7 +47,7 @@ readHexFile f = do
                  then return $ snd $ processLine s l
                  else helper h (processLine s l)
 
-checkInterrupt :: IO Bool
+checkInterrupt :: IO ChangeMIP
 checkInterrupt = do
   ready <- hReady stdin
   if ready then do
@@ -54,9 +55,9 @@ checkInterrupt = do
     if c == '!' then do
       _ <- getChar
       _ <- getChar
-      return True
-    else return False
-  else return False
+      return Set
+    else return DoNothing
+  else return DoNothing
 
 runProgram :: Maybe Int32 -> Minimal32 -> IO (Int32, Minimal32)
 
@@ -75,7 +76,7 @@ runProgram maybeToHostAddress = runStateT (stepHelper RV32IM maybeToHostAddress 
                                        instret <- getCSRField Field.MInstRet
                                        if (instret > 5000)
                                          then liftIO . exitWith .  ExitFailure $ 1
-                                         else liftIO checkInterrupt) mtimecmp_addr :: IOState Minimal32 Int32)
+                                         else liftIO checkInterrupt) (return (mtimecmp_addr,0)) (\inst -> return False) endCycle :: IOState Minimal32 Int32)
 -- Small MMIO hack to step each cycle
 
 

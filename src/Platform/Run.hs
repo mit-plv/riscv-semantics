@@ -25,6 +25,7 @@ import Control.Monad.Trans.Writer
 import qualified Data.Map.Strict as S
 import qualified Data.ByteString as B
 import Debug.Trace
+import Platform.Plic
 import Numeric (showHex, readHex)
 
 processLine :: String -> (Int, [(Int, Word8)]) -> (Int, [(Int, Word8)])
@@ -44,7 +45,7 @@ readHexFile f = do
                  then return $ snd $ processLine s l
                  else helper h (processLine s l)
 
-checkExternalInterrupt :: IO Bool
+checkExternalInterrupt :: IO ChangeMIP
 checkExternalInterrupt = do
   ready <- hReady stdin
   if ready then do
@@ -52,14 +53,14 @@ checkExternalInterrupt = do
     if c == '!' then do
       _ <- getChar
       _ <- getChar
-      return True
-    else return False
-  else return False
+      return Set
+    else return DoNothing
+  else return DoNothing
 
 runProgram :: Maybe Int64 -> Minimal64 -> IO (Int64, Minimal64)
 runProgram maybeToHostAddress c =
   runStateT (stepHelper RV64IMAF maybeToHostAddress (do 
-                                                        liftIO checkExternalInterrupt) mtimecmp_addr ) c 
+                                                        liftIO checkExternalInterrupt) (return (mtimecmp_addr,0)) (\inst -> return False) endCycle ) c 
 
 
 

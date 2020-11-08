@@ -21,6 +21,17 @@ all64: $(HEX64)
 $(ELF2HEX)/elf2hex:
 	$(MAKE) -C $(ELF2HEX)
 
+mpFence: mpFence.S
+	$(RISCVCC64) -c mpFence.S -o $(BUILDDIR)/mpFence64.o
+	$(RISCVCC64) -o $(BUILDDIR)/mpFence64 $(BUILDDIR)/mpFence64.o
+mp: mp.S
+	$(RISCVCC64) -c mp.S -o $(BUILDDIR)/mp64.o
+	$(RISCVCC64) -o $(BUILDDIR)/mp64 $(BUILDDIR)/mp64.o
+sb: sbData.S
+	$(RISCVCC64) -c sbData.S -o $(BUILDDIR)/sbData64.o
+	$(RISCVCC64) -o $(BUILDDIR)/sbData64 $(BUILDDIR)/sbData64.o
+
+
 init32.o: init.S
 	$(RISCVCC32) -c init.S -o init32.o
 

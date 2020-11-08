@@ -104,8 +104,14 @@ getCSR Time = do
       (priv == Supervisor && permS == 1)||
       (priv == User && permS == 1 && permU == 1))
     then do
-    timer <- loadWord 0x200bff8 --Hardcode for Minimal. TODO from platform. BUG it should be DOUBLE word not word. For size 64.
-    return (fromIntegral timer)
+    timerlo <- loadWord Execute 0x200bff8 --Hardcode for Minimal. TODO from platform. BUG it should be DOUBLE word not word. For size 64. Source a bit arbitrary to Execute
+    xlen <- getXLEN
+    if xlen > 32 
+    then do
+        timerhi <- loadWord Execute 0x200bffc --Hardcode for Minimal. TODO from platform. BUG it should be DOUBLE word not word. For size 64. A bit arbitrary association to execute source
+        return (fromIntegral (shiftL timerhi 32) .|. (fromIntegral timerlo))
+    else
+        return (fromIntegral timerlo)
  -- getCSRField timer -- TODO FIX BUG here
     else
     raiseException 0 2

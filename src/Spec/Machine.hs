@@ -16,6 +16,8 @@ import Debug.Trace
 data PrivMode = User | Supervisor | Machine deriving (Eq, Ord, Show)
 data AccessType = Instruction | Load | Store deriving (Eq, Show)
 
+data SourceType = VirtualMemory | Fetch | Execute deriving (Eq,Show)
+
 decodePrivMode 0 = User
 decodePrivMode 1 = Supervisor
 decodePrivMode 3 = Machine
@@ -40,14 +42,14 @@ class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
   -- TODO: Another typeclass parameter for floating-point width?
   getFPRegister :: FPRegister -> p Int32
   setFPRegister :: FPRegister -> Int32 -> p ()
-  loadByte :: t -> p Int8
-  loadHalf :: t -> p Int16
-  loadWord :: t -> p Int32
-  loadDouble :: t -> p Int64
-  storeByte :: t -> Int8 -> p ()
-  storeHalf :: t -> Int16 -> p ()
-  storeWord :: t -> Int32 -> p ()
-  storeDouble :: t -> Int64 -> p ()
+  loadByte :: SourceType -> t -> p Int8
+  loadHalf :: SourceType -> t -> p Int16
+  loadWord :: SourceType -> t -> p Int32
+  loadDouble :: SourceType -> t -> p Int64
+  storeByte :: SourceType -> t -> Int8 -> p ()
+  storeHalf :: SourceType -> t -> Int16 -> p ()
+  storeWord :: SourceType -> t -> Int32 -> p ()
+  storeDouble :: SourceType -> t -> Int64 -> p ()
   makeReservation :: t -> p ()
   checkReservation :: t -> p Bool
   clearReservation :: t -> p ()
@@ -62,6 +64,7 @@ class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
   inTLB :: AccessType -> MachineInt -> p (Maybe MachineInt)
   addTLB :: MachineInt -> MachineInt -> Int -> p ()
   flushTLB :: p ()
+  fence :: MachineInt -> MachineInt -> p ()
   getPlatform :: p Platform
 
 cacheAccess :: forall p t. (RiscvMachine p t) => AccessType -> MachineInt -> p (MachineInt, MachineInt,  Int) -> p MachineInt
@@ -102,14 +105,14 @@ instance (RiscvMachine p t) => RiscvMachine (MaybeT p) t where
   setRegister r v = lift (setRegister r v)
   getFPRegister r = lift (getFPRegister r)
   setFPRegister r v = lift (setFPRegister r v)
-  loadByte a = lift (loadByte a)
-  loadHalf a = lift (loadHalf a)
-  loadWord a = lift (loadWord a)
-  loadDouble a = lift (loadDouble a)
-  storeByte a v = lift (storeByte a v)
-  storeHalf a v = lift (storeHalf a v)
-  storeWord a v = lift (storeWord a v)
-  storeDouble a v = lift (storeDouble a v)
+  loadByte s a = lift (loadByte s a)
+  loadHalf s a = lift (loadHalf s a)
+  loadWord s a = lift (loadWord s a)
+  loadDouble s a = lift (loadDouble s a)
+  storeByte s a v = lift (storeByte s a v)
+  storeHalf s a v = lift (storeHalf s a v)
+  storeWord s a v = lift (storeWord s a v)
+  storeDouble s a v = lift (storeDouble s a v)
   makeReservation a = lift (makeReservation a)
   checkReservation a = lift (checkReservation a)
   clearReservation a = lift (clearReservation a)

@@ -1,4 +1,4 @@
-module GcdExpr where
+module Platform.GcdExpr where
 import Prelude
 gcdState addr = if ( addr == 0) then 17719
  else if ( addr == 4) then 17847

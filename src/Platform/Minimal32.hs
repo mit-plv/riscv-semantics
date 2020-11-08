@@ -56,7 +56,7 @@ instance RiscvMachine MState Int32 where
   commit = do
     -- Post interrupt if mtime >= mtimecmp
     mtime <- getMTime
-    mtimecmp <- loadWord mtimecmp_addr
+    mtimecmp <- loadWord Execute mtimecmp_addr
     setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
     -- Check for interrupts before updating PC.
     mie <- getCSRField Field.MIE
@@ -82,17 +82,17 @@ instance RiscvMachine MState Int32 where
             else return nPC)
     state $ \comp -> ((), comp { pc = fPC })
   -- Wrap Memory instance:
-  loadByte = wrapLoad M.loadByte
-  loadHalf = wrapLoad M.loadHalf
-  loadWord :: forall s. (Integral s) => s -> MState Int32
-  loadWord addr =
+  loadByte s = wrapLoad M.loadByte
+  loadHalf s = wrapLoad M.loadHalf
+  loadWord :: forall s. (Integral s) => SourceType -> s -> MState Int32
+  loadWord s addr =
     case S.lookup ((fromIntegral:: s -> MachineInt) addr) memMapTable of
       Just (getFunc, _) -> getFunc
       Nothing -> wrapLoad M.loadWord addr
-  storeByte = wrapStore M.storeByte
-  storeHalf = wrapStore M.storeHalf
-  storeWord :: forall s. (Integral s, Bits s) => s -> Int32 -> MState ()
-  storeWord addr val =
+  storeByte s = wrapStore M.storeByte
+  storeHalf s = wrapStore M.storeHalf
+  storeWord :: forall s. (Integral s, Bits s) => SourceType -> s -> Int32 -> MState ()
+  storeWord s addr val =
     case S.lookup ((fromIntegral:: s -> MachineInt) addr) memMapTable of
       Just (_, setFunc) -> setFunc val
       Nothing -> wrapStore M.storeWord addr val
@@ -104,8 +104,8 @@ instance RiscvMachine MState Int32 where
   unsafeSetCSRField :: forall s. (Integral s) => Field.CSRField -> s -> MState ()
   unsafeSetCSRField field val = state $ \comp -> ((), comp { csrs = setField field ((fromIntegral:: s -> MachineInt) val) (csrs comp) })
   -- Unimplemented:
-  loadDouble _ = return 0
-  storeDouble _ _ = return ()
+  loadDouble s _ = return 0
+  storeDouble s _ _ = return ()
   inTLB a b = return Nothing -- noTLB
   addTLB a b c= return ()
   flushTLB = return ()
