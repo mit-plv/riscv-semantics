@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ed0e92c6479dd13fbcecc734a5bb32f43979a0f766deec94c9195d9478684293
+-- hash: a06bdd2b071bcfceb29aad0ce96a6aba30513fbed00d13854b31dce666cfd599
 
 name:           riscv-semantics
 version:        0.1.0.0
@@ -27,6 +27,7 @@ executable riscv-mm
       Spec.CSRField
       Spec.CSRFile
       Spec.CSRSpec
+      Spec.CSRGetSet
       Spec.Decode
       Spec.Execute
       Spec.ExecuteA
@@ -92,6 +93,7 @@ executable riscv-semantics
       Spec.CSRFile
       Spec.CSRFileIO
       Spec.CSRSpec
+      Spec.CSRGetSet
       Spec.Decode
       Spec.Execute
       Spec.Execute32
@@ -158,6 +160,7 @@ executable riscv-semantics-rv32im-compliance
       Spec.CSRFile
       Spec.CSRFileIO
       Spec.CSRSpec
+      Spec.CSRGetSet
       Spec.Decode
       Spec.Execute
       Spec.Execute32
@@ -224,6 +227,7 @@ executable riscv-semantics-tests
       Spec.CSRFile
       Spec.CSRFileIO
       Spec.CSRSpec
+      Spec.CSRGetSet
       Spec.Decode
       Spec.Execute
       Spec.Execute32

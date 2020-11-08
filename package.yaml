@@ -43,6 +43,7 @@ executables:
       - Spec.CSRField
       - Spec.CSRFile
       - Spec.CSRSpec
+      - Spec.CSRGetSet
       - Spec.Decode
       - Spec.Execute
       - Spec.ExecuteA
@@ -89,6 +90,7 @@ executables:
       - Spec.CSRFile
       - Spec.CSRFileIO
       - Spec.CSRSpec
+      - Spec.CSRGetSet
       - Spec.Decode
       - Spec.Execute
       - Spec.Execute32
@@ -135,6 +137,7 @@ executables:
       - Spec.CSRFile
       - Spec.CSRFileIO
       - Spec.CSRSpec
+      - Spec.CSRGetSet
       - Spec.Decode
       - Spec.Execute
       - Spec.Execute32
@@ -181,6 +184,7 @@ executables:
       - Spec.CSRFile
       - Spec.CSRFileIO
       - Spec.CSRSpec
+      - Spec.CSRGetSet
       - Spec.Decode
       - Spec.Execute
       - Spec.Execute32
