@@ -145,6 +145,7 @@ instance (RiscvMachine p t) => RiscvMachine (MaybeT p) t where
   addTLB a b c = lift (addTLB a b c)
   inTLB a b = lift (inTLB a b)
   flushTLB = lift flushTLB
+  fence a b = lift (fence a b)
   getPlatform = lift getPlatform
 
 raiseExceptionWithInfo :: forall a p t. (RiscvMachine p t) => MachineInt -> MachineInt -> MachineInt -> p a
