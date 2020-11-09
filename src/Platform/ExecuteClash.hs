@@ -16,9 +16,10 @@ execute inst = do
 --    MInstruction   i   -> M.execute   i
 --    I64Instruction i   -> I64.execute i
 --    M64Instruction i   -> M64.execute i
-    CSRInstruction i     -> CSR.execute i
-    InvalidInstruction i -> raiseExceptionWithInfo 0 2 i
-  cycles <- getCSRField Field.MCycle
-  setCSRField Field.MCycle (cycles + 1)
-  instret <- getCSRField Field.MInstRet
-  setCSRField Field.MInstRet (instret + 1)
+--    CSRInstruction i     -> CSR.execute i
+    --InvalidInstruction i -> raiseExceptionWithInfo 0 2 i
+    _ -> return () --raiseExceptionWithInfo 0 2 0
+  --cycles <- getCSRField Field.MCycle
+  --setCSRField Field.MCycle (cycles + 1)
+  --instret <- getCSRField Field.MInstRet
+  --setCSRField Field.MInstRet (instret + 1)

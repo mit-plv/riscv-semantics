@@ -50,38 +50,38 @@ embed byteen store  -- quot get rid of the bits on the right fromIntegral, those
 instance RiscvMachine MState Int32 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = state $ \comp -> ((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
-  loadByte ina = state $ \comp -> let a = ina .&. (complement 3) 
-                                      offset = mod ina 4 
-                                      byteen | offset == 3 = (True,False,False,False)
-                                             | offset == 2 = (False,True,False,False)
-                                             | offset == 1 = (False,False,True,False)
-                                             | offset == 0 = (False,False,False,True) in
+  loadByte s ina = state $ \comp -> let a = ina .&. (complement 3) 
+                                        offset = mod ina 4 
+                                        byteen | offset == 3 = (True,False,False,False)
+                                               | offset == 2 = (False,True,False,False)
+                                               | offset == 1 = (False,False,True,False)
+                                               | offset == 0 = (False,False,False,True) in
                          (extract byteen (fromIntegral (load comp)), comp{loadAddress = Just $ (fromIntegral a, byteen)})
-  loadHalf ina =state $ \comp -> let a = ina .&. (complement 3) 
-                                     offset = mod ina 4 
-                                     byteen | offset == 2 = (True,True,False,False)
-                                            | offset == 0 = (False,False,True,True)
-                                            | otherwise = (False,False,False,False) -- Should not happen
+  loadHalf s ina =state $ \comp -> let a = ina .&. (complement 3) 
+                                       offset = mod ina 4 
+                                       byteen | offset == 2 = (True,True,False,False)
+                                              | offset == 0 = (False,False,True,True)
+                                              | otherwise = (False,False,False,False) -- Should not happen
                          in
                          (extract byteen (fromIntegral (load comp)), comp{loadAddress = Just $ (fromIntegral a, byteen)})
-  loadWord a = state $ \comp -> (extract (True,True,True,True) (fromIntegral (load comp)), comp{loadAddress = Just $ (fromIntegral a,(True,True,True,True))})
-  loadDouble a = state $ \comp -> (0, comp)
-  storeByte ina v = state $ \comp -> let a = ina .&. (complement 3) 
-                                         offset = mod ina 4 
-                                         byteen | offset == 3 = (True,False,False,False)
-                                                | offset == 2 = (False,True,False,False)
-                                                | offset == 1 = (False,False,True,False)
-                                                | offset == 0 = (False,False,False,True)
+  loadWord s a = state $ \comp -> (extract (True,True,True,True) (fromIntegral (load comp)), comp{loadAddress = Just $ (fromIntegral a,(True,True,True,True))})
+  loadDouble s a = state $ \comp -> (0, comp)
+  storeByte s ina v = state $ \comp -> let a = ina .&. (complement 3) 
+                                           offset = mod ina 4 
+                                           byteen | offset == 3 = (True,False,False,False)
+                                                  | offset == 2 = (False,True,False,False)
+                                                  | offset == 1 = (False,False,True,False)
+                                                  | offset == 0 = (False,False,False,True)
                          in ((), comp{store=Just (fromIntegral a, embed byteen (fromIntegral v), byteen)})
-  storeHalf ina v = state $ \comp ->let a = ina .&. (complement 3)
-                                        offset = mod ina 4 
-                                        byteen | offset == 2 = (True,True,False,False)
-                                               | offset == 0 = (False,False,True,True)
-                                               | otherwise = (False,False,False,False) -- Should not happen
+  storeHalf s ina v = state $ \comp ->let a = ina .&. (complement 3)
+                                          offset = mod ina 4 
+                                          byteen | offset == 2 = (True,True,False,False)
+                                                 | offset == 0 = (False,False,True,True)
+                                                 | otherwise = (False,False,False,False) -- Should not happen
                          in
                          ((), comp{store=Just (fromIntegral a, embed byteen (fromIntegral v), byteen)})
-  storeWord  a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v,(True,True,True,True))})
-  storeDouble  a v = state $ \comp -> ((), comp)
+  storeWord s a v = state $ \comp -> ((), comp{store=Just (fromIntegral a, fromIntegral v,(True,True,True,True))})
+  storeDouble s a v = state $ \comp -> ((), comp)
 -- fake CSR
   getCSRField field = state $ \comp -> (0, comp)
   unsafeSetCSRField field val = state $ \comp -> ((), comp)
@@ -104,7 +104,8 @@ oneStep i = do
   result <- runMaybeT $ do
     pc <- getPC
     setPC (pc + 4)
-    execute (D.decode D.RV32I $ fromIntegral i)
+    let a = (D.decode D.RV32I $ fromIntegral i)
+    execute a 
   case result of
     Nothing -> commit >> (state $ \comp -> ((), comp{exception = True})) -- early return
     Just r -> commit >> return r -- this is a ()
