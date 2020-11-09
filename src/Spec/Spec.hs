@@ -54,10 +54,9 @@ stepHelper iset maybeToHostAddress checkExternalInterrupt mtimecmpAndMtime preDe
     checkInterrupt = do
              interrupt <- checkExternalInterrupt
              when (interrupt == Plic.Set) $! (do
-
-                          trace "Set meip" $ setCSRField Field.MEIP 1)
+                          setCSRField Field.MEIP 1)
              when (interrupt == Plic.Reset) $! (do --SHOULD NOT BE POSSIBLE
-                          trace "Reset meip" $ setCSRField Field.MEIP 0)
+                          setCSRField Field.MEIP 0)
 
              (mtimecmp, mtime) <- mtimecmpAndMtime
              setCSRField Field.MTIP (fromEnum (mtime >= mtimecmp))
