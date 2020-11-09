@@ -5,6 +5,7 @@ import Spec.Decode
 import Utility.Utility
 import Spec.CSRFile
 import qualified Spec.CSRField as Field
+import qualified Spec.CSR as CSR
 import qualified Spec.Memory as M
 import Utility.MapMemory
 import Data.Bits
@@ -53,6 +54,54 @@ wrapLoad loadFunc addr = state $ \comp -> ((fromIntegral:: r -> r') $ loadFunc (
 wrapStore :: forall a' v v' m. (Integral a', Integral v, Integral v') => (MapMemory Int -> Int -> v -> MapMemory Int) -> (a' -> v' -> MState ())
 wrapStore storeFunc addr val = state $ \comp -> ((), comp { mem = storeFunc (mem comp) ((fromIntegral:: Word64 -> Int) ((fromIntegral:: a' -> Word64) addr)) ((fromIntegral:: v' -> v) val) })
 
+getMinimalCSR :: (RiscvMachine p t) => CSR.CSR -> p MachineInt
+getMinimalCSR CSR.InstRet = do
+  permS <- getCSRField Field.MIR
+  permU <- getCSRField Field.SIR
+  priv <- getPrivMode
+  -- here we hardcode that user mode is supported.
+  if (priv == Machine ||
+      (priv == Supervisor && permS == 1) ||
+      (priv == User && permS == 1 && permU == 1))
+    then
+    getCSRField Field.MInstRet
+    else
+    raiseException 0 2
+getMinimalCSR CSR.Time = do
+  permS <- getCSRField Field.MTM
+  permU <- getCSRField Field.STM
+  priv <- getPrivMode
+  --  _ <- trace (show priv ++ show permS ++ show permU) (return ())
+  -- here we hardcode that user mode is supported.
+  if (priv == Machine ||
+      (priv == Supervisor && permS == 1)||
+      (priv == User && permS == 1 && permU == 1))
+    then do
+    timerlo <- loadWord Execute 0x200bff8 --Hardcode for Minimal. BUG it should be DOUBLE word not word. For size 64. Source a bit arbitrary to Execute
+    xlen <- getXLEN
+    if xlen > 32
+    then do
+        timerhi <- loadWord Execute 0x200bffc --Hardcode for Minimal. BUG it should be DOUBLE word not word. For size 64. A bit arbitrary association to execute source
+        return (fromIntegral (shiftL timerhi 32) .|. (fromIntegral timerlo))
+    else
+        return (fromIntegral timerlo)
+ -- getCSRField timer -- TODO FIX BUG here
+    else
+    raiseException 0 2
+getMinimalCSR CSR.Cycle = do
+  permS <- getCSRField Field.MCY
+  permU <-  getCSRField Field.SCY
+  priv <- getPrivMode
+  -- here we hardcode that user mode is supported.
+  if (priv == Machine ||
+      (priv == Supervisor && permS == 1) ||
+      (priv == User && permS == 1 && permU == 1))
+     -- (priv == User &&  permU == 1))
+    then
+    getCSRField Field.MCycle -- TODO FIX BUG here
+    else
+    raiseException 0 2
+
 instance RiscvMachine MState Int64 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else fromMaybe 0 (S.lookup reg (registers comp)), comp)
   setRegister :: forall s. (Integral s) => Register -> s -> MState ()
@@ -86,6 +135,7 @@ instance RiscvMachine MState Int64 where
   makeReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)) })
   checkReservation addr = state $ \comp -> (M.checkReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)), comp)
   clearReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)) })
+  fence a b = return ()
 
   -- CSRs:
   getCSRField field = state $ \comp -> (getField field (csrs comp), comp)
@@ -95,4 +145,8 @@ instance RiscvMachine MState Int64 where
   addTLB a b c= return ()
   flushTLB = return ()
 
-  getPlatform = return (Platform { dirtyHardware = return False, writePlatformCSRField = \field value -> return value })
+  getPlatform = return (Platform {
+    dirtyHardware = return False,
+    readPlatformCSR = getMinimalCSR,
+    writePlatformCSRField = \field value -> return value
+  })

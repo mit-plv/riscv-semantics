@@ -4,7 +4,7 @@ license-file:        LICENSE
 author:              MIT
 maintainer:          ijc@mit.edu bthom@mit.edu adamc@mit.edu
 build-type:          Simple
-extra-source-files:  
+extra-source-files:
 - ChangeLog.md
 - README.md
 #ghc-options: -haddock
@@ -15,7 +15,7 @@ dependencies:
 - mtl >=2.2 && <2.4
 - transformers >=0.5 && <0.6
 - bytestring
-- containers 
+- containers
 - directory
 - filepath
 - elf >=0.30
@@ -33,7 +33,7 @@ dependencies:
 executables:
   riscv-mm:
     main:             Platform/MainMM.hs
-    ghc-options:         -fexpose-all-unfoldings -fspecialise-aggressively -funfolding-use-threshold=50 -funfolding-creation-threshold=100 -fstatic-argument-transformation -O2 -optc-O3 -threaded 
+    ghc-options:         -fexpose-all-unfoldings -fspecialise-aggressively -funfolding-use-threshold=50 -funfolding-creation-threshold=100 -fstatic-argument-transformation -O2 -optc-O3 -threaded
     source-dirs:      src
     other-modules:
       - Platform.Plic
@@ -43,6 +43,7 @@ executables:
       - Spec.CSRField
       - Spec.CSRFile
       - Spec.CSRSpec
+      - Spec.CSRGetSet
       - Spec.Decode
       - Spec.Execute
       - Spec.ExecuteA
@@ -62,11 +63,11 @@ executables:
       - Utility.ListMemory
       - Utility.MapMemory
       - Utility.Utility
- 
+
 
   riscv-semantics:
     main:             Platform/MainRun.hs
-    ghc-options:         -fexpose-all-unfoldings -fspecialise-aggressively -funfolding-use-threshold=50 -funfolding-creation-threshold=100 -fstatic-argument-transformation -O2 -optc-O3 -threaded 
+    ghc-options:         -fexpose-all-unfoldings -fspecialise-aggressively -funfolding-use-threshold=50 -funfolding-creation-threshold=100 -fstatic-argument-transformation -O2 -optc-O3 -threaded
     source-dirs:      src
     other-modules:
       - Platform.BufferMMIO
@@ -89,6 +90,7 @@ executables:
       - Spec.CSRFile
       - Spec.CSRFileIO
       - Spec.CSRSpec
+      - Spec.CSRGetSet
       - Spec.Decode
       - Spec.Execute
       - Spec.Execute32
@@ -109,7 +111,7 @@ executables:
       - Utility.ListMemory
       - Utility.MapMemory
       - Utility.Utility
- 
+
   riscv-semantics-rv32im-compliance:
     main:             Platform/MainCompliance.hs
     ghc-options:         -threaded
@@ -135,6 +137,7 @@ executables:
       - Spec.CSRFile
       - Spec.CSRFileIO
       - Spec.CSRSpec
+      - Spec.CSRGetSet
       - Spec.Decode
       - Spec.Execute
       - Spec.Execute32
@@ -155,7 +158,7 @@ executables:
       - Utility.ListMemory
       - Utility.MapMemory
       - Utility.Utility
-  
+
   riscv-semantics-tests:
     main:             Platform/MainTest.hs
     ghc-options:         -threaded
@@ -181,6 +184,7 @@ executables:
       - Spec.CSRFile
       - Spec.CSRFileIO
       - Spec.CSRSpec
+      - Spec.CSRGetSet
       - Spec.Decode
       - Spec.Execute
       - Spec.Execute32
@@ -201,5 +205,3 @@ executables:
       - Utility.ListMemory
       - Utility.MapMemory
       - Utility.Utility
-
-

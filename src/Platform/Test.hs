@@ -32,7 +32,7 @@ runTest (Test name iset input returnValue output) = do
 
 -- TODO: Read this from a file.
 tests :: [Test]
-tests = 
+tests =
   [Test "add64" RV64I ""  11 "",
          Test "ebreak64" RV64IM "" 0 "D\n?\n",
          Test "mul_support64" RV64IM "" 0 "A\n",
@@ -55,7 +55,7 @@ getRiscvTests = do
   return (map makeTest (sort (filter isEnabled ls)))
   where makeTest f = Test ("../../riscv-tests/isa/" ++ f) RV64IMAF "" 0 ""
         isEnabled f = (isPrefixOf "rv64mi-" f || isPrefixOf "rv64si-" f || isPrefixOf "rv64ui-" f || isPrefixOf "rv64ua-" f
-         || isPrefixOf "rv64uf-" f) 
+         || isPrefixOf "rv64uf-" f)
                        && not (isSuffixOf ".dump" f)
 
 runProgram :: InstructionSet -> Maybe Int64 -> Minimal64 -> String -> (Int64, String)

@@ -136,7 +136,7 @@ memMapTable = S.fromList
                (0x200bffc, (readClintWrap 0xbffc, writeClintWrap 0xbffc)),
                (0x2004000, (readClintWrap 0x4000, writeClintWrap 0x4000)),
                (0x2004004, (readClintWrap 0x4004, writeClintWrap 0x4004))
- 
+
               ]
 
 mtimecmp_addr = 0x4000 :: Int64
@@ -184,15 +184,15 @@ instance RiscvMachine IOState Int64 where
        npc <- lift $ readIORef (nextPC refs)
        lift $! writeIORef (pc refs) npc
 --  -- Wrap Memory instance:
-  loadByte s addr = 
+  loadByte s addr =
        case S.lookup (fromIntegral addr) memMapTable of
-       Just _ -> error "loadByte on MMIO unsupported" 
+       Just _ -> error "loadByte on MMIO unsupported"
        Nothing -> do
          refs <- get
          fmap fromIntegral . lift $ readArray (mem refs) (fromIntegral addr)
-  loadHalf s addr = 
+  loadHalf s addr =
        case S.lookup (fromIntegral addr) memMapTable of
-       Just _ -> error "loadHalf on MMIO unsupported" 
+       Just _ -> error "loadHalf on MMIO unsupported"
        Nothing -> do
           refs <- get
           b0 <- lift . readArray (mem refs) $ fromIntegral addr
@@ -222,7 +222,7 @@ instance RiscvMachine IOState Int64 where
        Nothing -> do
           refs <- get
           lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral val) -- Convert from Int8 to Word8
-  storeHalf s addr val =  
+  storeHalf s addr val =
        case S.lookup (fromIntegral addr) memMapTable of
        Just _ -> error "storeHald on MMIO unsupported"
        Nothing -> do
@@ -238,14 +238,14 @@ instance RiscvMachine IOState Int64 where
    -- when (addr >= 0x2000000 && addr < 0x20c0000) .lift $ putStrLn ("write to the clint:  " ++ show ( fromIntegral addr))
     case S.lookup ((fromIntegral:: s -> MachineInt) addr) memMapTable of
       Just (_, setFunc) -> setFunc val
-      Nothing -> do 
+      Nothing -> do
        let bytes = splitWord val
       -- refs <- get
        forM_ (zip bytes [addr + i| i<- [0..]])  $ (\(x,addr)-> lift $ writeArray (mem refs) (fromIntegral addr) (fromIntegral x))
   storeDouble s addr val =
     case (S.lookup (fromIntegral addr) memMapTable,S.lookup (fromIntegral (addr+4)) memMapTable) of
     (Just (_, setFunc1 ),Just (_, setFunc2 ))  -> do
-           setFunc1 $ fromIntegral (val .&. 0xFFFFFFFF)  
+           setFunc1 $ fromIntegral (val .&. 0xFFFFFFFF)
            setFunc2 $ fromIntegral (shiftR val 32)
     (Nothing, Nothing) -> do
        let bytes = splitDouble val
@@ -262,6 +262,7 @@ instance RiscvMachine IOState Int64 where
   clearReservation addr = do
        refs <- get
        lift $ writeIORef (reservation refs) Nothing
+  fence a b = return ()
 --  -- CSRs:
   getCSRField field = do
      refs <- get
@@ -274,4 +275,3 @@ instance RiscvMachine IOState Int64 where
   addTLB a b c= return ()
   flushTLB = return ()
   getPlatform = return (Platform { dirtyHardware = return False, writePlatformCSRField = \field value -> return value })
-
