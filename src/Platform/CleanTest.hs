@@ -262,6 +262,7 @@ instance RiscvMachine IOState Int64 where
   clearReservation addr = do
        refs <- get
        lift $ writeIORef (reservation refs) Nothing
+  fence a b = return ()
 --  -- CSRs:
   getCSRField field = do
      refs <- get

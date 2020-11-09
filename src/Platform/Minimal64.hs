@@ -135,6 +135,7 @@ instance RiscvMachine MState Int64 where
   makeReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)) })
   checkReservation addr = state $ \comp -> (M.checkReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)), comp)
   clearReservation addr = state $ \comp -> ((), comp { mem = M.makeReservation (mem comp) ((fromIntegral :: Word64 -> Int) ((fromIntegral :: Int64 -> Word64) addr)) })
+  fence a b = return ()
 
   -- CSRs:
   getCSRField field = state $ \comp -> (getField field (csrs comp), comp)

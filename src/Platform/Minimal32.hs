@@ -104,6 +104,7 @@ instance RiscvMachine MState Int32 where
   unsafeSetCSRField :: forall s. (Integral s) => Field.CSRField -> s -> MState ()
   unsafeSetCSRField field val = state $ \comp -> ((), comp { csrs = setField field ((fromIntegral:: s -> MachineInt) val) (csrs comp) })
   -- Unimplemented:
+  fence a b = return ()
   loadDouble s _ = return 0
   storeDouble s _ _ = return ()
   inTLB a b = return Nothing -- noTLB

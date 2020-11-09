@@ -79,6 +79,7 @@ instance (RiscvMachine (State s) t, MachineWidth t) => RiscvMachine (BufferState
   setPC v = liftState (setPC v)
   getPrivMode = liftState getPrivMode
   setPrivMode v = liftState (setPrivMode v)
+  fence a b = liftState (fence a b)
   commit = liftState commit
   endCycle = liftState endCycle
   inTLB a b = liftState (inTLB a b) -- noTLB
