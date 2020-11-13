@@ -14,9 +14,9 @@ before_install:
 
 install:
   - ./install.sh
-  - ./install-clash.sh
+#  - ./install-clash.sh
 
 script:
   - make
   - stack --no-terminal --skip-ghc-check exec riscv-semantics-tests
-  - ./make-circuit.sh
+#  - ./make-circuit.sh
