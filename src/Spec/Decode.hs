@@ -24,14 +24,14 @@ data InstructionI =
   Fence_i |
 
   Addi { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
-  Slli { rd :: Register, rs1 :: Register, shamt6 :: Int } |
+  Slli { rd :: Register, rs1 :: Register, shamt6 :: MachineInt } |
   Slti { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
   Sltiu { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
   Xori { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
   Ori { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
   Andi { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
-  Srli { rd :: Register, rs1 :: Register, shamt6 :: Int } |
-  Srai { rd :: Register, rs1 :: Register, shamt6 :: Int } |
+  Srli { rd :: Register, rs1 :: Register, shamt6 :: MachineInt } |
+  Srai { rd :: Register, rs1 :: Register, shamt6 :: MachineInt } |
 
   Auipc { rd :: Register, oimm20 :: MachineInt } |
 
@@ -133,9 +133,9 @@ data InstructionI64 =
   Lwu { rd :: Register, rs1 :: Register, oimm12 :: MachineInt } |
 
   Addiw { rd :: Register, rs1 :: Register, imm12 :: MachineInt } |
-  Slliw { rd :: Register, rs1 :: Register, shamt5 :: Int } |
-  Srliw { rd :: Register, rs1 :: Register, shamt5 :: Int } |
-  Sraiw { rd :: Register, rs1 :: Register, shamt5 :: Int } |
+  Slliw { rd :: Register, rs1 :: Register, shamt5 :: MachineInt } |
+  Srliw { rd :: Register, rs1 :: Register, shamt5 :: MachineInt } |
+  Sraiw { rd :: Register, rs1 :: Register, shamt5 :: MachineInt } |
 
   Sd { rs1 :: Register, rs2 :: Register, simm12 :: MachineInt } |
 
@@ -225,7 +225,7 @@ data InstructionSet = RV32I | RV32IM | RV32IA | RV32IMA | RV32IF | RV32IMF | RV3
                       RV64I | RV64IM | RV64IA | RV64IMA | RV64IF | RV64IMF | RV64IAF | RV64IMAF
   deriving (Eq, Show)
 
-bitwidth :: InstructionSet -> Int
+bitwidth :: InstructionSet -> MachineInt
 bitwidth RV32I = 32
 bitwidth RV32IM = 32
 bitwidth RV32IA = 32
@@ -624,8 +624,8 @@ decode iset inst =
                                 shift (bitSlice inst 8 12) 1  .|.
                                 shift (bitSlice inst 7 8) 11)
 
-    shamt5  = machineIntToShamt (bitSlice inst 20 25)
-    shamt6  = machineIntToShamt (bitSlice inst 20 26)
+    shamt5  = bitSlice inst 20 25
+    shamt6  = bitSlice inst 20 26
     shamtHi = bitSlice inst 25 26
     funct6  = bitSlice inst 26 32
     shamtHiTest = shamtHi == 0 || bitwidth iset == 64

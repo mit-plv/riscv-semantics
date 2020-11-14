@@ -95,11 +95,11 @@ class (Integral t, Bits t) => MachineWidth t where
 
   regToZ_unsigned :: t -> Integer
 
-  sll :: t -> Int -> t
+  sll :: t -> MachineInt -> t
 
-  srl :: t -> Int -> t
+  srl :: t -> MachineInt -> t
 
-  sra :: t -> Int -> t
+  sra :: t -> MachineInt -> t
 
   ltu :: t -> t -> Bool
 
@@ -111,9 +111,9 @@ class (Integral t, Bits t) => MachineWidth t where
   maxUnsigned :: t
   minSigned :: t
 
-  regToShamt5 :: t -> Int
+  regToShamt5 :: t -> MachineInt
 
-  regToShamt :: t -> Int
+  regToShamt :: t -> MachineInt
 
   highBits :: Integer -> t
 
@@ -174,6 +174,3 @@ signExtend :: Int -> MachineInt -> MachineInt
 signExtend l n = if testBit n (l-1)
                  then n-2^l
                  else n
-
-machineIntToShamt :: MachineInt -> Int
-machineIntToShamt = fromIntegral
