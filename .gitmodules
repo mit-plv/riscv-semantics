@@ -1,6 +1,3 @@
-[submodule "clash"]
-	path = clash
-	url = https://github.com/clash-lang/clash-compiler
 [submodule "riscv-tests"]
 	path = riscv-tests
 	url = https://github.com/riscv/riscv-tests
