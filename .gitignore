@@ -8,3 +8,6 @@ test/build/
 # no need to put under version control because stack.yaml already hardcodes all versions precisely
 stack.yaml.lock
 gnu-mcu-eclipse
+*.dyn_o
+*.dyn_hi
+src/verilog/

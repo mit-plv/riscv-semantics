@@ -9,4 +9,5 @@ stack setup
 stack install split
 stack install text
 make
-stack build
+# the --extra... options are a workaround needed because the Makefile of softfloat-hs assumes it can globally install itself
+stack build --extra-include-dirs softfloat-hs/berkeley-softfloat-3/source/include/ --extra-lib-dirs softfloat-hs/lib/

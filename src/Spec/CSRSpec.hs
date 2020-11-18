@@ -5,6 +5,7 @@ import Spec.CSR
 import Spec.Machine
 import Utility.Utility
 import Control.Monad
+import Prelude
 
 getCSR :: forall p t . (RiscvMachine p t) => CSR -> p t
 getCSR c = do
