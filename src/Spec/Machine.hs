@@ -63,22 +63,9 @@ class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
   setPrivMode :: PrivMode -> p ()
   commit :: p ()
   endCycle :: forall z. p z
-  inTLB :: AccessType -> MachineInt -> p (Maybe MachineInt)
-  addTLB :: MachineInt -> MachineInt -> Int -> p ()
   flushTLB :: p ()
   fence :: MachineInt -> MachineInt -> p ()
   getPlatform :: p Platform
-
-cacheAccess :: forall p t. (RiscvMachine p t) => AccessType -> MachineInt -> p (MachineInt, MachineInt,  Int) -> p MachineInt
-cacheAccess accessType addr getPA = do
-      a <-  inTLB accessType addr
-      case a of
-        Nothing -> do
-                 (pa, pte, level) <- getPA
-                 addTLB addr pte level
-                 return $ pa
-        Just a ->
-                 return $ a
 
 getXLEN :: forall p t s. (RiscvMachine p t, Integral s) => p s
 getXLEN = do
@@ -142,8 +129,6 @@ instance (RiscvMachine p t) => RiscvMachine (MaybeT p) t where
   setPrivMode m = lift (setPrivMode m)
   commit = lift commit
   endCycle = MaybeT (return Nothing) -- b is of type (MaybeT p) a
-  addTLB a b c = lift (addTLB a b c)
-  inTLB a b = lift (inTLB a b)
   flushTLB = lift flushTLB
   fence a b = lift (fence a b)
   getPlatform = lift getPlatform

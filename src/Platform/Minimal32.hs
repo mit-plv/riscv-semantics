@@ -107,6 +107,4 @@ instance RiscvMachine MState Int32 where
   fence a b = return ()
   loadDouble s _ = return 0
   storeDouble s _ _ = return ()
-  inTLB a b = return Nothing -- noTLB
-  addTLB a b c= return ()
   flushTLB = return ()

@@ -91,8 +91,6 @@ instance RiscvMachine MState Int32 where
   getPrivMode = state $ \comp -> (Machine , comp)
   setPrivMode m = state $ \comp -> ((), comp)
   fence a b = return ()
-  inTLB a b = return Nothing -- noTLB
-  addTLB a b c= return ()
   flushTLB = return ()
   makeReservation x = return ()
   checkReservation x = return False

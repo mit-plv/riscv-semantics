@@ -271,7 +271,5 @@ instance RiscvMachine IOState Int64 where
   unsafeSetCSRField field val = do -- CSRS are not refs in there, because I am lazy.
      refs <- get
      lift $! writeArray (csrs refs) field ((fromIntegral:: s -> MachineInt) val)
-  inTLB a b = return Nothing -- noTLB
-  addTLB a b c= return ()
   flushTLB = return ()
   getPlatform = return (Platform { dirtyHardware = return False, writePlatformCSRField = \field value -> return value })

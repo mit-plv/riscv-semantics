@@ -82,7 +82,5 @@ instance (RiscvMachine (State s) t, MachineWidth t) => RiscvMachine (BufferState
   fence a b = liftState (fence a b)
   commit = liftState commit
   endCycle = liftState endCycle
-  inTLB a b = liftState (inTLB a b) -- noTLB
-  addTLB a b c = liftState (addTLB a b c)
   flushTLB = liftState flushTLB
   getPlatform = liftState getPlatform
