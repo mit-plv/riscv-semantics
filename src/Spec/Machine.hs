@@ -67,6 +67,12 @@ class (Monad p, MachineWidth t) => RiscvMachine p t | p -> t where
   fence :: MachineInt -> MachineInt -> p ()
   getPlatform :: p Platform
 
+
+cacheAccess :: forall p t. (RiscvMachine p t) => AccessType -> MachineInt -> p (MachineInt, MachineInt,  Int) -> p MachineInt
+cacheAccess accessType addr getPA = do --remove TLB tracking, the only people that model stalled TLB entries seem to be doing it in an axiomatic memory model fashion
+      (pa, _pte, _level) <- getPA
+      return pa
+
 getXLEN :: forall p t s. (RiscvMachine p t, Integral s) => p s
 getXLEN = do
             mxl <- getCSRField MXL
