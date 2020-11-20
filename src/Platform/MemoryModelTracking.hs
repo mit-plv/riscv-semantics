@@ -304,6 +304,8 @@ data Ptrs = Ptrs {
 
 
 instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
+
+  getCSRField field = return 0
   getPC = do
       refs <- ask
       --tid <- lift $ readIORef (r_currentThread refs)
@@ -742,29 +744,29 @@ runTime init threads = do
                       Node(tid,iid) -> tid' < tid || (tid == tid' && iid' <= iid)) domain
 
 mpRev = Platform.MemoryModelTracking.runFile
- "/home/bthom/git/riscv-semantics/test/build/mp64" 
+ "./test/build/mp64" 
  $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b4)]
 mp = Platform.MemoryModelTracking.runFile
- "/home/bthom/git/riscv-semantics/test/build/mp64" 
+ "./test/build/mp64" 
  $ [(0x10078,0x10098),(0x1009c,0x100b4)]
 
 mpFence = Platform.MemoryModelTracking.runFile
- "/home/bthom/git/riscv-semantics/test/build/mpFence64" 
+ "./test/build/mpFence64" 
  $ [(0x10078,0x10098),(0x1009c,0x100b8)]
 
 mpFenceRev = Platform.MemoryModelTracking.runFile
- "/home/bthom/git/riscv-semantics/test/build/mpFence64" 
+ "./test/build/mpFence64" 
  $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b8)]
 
 
-
 sbData = Platform.MemoryModelTracking.runFile
- "/home/bthom/git/riscv-semantics/test/build/sbData64" 
+ "./test/build/sbData64" 
  $ [(0x10078,0x10098),(0x1009c,0x100b4)]
 
 sbDataRev = Platform.MemoryModelTracking.runFile
- "/home/bthom/git/riscv-semantics/test/build/sbData64" 
+ "./test/build/sbData64" 
  $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b4)]
+
 
 
 emptyEx = Execution {
