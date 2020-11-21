@@ -30,6 +30,10 @@ mp: mp.S
 sb: sbData.S
 	$(RISCVCC64) -c sbData.S -o $(BUILDDIR)/sbData64.o
 	$(RISCVCC64) -o $(BUILDDIR)/sbData64 $(BUILDDIR)/sbData64.o
+sbFence: sbFence.S
+	$(RISCVCC64) -c sbFence.S -o $(BUILDDIR)/sbFence64.o
+	$(RISCVCC64) -o $(BUILDDIR)/sbFence64 $(BUILDDIR)/sbFence64.o
+
 
 
 init32.o: init.S
