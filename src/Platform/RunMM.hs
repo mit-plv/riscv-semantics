@@ -84,7 +84,14 @@ import Numeric (showHex, readHex)
 --    fmap fst $ runProgram maybeToHostAddress c
 --
 main :: IO ()
-main = undefined 
+main = do
+	putStrLn "Tiny test"
+	readerRead mp 
+        readerRead mpRev 
+        readerRead mpFence
+        readerRead sbData 
+        readerRead sbDataReb 
+	return () 
   --  do
   --args <- getArgs
   --retval <- case args of

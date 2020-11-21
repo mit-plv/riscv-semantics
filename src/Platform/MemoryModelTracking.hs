@@ -701,7 +701,7 @@ runTime init threads = do
   result <- runMaybeT (interpThreads init threads)
   case result of 
     Just _ -> do
-      lift $ putStrLn "Found a new execution"
+      lift $ putStrLn "\n=====\nFound a new execution\n ======="
       refs <- ask
       oldexpl <- lift $ readIORef (r_currentExecution refs)
       -- Final mm check because we don't check on stores. Maybe we should check earlier in stores?
@@ -716,7 +716,6 @@ runTime init threads = do
       else 
         nextRound
     Nothing -> do 
-      lift $ putStrLn "Dead execution path, restart interpreter"
       nextRound
   where
     nextRound = do
