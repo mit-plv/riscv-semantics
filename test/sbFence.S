@@ -38,6 +38,3 @@ out1:
 1:
   j 1b
 
-# Note: we observe twice the same execution because the last store generate an event twice.
-# I am guessing because there are 2 prefixes but the two prefixes should be because of the 2 
-# load words of thread 1, but 
