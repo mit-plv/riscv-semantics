@@ -31,7 +31,7 @@ instance RiscvMachine MState Int32 where
   getRegister reg = state $ \comp -> (if reg == 0 then 0 else (registers comp) !! (fromIntegral reg-1), comp)
   setRegister reg val = state $ \comp ->((), if reg == 0 then comp else comp { registers = replace (fromIntegral reg-1) (fromIntegral val) (registers comp) })
 -- Fake load and stores
-  loadWord a = state $ \comp -> (
+  loadWord s a = state $ \comp -> (
                         if (a == 0x4000) 
                          then gcdI1 comp
                          else if (a == 0x4004)
@@ -39,7 +39,7 @@ instance RiscvMachine MState Int32 where
                            else 
                             0                   
      ,comp)
-  storeWord a v = state $ \comp -> ((), comp{store = Just (fromIntegral a, fromIntegral v,(True,True,True,True))})
+  storeWord s a v = state $ \comp -> ((), comp{store = Just (fromIntegral a, fromIntegral v,(True,True,True,True))})
   getCSRField field = state $ \comp -> (0, comp)
   unsafeSetCSRField field val = state $ \comp -> ((), comp)
   getPC = state $ \comp -> (pc comp, comp)
@@ -63,9 +63,9 @@ oneStep i = do
 wrap :: Int32 -> MMIOClash-> MMIOClash
 wrap i s = snd $ runState (oneStep i) s
 
-topEntity:: Clock System Source -> Reset System Asynchronous ->
+topEntity:: Clock System -> Reset System -> Enable System ->
     Signal System (Int32,Int32) -> Signal System (Int32,Int32) 
-topEntity = exposeClockReset machine
+topEntity = exposeClockResetEnable machine
 machine = mealy 
      (\(iregister::Vec 31 Int32,pc::Int32) 
                      (gcd1::Int32, gcd2::Int32) ->
