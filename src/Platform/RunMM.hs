@@ -90,7 +90,7 @@ main = do
         readerRead mpRev 
         readerRead mpFence
         readerRead sbData 
-        readerRead sbDataReb 
+        readerRead sbDataRev 
 	return () 
   --  do
   --args <- getArgs
