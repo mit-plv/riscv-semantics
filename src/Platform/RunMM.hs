@@ -85,13 +85,13 @@ import Numeric (showHex, readHex)
 --
 main :: IO ()
 main = do
-	putStrLn "Tiny test"
-	readerRead mp 
-        readerRead mpRev 
-        readerRead mpFence
-        readerRead sbData 
-        readerRead sbDataRev 
-	return () 
+  putStrLn "Tiny test"
+  readerRead mp 
+  readerRead mpRev 
+  readerRead mpFence
+  readerRead sbData 
+  readerRead sbDataRev
+  return ()
   --  do
   --args <- getArgs
   --retval <- case args of
