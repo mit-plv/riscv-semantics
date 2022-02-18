@@ -30,6 +30,7 @@ import System.Process
 import Spec.ExecuteI as I
 import Utility.Elf
 import Debug.Trace as T
+import Numeric (showHex)
 
 
 data Event =  Init Int64 --location begin initialized
@@ -559,7 +560,7 @@ interpThread pcStart pcStop preExecute = do
     loop
     where loop = do
               vpc <- getPC
---              T.trace (show $ fromIntegral vpc) $return () 
+              T.trace (showHex (fromIntegral vpc) "") $return () 
               inst <- loadWord Fetch vpc
               if not (vpc == pcStop)
                 then do
@@ -652,6 +653,7 @@ updateDeps inst =
 
 interpThreads :: Minimal64 -> [(Int64,Int64)] -> (MaybeT IORead) ()
 interpThreads initMachine ((start,stop):q) = do
+    T.trace ("\t" ++ showHex (fromIntegral start) "") $ return ()
     refs <- lift $ ask
     -- inc thread, restart iid to 0, run thread
     lift . lift $! writeIORef (r_threads refs) initMachine 
@@ -703,6 +705,7 @@ runTime init threads = do
     Just _ -> do
       lift $ putStrLn "\n=====\nFound a new execution\n ======="
       refs <- ask
+      -- lift $ readIORef (r_currentThreads refs) -- store the current machine state to check later
       oldexpl <- lift $ readIORef (r_currentExecution refs)
       -- Final mm check because we don't check on stores. Maybe we should check earlier in stores?
       mmOk <- liftIO $ checkGraph oldexpl 

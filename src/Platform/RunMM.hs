@@ -85,12 +85,16 @@ import Numeric (showHex, readHex)
 --
 main :: IO ()
 main = do
-  putStrLn "Tiny test"
+  putStrLn "\n\n\n\n\n\n\n\n\nmp"
   readerRead mp 
-  readerRead mpRev 
+  {- putStrLn "\n\n\n\n\n\n\n\n\nmpRev"
+  readerRead mpRev  
+  putStrLn "\n\n\n\n\n\n\n\n\nmpFence"
   readerRead mpFence
+  putStrLn "\n\n\n\n\n\n\n\n\nsbData"
   readerRead sbData 
-  readerRead sbDataRev
+  putStrLn "\n\n\n\n\n\n\n\n\nsbDataRev"
+  readerRead sbDataRev -}
   return ()
   --  do
   --args <- getArgs
