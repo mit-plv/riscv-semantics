@@ -93,20 +93,20 @@ compileInits inits =
 
 preamble :: String
 preamble = "\
-\#include \"encoding.h\"\n\
-\\n\
-\# define LREG lw\n\
-\# define SREG sw\n\
-\# define REGBYTES 4\n\
-\\n\
-\.section \".text.init\"\n\
-\#  .text\n\
-\#  .align 6\n\
-\  .globl _startTh0\n\
-\  .globl _startTh1\n\
-\  .globl _endTh0\n\
-\  .globl _endTh1\n\
-\"
+  \#include \"encoding.h\"\n\
+  \\n\
+  \# define LREG lw\n\
+  \# define SREG sw\n\
+  \# define REGBYTES 4\n\
+  \\n\
+  \.section \".text.init\"\n\
+  \#  .text\n\
+  \#  .align 6\n\
+  \  .globl _startTh0\n\
+  \  .globl _startTh1\n\
+  \  .globl _endTh0\n\
+  \  .globl _endTh1\n\
+  \"
 
 compileLitmusFile :: LitmusFile -> String
 compileLitmusFile (LFile (inits, (LThread t0, LThread t1))) = 
