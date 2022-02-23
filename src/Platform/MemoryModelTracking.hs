@@ -177,61 +177,61 @@ instance Pretty Execution where
                   case el of
                     ERead addr -> Set.insert ((tid,iid),addr) acc
                     _ -> acc) Set.empty $ lab e
-        stores = 
-          Set.toList . S.foldlWithKey 
-            (\acc k el -> 
+        stores =
+          Set.toList . S.foldlWithKey
+            (\acc k el ->
               case k of
                 Init _ -> acc
-                Node(tid,iid) -> 
+                Node(tid,iid) ->
                   case el of
                     EWrite addr _ -> Set.insert ((tid,iid),addr) acc
                     _ -> acc) Set.empty $ lab e
         memoryEvents =
           S.foldlWithKey
-            (\acc key el -> 
+            (\acc key el ->
                   let aux = case key of
-                        Node(_a,_b) -> pretty key : acc 
+                        Node(_a,_b) -> pretty key : acc
                         Init _ -> acc
                   in
                   case el of
                     ERead _  -> aux
-                    EWrite _ _ -> aux 
+                    EWrite _ _ -> aux
                     EFence -> acc
-                  ) 
+                  )
              [] $ lab e
         fenceEvents =
           S.foldlWithKey
-            (\acc key el -> 
+            (\acc key el ->
                   let aux = case key of
-                        Node(_a,_b) -> pretty key : acc 
+                        Node(_a,_b) -> pretty key : acc
                         Init _ -> acc
                   in
                   case el of
-                    ERead _  -> acc 
+                    ERead _  -> acc
                     EWrite _ _ -> acc
                     EFence -> aux
-                  ) 
+                  )
              [] $ lab e
 
-        addressesEvent = 
-          fmap (\el -> "a_" <> pretty el) . Set.toList . S.foldl 
+        addressesEvent =
+          fmap (\el -> "a_" <> pretty el) . Set.toList . S.foldl
             (\acc el -> case el of
                           EWrite addr _ -> Set.insert addr acc
                           ERead addr  -> Set.insert addr acc
                           _ -> acc) Set.empty $ lab e
-        initAddresses = 
-          fmap (\el -> "ia_" <> pretty el <+> "in Init &"<> "a_"<>pretty el <>".~address") . Set.toList . S.foldl 
+        initAddresses =
+          fmap (\el -> "ia_" <> pretty el <+> "in Init &"<> "a_"<>pretty el <>".~address") . Set.toList . S.foldl
             (\acc el -> case el of
                           EWrite addr _ -> Set.insert addr acc
                           ERead addr  -> Set.insert addr acc
                           _ -> acc) Set.empty $ lab e
 
- 
+
 
 instance Show(Execution) where
   show a = show (domain a)
 
-data Minimal64 = Minimal64 { 
+data Minimal64 = Minimal64 {
             registers :: S.Map Register Int64,
             csrs :: CSRFile,
             pc :: Int64,
@@ -241,13 +241,13 @@ data Minimal64 = Minimal64 {
             dep_addr:: Events,
             dep_data:: Events,
             dependencies :: (S.Map Register Events, Events) -- Registers, Ctrl dependencies
-} deriving (Show) 
+} deriving (Show)
 
 -- Translated from Karl Samuel Gruetter's experimentation with our idea to implement dependency tracking with monads
 -- based on the remark that the tracking is not dynamic (github.com/mit-plv/riscv-coq)
 updateDepsI :: InstructionI -> (S.Map Register Events, Events) -> (S.Map Register Events, Events)
 updateDepsI inst d =
-  case inst of 
+  case inst of
      Auipc rd _oimm20 -> (insert rd pc dep,pc)
      Jal rd _jimm20 -> (insert rd pc dep,pc)
      Jalr rd rs1 _oimm12 -> (insert rd pc dep, Set.union pc . fromJust $ S.lookup rs1 dep)
@@ -276,12 +276,12 @@ updateDepsI inst d =
      Srl  rd rs1 rs2 -> arithDep rs1 rs2 rd
      Sra  rd rs1 rs2 -> arithDep rs1 rs2 rd
      And  rd rs1 rs2 -> arithDep rs1 rs2 rd
-     Lui rd _imm20 -> memDep 
-     Lw  rd rs1 _oimm12 -> memDep 
-     Sw rs1 rs2 _simm12 -> memDep 
-     Fence _pred _succ -> memDep 
+     Lui rd _imm20 -> memDep
+     Lw  rd rs1 _oimm12 -> memDep
+     Sw rs1 rs2 _simm12 -> memDep
+     Fence _pred _succ -> memDep
      _ -> error "Dependency tracking for an instruction unsupported"
-  where 
+  where
      (dep,pc) = d
      memDep = d
      branchDep rs1 rs2 = (dep, Set.union pc (Set.union (fromJust $ S.lookup rs1 dep) (fromJust $ S.lookup rs2 dep)))
@@ -291,6 +291,8 @@ updateDepsI inst d =
 
 type IORead= ReaderT Ptrs IO
 
+data Condition = RegCond (Integer, Register, Int64) | MemCond (Int, Word8)
+
 data Ptrs = Ptrs {
   r_threads :: IORef Minimal64,
   r_currentExecution :: IORef Execution,
@@ -299,7 +301,9 @@ data Ptrs = Ptrs {
   r_alternativeExplorations :: IORef ([(Event, Event, Execution)]),
   r_revisitSet :: IORef (Set.Set Event),
   r_return :: IORef ([Execution]),
-  r_mem :: IORef (MapMemory Int)--,
+  r_mem :: IORef (MapMemory Int),
+  r_post_exists :: IORef [Condition]
+ -- r_post_forall :: IORef [Condition] -- not needed for simple tests
  -- r_end :: MaybeT IORef () 
 }
 
@@ -313,13 +317,13 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
       machine <- lift . lift $! readIORef (r_threads refs)
       return (pc machine)
   setPC npc = do
-      refs <- ask 
+      refs <- ask
       machine <- lift . lift $! readIORef (r_threads refs)
       lift . lift $! writeIORef (r_threads refs) (machine{nextPC = npc})
   getPrivMode = do
       refs <- ask
       machine <- lift . lift $! readIORef (r_threads refs)
-      return (privMode machine) 
+      return (privMode machine)
   setPrivMode val = do
       refs <- ask
       machine <- lift . lift $! readIORef (r_threads refs)
@@ -336,11 +340,11 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
       refs <- ask
       machine <- lift . lift $! readIORef (r_threads refs)
       let newmachine = if reg == 0 then machine else machine { registers = S.insert reg (fromIntegral val) (registers machine) }
-      lift . lift $! writeIORef (r_threads refs) newmachine 
+      lift . lift $! writeIORef (r_threads refs) newmachine
   loadWord :: forall s. (Integral s) => SourceType -> s -> (MaybeT IORead) Int32
   loadWord Fetch ad = do
        refs <-  ask
-       b0 <- lift . lift $ readIORef (r_mem refs) 
+       b0 <- lift . lift $ readIORef (r_mem refs)
        return $  (fromIntegral:: Word32 -> Int32) $ M.loadWord b0 ((fromIntegral :: s -> Int) ad)
   loadWord Execute ad = do
       refs <- ask
@@ -364,7 +368,7 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
           lift . lift $ writeIORef (r_revisitSet refs)
             (Set.union (Set.singleton (Node(tid,iid))) t)
           let all_write_same_loc = fmap fst . S.toList $ S.filter (\l -> case l of
-                        EWrite a _b -> a == fromIntegral ad 
+                        EWrite a _b -> a == fromIntegral ad
                         _ -> False) ( S.insert (Init $ fromIntegral ad) (EWrite (fromIntegral ad) 0) $ lab execution)
           case all_write_same_loc of
             [] -> error "reading uninitialized location"
@@ -383,23 +387,23 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
                 })
               -- add the alternative executions
               --let prefixexecution = prefix (Set.singleton (Node (tid,iid) )) newexecution
-              foldM (\_acc el -> do 
+              foldM (\_acc el -> do
                         expls <- lift . lift $ readIORef (r_alternativeExplorations refs)
                         --T.trace ("One more load exploration: " ++ (show $ ((Node (tid,iid),el, emptyEx):expls))) return ()
-                        lift. lift $ writeIORef (r_alternativeExplorations refs) ((Node (tid,iid),el, emptyEx):expls)) () q 
+                        lift. lift $ writeIORef (r_alternativeExplorations refs) ((Node (tid,iid),el, emptyEx):expls)) () q
               -- update the current execution
-              lift. lift $ writeIORef (r_currentExecution refs) newexecution 
+              lift. lift $ writeIORef (r_currentExecution refs) newexecution
               -- finally check the memory model 
-              mmOk <- liftIO $ checkGraph newexecution 
+              mmOk <- liftIO $ checkGraph newexecution
               if mmOk
-              then do 
+              then do
                     let lab' = fromJust $ S.lookup  w0 (lab newexecution)
                     case lab' of
                       EWrite _ d -> return d
                       _ -> error "Not a write in rf"
               else do
                 MaybeT (return Nothing) -- b is of type (MaybeT p) a
-                
+
 
   storeWord :: forall s. (Integral s, Bits s) => SourceType -> s -> Int32 -> (MaybeT IORead) ()
   storeWord Execute ad val = do
@@ -414,9 +418,9 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
           return ()
         else do
           -- find all the reads which are not in the prefix of a which
-          let all_read_same_loc =  Set.filter 
+          let all_read_same_loc =  Set.filter
                                 (\l -> case S.lookup l (lab execution) of
-                                                 Just (ERead a) -> a == fromIntegral ad 
+                                                 Just (ERead a) -> a == fromIntegral ad
                                                  _ -> False) revisitSet
           --T.trace ("Revisit set on store: " ++ show all_read_same_loc) $ return()
           m <- lift . lift $ readIORef (r_threads refs)
@@ -435,12 +439,12 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
           --T.trace ("Prefix exec: " ++ show prefixexecution) $ return()
           let all_read_not_prefix = all_read_same_loc Set.\\ (domain prefixexecution)
               -- add the alternative executions 
-          foldM (\_acc el -> do 
+          foldM (\_acc el -> do
                     expls <- lift .lift $ readIORef (r_alternativeExplorations refs)
                     --T.trace ("One more store exploration: " ++ (show $ ((el,Node (tid,iid), prefixexecution):expls))) return ()
-                    lift. lift $ writeIORef (r_alternativeExplorations refs) ((el,Node (tid,iid), prefixexecution):expls)) () all_read_not_prefix 
+                    lift. lift $ writeIORef (r_alternativeExplorations refs) ((el,Node (tid,iid), prefixexecution):expls)) () all_read_not_prefix
           -- update the current execution
-          lift .lift $ writeIORef (r_currentExecution refs) newexecution 
+          lift .lift $ writeIORef (r_currentExecution refs) newexecution
   fence _start  _end= do --FIXME Todo, for now only supports full fence
       refs <- ask
       tid <- lift. lift $ readIORef (r_currentThread refs)
@@ -461,15 +465,15 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
                   ctrl    = S.insert (Node(tid,iid)) ctrlDep (ctrl execution),
                   depdata = (depdata execution)
                 })
-          lift .lift $ writeIORef (r_currentExecution refs) newexecution 
+          lift .lift $ writeIORef (r_currentExecution refs) newexecution
 
 
 
-checkGraph :: Execution -> IO Bool 
+checkGraph :: Execution -> IO Bool
 checkGraph g = do
 --  putStrLn "New load event, assume an RF, check mem model by calling alloy. Press enter to continue"
 --  _wait <- getLine
-  let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty g 
+  let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty g
 --  T.trace "Alloy graph to check:" $ return ()
 --  T.putStr alloyFile
   T.writeFile "temporary.als" $! alloyFile
@@ -484,7 +488,7 @@ checkGraph g = do
   return (exitCode == ExitSuccess)
 
 
-  
+
 prefix1 :: Execution -> Events -> Events
 prefix1 ex events =
   let rf_set = Set.foldl (\newset el -> Set.union newset $ case  (S.lookup el (rf ex)) of
@@ -494,7 +498,7 @@ prefix1 ex events =
   let ctrl_set = Set.foldl (\newset el -> Set.union newset $ fromMaybe Set.empty (S.lookup el (ctrl ex))) Set.empty events in
   let addr_set = Set.foldl (\newset el -> Set.union newset $ fromMaybe Set.empty (S.lookup el (addr ex))) Set.empty events in
   let data_set = Set.foldl (\newset el -> Set.union newset $ fromMaybe Set.empty (S.lookup el (depdata ex))) Set.empty events in
-  Set.union events (Set.union 
+  Set.union events (Set.union
                                             (Set.union (rf_set) ctrl_set)
                                             (Set.union addr_set data_set))
 
@@ -505,13 +509,13 @@ restrictExec ex newdomain =
      ctrl = S.restrictKeys (ctrl ex) newdomain,
      depdata = S.restrictKeys (depdata ex) newdomain,
      addr = S.restrictKeys (addr ex) newdomain,
-     lab = S.restrictKeys (lab ex) newdomain  } 
+     lab = S.restrictKeys (lab ex) newdomain  }
 
 prefix :: Events -> Execution -> Execution
-prefix stableSet ex = 
+prefix stableSet ex =
   --T.trace ("prefix widening:" ++ show stableSet) $
   let newacc = prefix1 ex stableSet in
-    if newacc == stableSet 
+    if newacc == stableSet
       then restrictExec ex newacc
       else prefix newacc ex
 
@@ -522,7 +526,7 @@ prefix stableSet ex =
 
 
 unionEx :: Execution -> Execution -> Execution
-unionEx u1 u2 = 
+unionEx u1 u2 =
 --  if Set.disjoint (domain u1) (domain u2)
 --    then 
       emptyEx{domain = Set.union (domain u1) (domain u2),
@@ -553,20 +557,20 @@ removeMax = do
 
 
 
-interpThread :: (RiscvMachine p t) => t -> t -> (Instruction -> p ())  -> (p) () 
+interpThread :: (RiscvMachine p t) => t -> t -> (Instruction -> p ())  -> (p) ()
 interpThread pcStart pcStop preExecute = do
     setPC pcStart
     commit
     loop
     where loop = do
               vpc <- getPC
-              T.trace (showHex (fromIntegral vpc) "") $return () 
+              T.trace (showHex (fromIntegral vpc) "") $return ()
               inst <- loadWord Fetch vpc
               if not (vpc == pcStop)
                 then do
                   setPC (vpc + 4)
                   preExecute $ dInst inst
-                  execute $ dInst inst 
+                  execute $ dInst inst
                   commit
                   loop
                 else
@@ -580,10 +584,10 @@ interpThread pcStart pcStop preExecute = do
 
 instGenAddrCtrlData :: InstructionI -> (MaybeT IORead) ()
 instGenAddrCtrlData inst =
-  case inst of 
+  case inst of
     Auipc rd _oimm20      -> noDep
-    Jal rd _jimm20        -> noDep 
-    Jalr rd rs1 _oimm12   -> noDep 
+    Jal rd _jimm20        -> noDep
+    Jalr rd rs1 _oimm12   -> noDep
     Beq  rs1 rs2 _sbimm12 -> noDep
     Bne  rs1 rs2 _sbimm12 -> noDep
     Blt  rs1 rs2 _sbimm12 -> noDep
@@ -673,6 +677,28 @@ readProgram f = do
     maybeToHostAddress <- readElfSymbol "tohost" f
     return (fmap (fromIntegral:: Word64 -> Int64) maybeToHostAddress, mem)
 
+getThreads :: String -> Integer -> IO [(Int64, Int64)]
+getThreads f n = do
+  maybeStart <- readElfSymbol ("_startTh" ++ show n) f
+  maybeEnd <- readElfSymbol ("_endTh" ++ show n) f
+  case (maybeStart, maybeEnd) of
+    (Just startA, Just endA) -> do
+      ts <- getThreads f (n+1)
+      return $ ((fromIntegral:: Word64 -> Int64) startA, (fromIntegral:: Word64 -> Int64) endA) : ts
+    (_, _) -> return []
+
+readLitmusProgram :: String -> IO ([(Int, Word8)], [(Int64, Int64)])
+readLitmusProgram f = do
+    mem <- readElf f
+--    T.trace (show $ mem) $ return()
+    threads <- getThreads f 0 
+    T.trace (show threads) $ return ()
+    return (mem, threads)
+
+readLitmusPost :: String -> IO [Condition]
+readLitmusPost postfile = do
+  T.trace "HARDCODED POSTCONDITION TODO FIX" $ return ()
+  return [RegCond (0, 5, 1), RegCond (1, 5, 1)]
 
 runFile :: String -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
 runFile f threads = do
@@ -694,6 +720,28 @@ runFile f threads = do
   runTime c threads
   where initList = [(i,Set.empty) | i <- [0..31]]:: [(Register,Events)] 
 
+runLitmusFile :: String -> String -> ReaderT Ptrs IO [Execution]
+runLitmusFile asmfile postfile = do
+  (program, threads) <- lift $ readLitmusProgram asmfile
+  postcond <- lift $ readLitmusPost postfile
+--  T.trace (show $ program) $ return()
+  let mem = S.fromList program
+  let c = Minimal64 { registers = S.empty,
+                      csrs = (resetCSRFile 64), -- here but probably usless
+                      pc = 0x80000000, -- useless will be overwritten
+                      nextPC = 0,
+                      privMode = Machine,
+                      dep_addr = Set.empty,
+                      dep_data = Set.empty,
+                      dep_ctrl= Set.empty,
+                      dependencies = (S.fromList initList, Set.empty)
+                      }
+  refs <- ask
+  lift  $ writeIORef (r_mem refs) (MapMemory { bytes = mem, reservation = Nothing })
+  lift  $ writeIORef (r_post_exists refs) postcond
+  runTime c threads
+  where initList = [(i,Set.empty) | i <- [0..31]]:: [(Register,Events)]
+
 
 runTime :: Minimal64 -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
 runTime init threads = do
@@ -713,12 +761,12 @@ runTime init threads = do
         ret <- lift $ readIORef (r_return refs)
         let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty oldexpl 
         lift $ T.putStr alloyFile
-        lift $ T.writeFile ("execution"++ (show $ length ret ) ++".als") alloyFile 
-        lift $ writeIORef (r_return refs) (oldexpl:ret) 
+        lift $ T.writeFile ("execution"++ (show $ length ret ) ++".als") alloyFile
+        lift $ writeIORef (r_return refs) (oldexpl:ret)
         nextRound
-      else 
+      else
         nextRound
-    Nothing -> do 
+    Nothing -> do
       nextRound
   where
     nextRound = do
@@ -731,12 +779,12 @@ runTime init threads = do
             let beforeR = restrict (domain oldexpl) r
             let newexp = unionEx ( restrictExec oldexpl (domain $ prefix beforeR oldexpl)) nex
 --            T.trace ("new exec after removeMax:" ++ show (newexp) ++ show (lab newexp)) $ return ()
-            let newexpWithRf = newexp {rf = S.insert r w (rf newexp)} 
-            let newrevisit = restrict t r 
+            let newexpWithRf = newexp {rf = S.insert r w (rf newexp)}
+            let newrevisit = restrict t r
             lift $ writeIORef (r_currentIid refs) (0)
             lift $ writeIORef (r_currentThread refs) (0)
-            lift $ writeIORef (r_revisitSet refs) newrevisit 
-            lift $ writeIORef (r_currentExecution refs) newexpWithRf 
+            lift $ writeIORef (r_revisitSet refs) newrevisit
+            lift $ writeIORef (r_currentExecution refs) newexpWithRf
             runTime init threads
         Nothing -> lift $ readIORef (r_return refs)
     restrict domain elem =
@@ -745,6 +793,7 @@ runTime init threads = do
                     Node(tid',iid') -> case elem of
                       Init _ -> error "restrict to init elem does not make sense"
                       Node(tid,iid) -> tid' < tid || (tid == tid' && iid' <= iid)) domain
+
 
 mpRev = Platform.MemoryModelTracking.runFile
  "./test/build/mp64" 
@@ -770,6 +819,10 @@ sbDataRev = Platform.MemoryModelTracking.runFile
  "./test/build/sbData64" 
  $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b4)]
 
+sbLitmus = Platform.MemoryModelTracking.runLitmusFile
+ "./test/litmus/SB.litmus.exe" "./test/litmus/SB.litmus.post"
+ 
+
 
 emptyEx = Execution {
             domain= Set.empty, 
@@ -789,6 +842,7 @@ readerRead prog = do
   revisit <- newIORef Set.empty
   returnEx <- newIORef []
   mem <- newIORef $ MapMemory S.empty Nothing
+  post_exs <- newIORef $ []
   runReaderT prog Ptrs{ r_threads= threads,
                       r_currentExecution= execution, 
                       r_currentThread=tid, 
@@ -796,4 +850,5 @@ readerRead prog = do
                       r_alternativeExplorations= alternatives,
                       r_revisitSet= revisit, 
                       r_return= returnEx, 
-                      r_mem= mem } 
+                      r_mem= mem,
+                      r_post_exists= post_exs }

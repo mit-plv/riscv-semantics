@@ -85,8 +85,10 @@ import Numeric (showHex, readHex)
 --
 main :: IO ()
 main = do
-  putStrLn "\n\n\n\n\n\n\n\n\nmp"
-  readerRead mp 
+  putStrLn "\n\n\nSB.litmus.exe:\n"
+  readerRead sbLitmus
+  -- putStrLn "\n\n\n\n\n\n\n\n\nmp"
+  -- readerRead mp 
   {- putStrLn "\n\n\n\n\n\n\n\n\nmpRev"
   readerRead mpRev  
   putStrLn "\n\n\n\n\n\n\n\n\nmpFence"

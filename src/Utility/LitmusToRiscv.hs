@@ -104,6 +104,7 @@ preamble = "\
   \#  .align 6\n\
   \  .globl _startTh0\n\
   \  .globl _startTh1\n\
+  \  .globl _start\n\
   \  .globl _endTh0\n\
   \  .globl _endTh1\n\
   \"
@@ -112,6 +113,7 @@ compileLitmusFile :: LitmusFile -> String
 compileLitmusFile (LFile (inits, (LThread t0, LThread t1))) = 
   let (t0inits, t1inits, symptrs) = compileInits inits in
     preamble 
+    ++ "_start:\n"
     ++ "_startTh0:\n"
     ++ t0inits
     ++ t0
