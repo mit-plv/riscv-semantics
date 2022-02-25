@@ -9,7 +9,7 @@ import qualified Spec.Memory as M
 import Utility.MapMemory
 import Data.Bits
 import Data.Int
-import qualified Data.List as L 
+import qualified Data.List as L
 import Data.Word
 import Data.Maybe
 import qualified Data.Map.Strict as S
@@ -25,8 +25,8 @@ import qualified Data.Text.IO                          as T
 import           Data.Text.Prettyprint.Doc
 import           Data.Text.Prettyprint.Doc.Render.Text
 import System.Exit
-import System.Process 
- 
+import System.Process
+
 import Spec.ExecuteI as I
 import Utility.Elf
 import Debug.Trace as T
@@ -57,13 +57,13 @@ data Execution = Execution {
 
 instance Pretty Execution where
   pretty e =
-    vsep 
+    vsep
       ["open riscv"
       ,"run MP"
         <+> braces formula
         <+> "for"
         <+> pretty depth]
-      where 
+      where
         depth = (8::Integer)
         formula = indent 2 $ vsep
           [declarations
@@ -71,33 +71,33 @@ instance Pretty Execution where
           ,indent 2 . vsep . punctuate " and" $ concat [forallConstraints
                                                ,threadStarts
                                                ,loadsAndStores
-                                               ,relPo 
+                                               ,relPo
                                                ,let a = helperRel helpAddrDep in
                                                  if length a == 0 then [] else ["addrdep =" <+> (sep.punctuate "+" $ a)]
                                                ,let a = helperRel helpDataDep in
                                                  if length a == 0 then [] else ["datadep =" <+> (sep.punctuate "+" $ a)]
                                                ,let a = helperRel helpCtrlDep in
                                                  if length a == 0 then [] else ["ctrldep =" <+> (sep.punctuate "+" $ a)]
-                                               ,[relRf] 
+                                               ,[relRf]
                                                ,["RISCV_mm"]]]
         poThread ith =
           L.sort . catMaybes . fmap
             (\el -> case el of
                       Node(t, i) -> if t == ith then Just i else Nothing
-                      Init _ -> Nothing ) 
+                      Init _ -> Nothing )
             . Set.toList $ domain e
         pair2Doc ((tid,iid),(-1,addr)) = pretty (Init addr) <> "->" <> pretty (Node(tid,iid))
         pair2Doc ((tid,iid),(tidw,iidw)) = pretty (Node (tidw,iidw)) <> "->" <> pretty (Node(tid,iid))
-        rfHelper = 
-          Set.toList . S.foldlWithKey 
-            (\acc rd wr -> 
+        rfHelper =
+          Set.toList . S.foldlWithKey
+            (\acc rd wr ->
               case rd of
                 Init _ -> error "a read is living in the domain of the rf map, absurd"
-                Node(tid,iid) -> 
+                Node(tid,iid) ->
                   case wr of
                     Init addr -> Set.insert ((tid,iid),(-1,addr)) acc
                     Node (tidw, iidw) -> Set.insert ((tid,iid),(tidw,iidw)) acc) Set.empty $ rf e
-        relRf = "rf =" <+> (sep . punctuate "+" . map pair2Doc $ rfHelper) 
+        relRf = "rf =" <+> (sep . punctuate "+" . map pair2Doc $ rfHelper)
         poList = (helpPo 0 . wrapHelper  $poThread 0)
                  ++ (helpPo 1 . wrapHelper $ poThread 1)
         relPo = if length poList == 0 then [] else ["po =" <+> (sep . punctuate "+" $ poList)]
@@ -113,17 +113,17 @@ instance Pretty Execution where
                                                    Set.union acc (Set.map (\x -> (x,key)) el))
                                                  Set.empty
                                                  (ctrl e))
-        helperRel = fmap (\(a,b)-> pretty a <> "->" <> pretty b) :: [(Event,Event)]-> [Doc ann] 
+        helperRel = fmap (\(a,b)-> pretty a <> "->" <> pretty b) :: [(Event,Event)]-> [Doc ann]
         wrapHelper (h:t) =
           (h,t)
         wrapHelper [] = (0,[])
         helpPo _th (_last, []) =
           []
         helpPo th (last,(next:t)) =
-          ((pretty $ Node(th,last)) <> "->" <> (pretty $ Node (th,next))): helpPo th (next,t) 
-        declarations = 
+          ((pretty $ Node(th,last)) <> "->" <> (pretty $ Node (th,next))): helpPo th (next,t)
+        declarations =
           sep ["some"
-              ,align . vsep $ 
+              ,align . vsep $
                 [sep ["disj"
                      ,sep $ punctuate comma (memoryEvents ++ (map (\el -> "i"<> el) addressesEvent))
                      ,": MemoryEvent,"]
@@ -135,12 +135,12 @@ instance Pretty Execution where
                      ,": Address,"]
                 ,sep ["disj"
                      ,"h1, h2 : Hart |"]]]
-        forallConstraints = [parens "h = h1 or h = h2" 
+        forallConstraints = [parens "h = h1 or h = h2"
                             ,parens ("im in Init => " <+>
                                     parens (sep $ punctuate " or" $ map (\el -> "im = " <+> "i" <> el) addressesEvent))
                             ,parens ("m in NonInit => " <+>
                                     parens (sep $ punctuate " or" $ map (\el -> "m = " <+> el) memoryEvents))]
-        threadStarts = 
+        threadStarts =
           (case (poThread 0) of
             h:_t -> ["e_0_"<> pretty h<+> "in h1.start"]
             _ -> []) ++
@@ -154,26 +154,26 @@ instance Pretty Execution where
                                           hcat ["e_", pretty tid, "_", pretty iid]
                                           <+> "in" <+> sMem <+>"&" <+> "a_" <> pretty addr <>".~address") $ mem
 
-        loadsAndStores = concat 
+        loadsAndStores = concat
                               [helperLdSt "LoadNormal" loads
                               ,helperLdSt "StoreNormal" stores
                               --,helperFence "FenceTSO" fences
                               ,initAddresses]
-        _fences = 
-          Set.toList . S.foldlWithKey 
-            (\acc k el -> 
+        _fences =
+          Set.toList . S.foldlWithKey
+            (\acc k el ->
               case k of
                 Init _ -> acc
-                Node(tid,iid) -> 
+                Node(tid,iid) ->
                   case el of
                     EFence-> Set.insert (tid,iid) acc
                     _ -> acc) Set.empty $ lab e
-        loads = 
-          Set.toList . S.foldlWithKey 
-            (\acc k el -> 
+        loads =
+          Set.toList . S.foldlWithKey
+            (\acc k el ->
               case k of
                 Init _ -> acc
-                Node(tid,iid) -> 
+                Node(tid,iid) ->
                   case el of
                     ERead addr -> Set.insert ((tid,iid),addr) acc
                     _ -> acc) Set.empty $ lab e
@@ -291,7 +291,7 @@ updateDepsI inst d =
 
 type IORead= ReaderT Ptrs IO
 
-data Condition = RegCond (Integer, Register, Int64) | MemCond (Int, Word8)
+data Condition = RegCond (Int64, Register, Int64) | MemCond (Int, Word8)
 
 data Ptrs = Ptrs {
   r_threads :: IORef Minimal64,
@@ -302,7 +302,7 @@ data Ptrs = Ptrs {
   r_revisitSet :: IORef (Set.Set Event),
   r_return :: IORef ([Execution]),
   r_mem :: IORef (MapMemory Int),
-  r_post_exists :: IORef [Condition]
+  r_postExists :: IORef [Condition]
  -- r_post_forall :: IORef [Condition] -- not needed for simple tests
  -- r_end :: MaybeT IORef () 
 }
@@ -564,7 +564,7 @@ interpThread pcStart pcStop preExecute = do
     loop
     where loop = do
               vpc <- getPC
-              T.trace (showHex (fromIntegral vpc) "") $return ()
+              -- T.trace (showHex (fromIntegral vpc) "") $ return ()
               inst <- loadWord Fetch vpc
               if not (vpc == pcStop)
                 then do
@@ -574,7 +574,7 @@ interpThread pcStart pcStop preExecute = do
                   commit
                   loop
                 else
-                return $! ()
+                  return $! ()
           dInst inst = decode RV64I ((fromIntegral :: Int32 -> MachineInt) inst)
           execute inst =
             case inst of
@@ -617,32 +617,32 @@ instGenAddrCtrlData inst =
     Fence _pred _succ     -> noDep
     Lw  rd rs1 _oimm12    -> do
       refs <- ask
-      m <- lift . lift $! readIORef (r_threads refs) 
+      m <- lift . lift $! readIORef (r_threads refs)
       let (dep,pcDepOld) = dependencies m
       tid <- lift. lift $ readIORef (r_currentThread refs)
       iid <- lift . lift $ readIORef (r_currentIid refs)
       let newdep = insert rd (Set.singleton $ Node(tid,iid)) dep
       let (reg_dep, pc_dep) = dependencies m
-      lift . lift . writeIORef (r_threads refs) $! 
-          m{dep_addr = fromJust $! S.lookup rs1 reg_dep 
-           ,dep_data = Set.empty 
+      lift . lift . writeIORef (r_threads refs) $!
+          m{dep_addr = fromJust $! S.lookup rs1 reg_dep
+           ,dep_data = Set.empty
            ,dep_ctrl = pc_dep
            ,dependencies= (newdep,pcDepOld)}
     Sw rs1 rs2 _simm12 -> do -- rs1 is address, rs2 is data
       refs <- ask
-      m <- lift . lift $! readIORef (r_threads refs) 
+      m <- lift . lift $! readIORef (r_threads refs)
       let (reg_dep, pc_dep) = dependencies m
-      lift . lift . writeIORef (r_threads refs) $! 
-          m{dep_addr = fromJust $! S.lookup rs1 reg_dep 
-           ,dep_data = fromJust $! S.lookup rs2 reg_dep 
+      lift . lift . writeIORef (r_threads refs) $!
+          m{dep_addr = fromJust $! S.lookup rs1 reg_dep
+           ,dep_data = fromJust $! S.lookup rs2 reg_dep
            ,dep_ctrl = pc_dep}
     _ -> error "instruction not supported in this memory model exploration"
-  where 
-     noDep = return () 
+  where
+     noDep = return ()
      insert (k::Register) v map = if k /= 0 then S.insert k v map else map
 
 
- 
+
 
 updateDeps :: Instruction -> (MaybeT IORead) ()
 updateDeps inst =
@@ -650,25 +650,27 @@ updateDeps inst =
               IInstruction   i     -> do
                 instGenAddrCtrlData i
                 refs <- lift $ ask
-                m <- lift . lift $! readIORef (r_threads refs) 
+                m <- lift . lift $! readIORef (r_threads refs)
                 lift . lift .writeIORef (r_threads refs) $ m{dependencies = updateDepsI i (dependencies m)}
               _ -> error "instruction not supported (not I Instruction)"
 
 
-interpThreads :: Minimal64 -> [(Int64,Int64)] -> (MaybeT IORead) ()
-interpThreads initMachine ((start,stop):q) = do
+interpThreads :: Minimal64 -> [(Int64,Int64)] -> [(Int64, Minimal64)] -> (MaybeT IORead) [(Int64, Minimal64)]
+interpThreads initMachine ((start,stop):q) acc = do
     T.trace ("\t" ++ showHex (fromIntegral start) "") $ return ()
     refs <- lift $ ask
     -- inc thread, restart iid to 0, run thread
-    lift . lift $! writeIORef (r_threads refs) initMachine 
+    lift . lift $! writeIORef (r_threads refs) initMachine
     tid <- lift . lift $ readIORef (r_currentThread refs)
+    T.trace ("\t\ttid = " ++ show tid) $ return ()
     interpThread start stop updateDeps
+    endState <- lift . lift $! readIORef (r_threads refs)
     lift . lift $ writeIORef (r_currentIid refs) (0)
     lift . lift $ writeIORef (r_currentThread refs) (tid+1)
     -- keeps going
-    interpThreads initMachine q
-interpThreads _initMachine [] = 
-    return ()
+    interpThreads initMachine q ((tid, endState) : acc)
+interpThreads _initMachine [] acc =
+    return acc
 
 readProgram :: String -> IO (Maybe Int64, [(Int, Word8)])
 readProgram f = do
@@ -691,7 +693,7 @@ readLitmusProgram :: String -> IO ([(Int, Word8)], [(Int64, Int64)])
 readLitmusProgram f = do
     mem <- readElf f
 --    T.trace (show $ mem) $ return()
-    threads <- getThreads f 0 
+    threads <- getThreads f 0
     T.trace (show threads) $ return ()
     return (mem, threads)
 
@@ -716,9 +718,9 @@ runFile f threads = do
                       dependencies = (S.fromList initList, Set.empty)
                       }
   refs <- ask
-  lift  $ writeIORef (r_mem refs) (MapMemory { bytes = mem, reservation = Nothing }) 
+  lift  $ writeIORef (r_mem refs) (MapMemory { bytes = mem, reservation = Nothing })
   runTime c threads
-  where initList = [(i,Set.empty) | i <- [0..31]]:: [(Register,Events)] 
+  where initList = [(i,Set.empty) | i <- [0..31]]:: [(Register,Events)]
 
 runLitmusFile :: String -> String -> ReaderT Ptrs IO [Execution]
 runLitmusFile asmfile postfile = do
@@ -738,31 +740,54 @@ runLitmusFile asmfile postfile = do
                       }
   refs <- ask
   lift  $ writeIORef (r_mem refs) (MapMemory { bytes = mem, reservation = Nothing })
-  lift  $ writeIORef (r_post_exists refs) postcond
+  lift  $ writeIORef (r_postExists refs) postcond
   runTime c threads
   where initList = [(i,Set.empty) | i <- [0..31]]:: [(Register,Events)]
 
+checkLitmusPosts :: [(Int64, Minimal64)] -> [Condition] -> IO ()
+checkLitmusPosts endStates (RegCond (tid, reg, val) : tl) = do
+  case L.find (\(t,_) -> t == tid) endStates of
+    Just (_, endState) -> do
+      case S.lookup reg (registers endState) of
+        Just regVal -> 
+          if regVal == val then
+            return ()
+          else
+            putStrLn $ "\n\n\nFAILURE! Thread " ++ show tid ++ " reg " ++ show reg ++ " has value " ++ show regVal ++ " but should have value " ++ show val ++ "\n\n\n"
+        Nothing -> do
+          putStrLn $ "condition supplied for register " ++ show reg ++ " which was not set"
+          return ()
+    Nothing -> do
+      putStrLn $ "condition supplied for tid " ++ show tid ++ " which does not exist"
+      return ()
+checkLitmusPosts endStates (MemCond (addr, val) : tl) = do
+  putStrLn "currently memory conditions not supported :("
+  return ()
+checkLitmusPosts endStates [] =
+  return ()
 
 runTime :: Minimal64 -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
 runTime init threads = do
   refs <- ask
   lift $ writeIORef (r_currentIid refs) (0)
   lift $ writeIORef (r_currentThread refs) (0)
-  result <- runMaybeT (interpThreads init threads)
-  case result of 
-    Just _ -> do
+  result <- runMaybeT (interpThreads init threads [])
+  case result of
+    Just endStates -> do
       lift $ putStrLn "\n=====\nFound a new execution\n ======="
       refs <- ask
-      -- lift $ readIORef (r_currentThreads refs) -- store the current machine state to check later
+      lift $ print $ map (\(a,_) -> a) endStates
       oldexpl <- lift $ readIORef (r_currentExecution refs)
       -- Final mm check because we don't check on stores. Maybe we should check earlier in stores?
-      mmOk <- liftIO $ checkGraph oldexpl 
+      mmOk <- liftIO $ checkGraph oldexpl
       if mmOk then do
         ret <- lift $ readIORef (r_return refs)
-        let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty oldexpl 
+        let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty oldexpl
         lift $ T.putStr alloyFile
         lift $ T.writeFile ("execution"++ (show $ length ret ) ++".als") alloyFile
         lift $ writeIORef (r_return refs) (oldexpl:ret)
+        postExists <- lift $ readIORef (r_postExists refs)
+        lift $ checkLitmusPosts endStates postExists
         nextRound
       else
         nextRound
@@ -796,59 +821,60 @@ runTime init threads = do
 
 
 mpRev = Platform.MemoryModelTracking.runFile
- "./test/build/mp64" 
+ "./test/build/mp64"
  $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b4)]
 mp = Platform.MemoryModelTracking.runFile
- "./test/build/mp64" 
- $ [(0x10078,0x10098),(0x1009c,0x100b4)]
+ "./test/build/mp64"
+ $ [(0x10078,0x10098),(0x1009c,0x100b0)]
 
 mpFence = Platform.MemoryModelTracking.runFile
- "./test/build/mpFence64" 
+ "./test/build/mpFence64"
  $ [(0x10078,0x10098),(0x1009c,0x100b8)]
 
 mpFenceRev = Platform.MemoryModelTracking.runFile
- "./test/build/mpFence64" 
+ "./test/build/mpFence64"
  $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b8)]
 
 
 sbData = Platform.MemoryModelTracking.runFile
- "./test/build/sbData64" 
+ "./test/build/sbData64"
  $ [(0x10078,0x10098),(0x1009c,0x100b4)]
 
 sbDataRev = Platform.MemoryModelTracking.runFile
- "./test/build/sbData64" 
+ "./test/build/sbData64"
  $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b4)]
 
 sbLitmus = Platform.MemoryModelTracking.runLitmusFile
  "./test/litmus/SB.litmus.exe" "./test/litmus/SB.litmus.post"
- 
+
 
 
 emptyEx = Execution {
-            domain= Set.empty, 
+            domain= Set.empty,
             lab= S.empty,
             rf= S.empty,
             addr= S.empty,
             ctrl= S.empty,
             depdata= S.empty}
- 
+
 --readerRead :: IO()
 readerRead prog = do
   threads <- newIORef Minimal64{}
   execution <- newIORef emptyEx
-  tid <- newIORef 0 
-  iid <- newIORef 0 
+  tid <- newIORef 0
+  iid <- newIORef 0
   alternatives <- newIORef []
   revisit <- newIORef Set.empty
   returnEx <- newIORef []
   mem <- newIORef $ MapMemory S.empty Nothing
-  post_exs <- newIORef $ []
+  endStates <- newIORef $ []
+  postExs <- newIORef $ []
   runReaderT prog Ptrs{ r_threads= threads,
-                      r_currentExecution= execution, 
-                      r_currentThread=tid, 
+                      r_currentExecution= execution,
+                      r_currentThread=tid,
                       r_currentIid= iid,
                       r_alternativeExplorations= alternatives,
-                      r_revisitSet= revisit, 
-                      r_return= returnEx, 
+                      r_revisitSet= revisit,
+                      r_return= returnEx,
                       r_mem= mem,
-                      r_post_exists= post_exs }
+                      r_postExists= postExs }
