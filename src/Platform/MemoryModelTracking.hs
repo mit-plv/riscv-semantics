@@ -291,7 +291,7 @@ updateDepsI inst d =
 
 type IORead= ReaderT Ptrs IO
 
-data Condition = RegCond (Int64, Register, Int64) | MemCond (Int, Word8)
+data Condition = RegCond (Int64, Register, Int64) | MemCond (Int, Word32)
 
 data Ptrs = Ptrs {
   r_threads :: IORef Minimal64,
@@ -762,8 +762,12 @@ checkLitmusPosts endStates endMem (RegCond (tid, reg, val) : tl) = do
       putStrLn $ "condition supplied for tid " ++ show tid ++ " which does not exist"
       checkLitmusPosts endStates endMem tl
 checkLitmusPosts endStates endMem (MemCond (addr, val) : tl) = do
-  putStrLn "currently memory conditions not supported :("
-  checkLitmusPosts endStates endMem tl
+  let memVal = M.loadWord endMem addr
+  if memVal == val then
+    checkLitmusPosts endStates endMem tl
+  else do
+    putStrLn $ "\n\n\nFAILURE! Found value " ++ show memVal ++ " at address " ++ show addr ++ " which should have value " ++ show val ++ "\n\n\n"
+    return ()  
 checkLitmusPosts endStates endMem [] = do
   putStrLn "all postcondition checks pass"
   return ()
