@@ -700,7 +700,8 @@ readLitmusProgram f = do
 readLitmusPost :: String -> IO [Condition]
 readLitmusPost postfile = do
   T.trace "HARDCODED POSTCONDITION TODO FIX" $ return ()
-  return [RegCond (0, 5, 1), RegCond (1, 5, 1)]
+  return [RegCond (0, 5, 0), RegCond (1, 5, 0)]
+  -- return [MemCond (0x100c0, 2), MemCond (0x100c4, 2)]
 
 runFile :: String -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
 runFile f threads = do
@@ -753,7 +754,7 @@ checkLitmusPosts endStates endMem (RegCond (tid, reg, val) : tl) = do
           if regVal == val then
             checkLitmusPosts endStates endMem tl
           else do
-            putStrLn $ "\n\n\nFAILURE! Thread " ++ show tid ++ " reg " ++ show reg ++ " has value " ++ show regVal ++ " but should have value " ++ show val ++ "\n\n\n"
+            putStrLn "\n\"exists\" postconditions pass\n"
             return ()
         Nothing -> do
           putStrLn $ "condition supplied for register " ++ show reg ++ " which was not set"
@@ -766,10 +767,10 @@ checkLitmusPosts endStates endMem (MemCond (addr, val) : tl) = do
   if memVal == val then
     checkLitmusPosts endStates endMem tl
   else do
-    putStrLn $ "\n\n\nFAILURE! Found value " ++ show memVal ++ " at address " ++ show addr ++ " which should have value " ++ show val ++ "\n\n\n"
+    putStrLn "\n\"exists\" postconditions pass\n"
     return ()  
 checkLitmusPosts endStates endMem [] = do
-  putStrLn "all postcondition checks pass"
+  putStrLn "\n\n\nFAILURE: all \"exists\" postconditions were met, indicating failure\n\n\n"
   return ()
 
 runTime :: Minimal64 -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
@@ -789,14 +790,19 @@ runTime init threads = do
       if mmOk then do
         ret <- lift $ readIORef (r_return refs)
         let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty oldexpl
-        -- lift $ T.putStr alloyFile
+        lift $ T.putStr alloyFile
         lift $ T.writeFile ("execution"++ (show $ length ret ) ++".als") alloyFile
         lift $ writeIORef (r_return refs) (oldexpl:ret)
         postExists <- lift $ readIORef (r_postExists refs)
         endMem <- lift $ readIORef (r_mem refs)
         lift $ checkLitmusPosts endStates endMem postExists
         nextRound
-      else
+      else do
+        T.trace "failed mmOk" $ return ()
+        -- let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty oldexpl
+        -- lift $ T.putStr alloyFile
+        -- endMem <- lift $ readIORef (r_mem refs)
+        -- lift $ print endMem
         nextRound
     Nothing -> do
       nextRound
@@ -854,6 +860,8 @@ sbDataRev = Platform.MemoryModelTracking.runFile
 sbLitmus = Platform.MemoryModelTracking.runLitmusFile
  "./test/litmus/SB.litmus.exe" "./test/litmus/SB.litmus.post"
 
+litmus22W = Platform.MemoryModelTracking.runLitmusFile
+ "./test/litmus/2+2W.litmus.exe" "./test/litmus/2+2W.litmus.post"
 
 
 emptyEx = Execution {

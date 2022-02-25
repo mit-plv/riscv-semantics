@@ -87,6 +87,8 @@ main :: IO ()
 main = do
   putStrLn "\n\n\nSB.litmus.exe:\n"
   readerRead sbLitmus
+  putStrLn "\n\n\n2+2W.litmus.exe:\n"
+  readerRead litmus22W
   -- putStrLn "\n\n\n\n\n\n\n\n\nmp"
   -- readerRead mp 
   {- putStrLn "\n\n\n\n\n\n\n\n\nmpRev"
