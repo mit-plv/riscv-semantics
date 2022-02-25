@@ -744,26 +744,28 @@ runLitmusFile asmfile postfile = do
   runTime c threads
   where initList = [(i,Set.empty) | i <- [0..31]]:: [(Register,Events)]
 
-checkLitmusPosts :: [(Int64, Minimal64)] -> [Condition] -> IO ()
-checkLitmusPosts endStates (RegCond (tid, reg, val) : tl) = do
+checkLitmusPosts :: [(Int64, Minimal64)] -> MapMemory Int -> [Condition] -> IO ()
+checkLitmusPosts endStates endMem (RegCond (tid, reg, val) : tl) = do
   case L.find (\(t,_) -> t == tid) endStates of
     Just (_, endState) -> do
       case S.lookup reg (registers endState) of
         Just regVal -> 
           if regVal == val then
-            return ()
-          else
+            checkLitmusPosts endStates endMem tl
+          else do
             putStrLn $ "\n\n\nFAILURE! Thread " ++ show tid ++ " reg " ++ show reg ++ " has value " ++ show regVal ++ " but should have value " ++ show val ++ "\n\n\n"
+            return ()
         Nothing -> do
           putStrLn $ "condition supplied for register " ++ show reg ++ " which was not set"
-          return ()
+          checkLitmusPosts endStates endMem tl
     Nothing -> do
       putStrLn $ "condition supplied for tid " ++ show tid ++ " which does not exist"
-      return ()
-checkLitmusPosts endStates (MemCond (addr, val) : tl) = do
+      checkLitmusPosts endStates endMem tl
+checkLitmusPosts endStates endMem (MemCond (addr, val) : tl) = do
   putStrLn "currently memory conditions not supported :("
-  return ()
-checkLitmusPosts endStates [] =
+  checkLitmusPosts endStates endMem tl
+checkLitmusPosts endStates endMem [] = do
+  putStrLn "all postcondition checks pass"
   return ()
 
 runTime :: Minimal64 -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
@@ -776,18 +778,19 @@ runTime init threads = do
     Just endStates -> do
       lift $ putStrLn "\n=====\nFound a new execution\n ======="
       refs <- ask
-      lift $ print $ map (\(a,_) -> a) endStates
+      -- lift $ print $ map (\(a,_) -> a) endStates
       oldexpl <- lift $ readIORef (r_currentExecution refs)
       -- Final mm check because we don't check on stores. Maybe we should check earlier in stores?
       mmOk <- liftIO $ checkGraph oldexpl
       if mmOk then do
         ret <- lift $ readIORef (r_return refs)
         let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty oldexpl
-        lift $ T.putStr alloyFile
+        -- lift $ T.putStr alloyFile
         lift $ T.writeFile ("execution"++ (show $ length ret ) ++".als") alloyFile
         lift $ writeIORef (r_return refs) (oldexpl:ret)
         postExists <- lift $ readIORef (r_postExists refs)
-        lift $ checkLitmusPosts endStates postExists
+        endMem <- lift $ readIORef (r_mem refs)
+        lift $ checkLitmusPosts endStates endMem postExists
         nextRound
       else
         nextRound
