@@ -64,7 +64,7 @@ instance Pretty Execution where
         <+> "for"
         <+> pretty depth]
       where
-        depth = (8::Integer)
+        depth = (20::Integer)
         formula = indent 2 $ vsep
           [declarations
           ,"all h : Hart, m, im : MemoryEvent |"
@@ -78,7 +78,7 @@ instance Pretty Execution where
                                                  if length a == 0 then [] else ["datadep =" <+> (sep.punctuate "+" $ a)]
                                                ,let a = helperRel helpCtrlDep in
                                                  if length a == 0 then [] else ["ctrldep =" <+> (sep.punctuate "+" $ a)]
-                                               ,[relRf]
+                                               ,if length rfHelper == 0 then [] else [relRf]
                                                ,["RISCV_mm"]]]
         poThread ith =
           L.sort . catMaybes . fmap
@@ -220,7 +220,7 @@ instance Pretty Execution where
                           ERead addr  -> Set.insert addr acc
                           _ -> acc) Set.empty $ lab e
         initAddresses =
-          fmap (\el -> "ia_" <> pretty el <+> "in Init &"<> "a_"<>pretty el <>".~address") . Set.toList . S.foldl
+          fmap (\el -> "ia_" <> pretty el <+> "in Init & "<> "a_"<>pretty el <>".~address") . Set.toList . S.foldl
             (\acc el -> case el of
                           EWrite addr _ -> Set.insert addr acc
                           ERead addr  -> Set.insert addr acc
@@ -291,7 +291,7 @@ updateDepsI inst d =
 
 type IORead= ReaderT Ptrs IO
 
-data Condition = RegCond (Int64, Register, Int64) | MemCond (Int, Word32)
+data Condition = RegCond (Int64, Register, Int64) | MemCond (Int, Word8) deriving Show
 
 data Ptrs = Ptrs {
   r_threads :: IORef Minimal64,
@@ -475,7 +475,10 @@ checkGraph g = do
 --  _wait <- getLine
   let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty g
 --  T.trace "Alloy graph to check:" $ return ()
---  T.putStr alloyFile
+--  T.putStrLn alloyFile
+{-   putStrLn "file num?"
+  n <- getLine
+  T.writeFile ("temporary" ++ n ++ ".als") $! alloyFile -}
   T.writeFile "temporary.als" $! alloyFile
   let callAlloy = proc "java"
         $ ["-cp", "riscv-memory-model/riscvSemantics.jar:riscv-memory-model/alloy4.2_2015-02-22.jar", "RiscvSemantics", "temporary.als" ]
@@ -657,12 +660,12 @@ updateDeps inst =
 
 interpThreads :: Minimal64 -> [(Int64,Int64)] -> [(Int64, Minimal64)] -> (MaybeT IORead) [(Int64, Minimal64)]
 interpThreads initMachine ((start,stop):q) acc = do
-    T.trace ("\t" ++ showHex (fromIntegral start) "") $ return ()
+    -- T.trace ("\t" ++ showHex (fromIntegral start) "") $ return ()
     refs <- lift $ ask
     -- inc thread, restart iid to 0, run thread
     lift . lift $! writeIORef (r_threads refs) initMachine
     tid <- lift . lift $ readIORef (r_currentThread refs)
-    T.trace ("\t\ttid = " ++ show tid) $ return ()
+    -- T.trace ("\t\ttid = " ++ show tid) $ return ()
     interpThread start stop updateDeps
     endState <- lift . lift $! readIORef (r_threads refs)
     lift . lift $ writeIORef (r_currentIid refs) (0)
@@ -700,8 +703,9 @@ readLitmusProgram f = do
 readLitmusPost :: String -> IO [Condition]
 readLitmusPost postfile = do
   T.trace "HARDCODED POSTCONDITION TODO FIX" $ return ()
-  return [RegCond (0, 5, 0), RegCond (1, 5, 0)]
-  -- return [MemCond (0x100c0, 2), MemCond (0x100c4, 2)]
+  -- return [RegCond (0, 5, 0), RegCond (1, 5, 0)]
+  -- return [MemCond (0x100d8, 2), MemCond (0x100dc, 2)]
+  return [RegCond (0, 9, 2), RegCond (0, 10, 2), RegCond (1, 9, 2), RegCond (1, 10, 2)]
 
 runFile :: String -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
 runFile f threads = do
@@ -745,7 +749,7 @@ runLitmusFile asmfile postfile = do
   runTime c threads
   where initList = [(i,Set.empty) | i <- [0..31]]:: [(Register,Events)]
 
-checkLitmusPosts :: [(Int64, Minimal64)] -> MapMemory Int -> [Condition] -> IO ()
+checkLitmusPosts :: [(Int64, Minimal64)] -> MapMemory Int -> [Condition] -> IO Bool
 checkLitmusPosts endStates endMem (RegCond (tid, reg, val) : tl) = do
   case L.find (\(t,_) -> t == tid) endStates of
     Just (_, endState) -> do
@@ -755,7 +759,7 @@ checkLitmusPosts endStates endMem (RegCond (tid, reg, val) : tl) = do
             checkLitmusPosts endStates endMem tl
           else do
             putStrLn "\n\"exists\" postconditions pass\n"
-            return ()
+            return True
         Nothing -> do
           putStrLn $ "condition supplied for register " ++ show reg ++ " which was not set"
           checkLitmusPosts endStates endMem tl
@@ -763,15 +767,16 @@ checkLitmusPosts endStates endMem (RegCond (tid, reg, val) : tl) = do
       putStrLn $ "condition supplied for tid " ++ show tid ++ " which does not exist"
       checkLitmusPosts endStates endMem tl
 checkLitmusPosts endStates endMem (MemCond (addr, val) : tl) = do
-  let memVal = M.loadWord endMem addr
+  let memVal = M.loadByte endMem addr
+  T.trace ("\t\t\t addr = " ++ showHex addr "" ++ " val = " ++ show memVal) $ return ()
   if memVal == val then
     checkLitmusPosts endStates endMem tl
   else do
     putStrLn "\n\"exists\" postconditions pass\n"
-    return ()  
+    return True  
 checkLitmusPosts endStates endMem [] = do
   putStrLn "\n\n\nFAILURE: all \"exists\" postconditions were met, indicating failure\n\n\n"
-  return ()
+  return False
 
 runTime :: Minimal64 -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
 runTime init threads = do
@@ -781,24 +786,33 @@ runTime init threads = do
   result <- runMaybeT (interpThreads init threads [])
   case result of
     Just endStates -> do
-      lift $ putStrLn "\n=====\nFound a new execution\n ======="
       refs <- ask
       -- lift $ print $ map (\(a,_) -> a) endStates
       oldexpl <- lift $ readIORef (r_currentExecution refs)
       -- Final mm check because we don't check on stores. Maybe we should check earlier in stores?
       mmOk <- liftIO $ checkGraph oldexpl
       if mmOk then do
+        lift $ putStrLn "\n=====\nFound a new execution\n ======="
         ret <- lift $ readIORef (r_return refs)
         let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty oldexpl
-        lift $ T.putStr alloyFile
+        -- lift $ T.putStr alloyFile
         lift $ T.writeFile ("execution"++ (show $ length ret ) ++".als") alloyFile
         lift $ writeIORef (r_return refs) (oldexpl:ret)
         postExists <- lift $ readIORef (r_postExists refs)
         endMem <- lift $ readIORef (r_mem refs)
-        lift $ checkLitmusPosts endStates endMem postExists
+        condsOk <- lift $ checkLitmusPosts endStates endMem postExists
+        unless condsOk $ do
+          lift $ print postExists
+          lift $ print endStates
+          lift $ print endMem
+          lift $ T.putStrLn alloyFile
+          return ()
         nextRound
       else do
-        T.trace "failed mmOk" $ return ()
+        -- T.trace "failed mmOk" $ return ()
+        -- postExists <- lift $ readIORef (r_postExists refs)
+        -- endMem <- lift $ readIORef (r_mem refs)
+        -- lift $ checkLitmusPosts endStates endMem postExists
         -- let alloyFile = renderStrict . layoutPretty defaultLayoutOptions $ pretty oldexpl
         -- lift $ T.putStr alloyFile
         -- endMem <- lift $ readIORef (r_mem refs)
