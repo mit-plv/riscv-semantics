@@ -1,0 +1,20 @@
+RISCV LB+fence.rw.rw+data
+"Fence.rw.rwdRW Rfe DpDatadW Rfe"
+Cycle=Rfe Fence.rw.rwdRW Rfe DpDatadW
+Relax=
+Safe=Rfe Fence.rw.rwdRW DpDatadW
+Generator=diy7 (version 7.51+4(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=Fence.rw.rwdRW Rfe DpDatadW Rfe
+{
+0:x6=x; 0:x7=1; 0:x8=y;
+1:x6=y; 1:x8=x;
+}
+ P0          | P1           ;
+ lw x5,0(x6) | lw x5,0(x6)  ;
+ fence rw,rw | xor x7,x5,x5 ;
+ sw x7,0(x8) | ori x7,x7,1  ;
+             | sw x7,0(x8)  ;
+exists
+(0:x5=1 /\ 1:x5=1)

@@ -1,0 +1,19 @@
+RISCV S+fence.rw.rw+po
+"Fence.rw.rwdWW Rfe PodRW Wse"
+Cycle=Rfe PodRW Wse Fence.rw.rwdWW
+Relax=
+Safe=Rfe Wse PodRW Fence.rw.rwdWW
+Generator=diy7 (version 7.51+4(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=Fence.rw.rwdWW Rfe PodRW Wse
+{
+0:x5=2; 0:x6=x; 0:x7=1; 0:x8=y;
+1:x6=y; 1:x7=1; 1:x8=x;
+}
+ P0          | P1          ;
+ sw x5,0(x6) | lw x5,0(x6) ;
+ fence rw,rw | sw x7,0(x8) ;
+ sw x7,0(x8) |             ;
+exists
+(x=2 /\ 1:x5=1)

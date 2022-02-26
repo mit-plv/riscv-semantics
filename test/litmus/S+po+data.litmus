@@ -1,0 +1,20 @@
+RISCV S+po+data
+"PodWW Rfe DpDatadW Wse"
+Cycle=Rfe DpDatadW Wse PodWW
+Relax=
+Safe=Rfe Wse PodWW DpDatadW
+Generator=diy7 (version 7.51+4(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=PodWW Rfe DpDatadW Wse
+{
+0:x5=2; 0:x6=x; 0:x7=1; 0:x8=y;
+1:x6=y; 1:x8=x;
+}
+ P0          | P1           ;
+ sw x5,0(x6) | lw x5,0(x6)  ;
+ sw x7,0(x8) | xor x7,x5,x5 ;
+             | ori x7,x7,1  ;
+             | sw x7,0(x8)  ;
+exists
+(x=2 /\ 1:x5=1)
