@@ -29,6 +29,7 @@ import System.Process
 
 import Spec.ExecuteI as I
 import Utility.Elf
+import Utility.LitmusToRiscv as LTR
 import Debug.Trace as T
 import Numeric (showHex)
 
@@ -290,8 +291,6 @@ updateDepsI inst d =
      insert (k::Register) v map = if k /= 0 then S.insert k v map else map
 
 type IORead= ReaderT Ptrs IO
-
-data Condition = RegCond (Int64, Register, Int64) | MemCond (Int, Word8) deriving Show
 
 data Ptrs = Ptrs {
   r_threads :: IORef Minimal64,
@@ -697,15 +696,8 @@ readLitmusProgram f = do
     mem <- readElf f
 --    T.trace (show $ mem) $ return()
     threads <- getThreads f 0
-    T.trace (show threads) $ return ()
+--    T.trace (show threads) $ return ()
     return (mem, threads)
-
-readLitmusPost :: String -> IO [Condition]
-readLitmusPost postfile = do
-  T.trace "HARDCODED POSTCONDITION TODO FIX" $ return ()
-  -- return [RegCond (0, 5, 0), RegCond (1, 5, 0)]
-  -- return [MemCond (0x100d8, 2), MemCond (0x100dc, 2)]
-  return [RegCond (0, 9, 2), RegCond (0, 10, 2), RegCond (1, 9, 2), RegCond (1, 10, 2)]
 
 runFile :: String -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
 runFile f threads = do
@@ -727,10 +719,11 @@ runFile f threads = do
   runTime c threads
   where initList = [(i,Set.empty) | i <- [0..31]]:: [(Register,Events)]
 
-runLitmusFile :: String -> String -> ReaderT Ptrs IO [Execution]
-runLitmusFile asmfile postfile = do
-  (program, threads) <- lift $ readLitmusProgram asmfile
-  postcond <- lift $ readLitmusPost postfile
+runLitmusFile :: String -> ReaderT Ptrs IO [Execution]
+runLitmusFile litmusFile = do
+  (asmFile, postcond) <- lift $ litmusToRiscv litmusFile
+  (program, threads) <- lift $ readLitmusProgram asmFile 
+--  T.trace (show postcond) $ return ()
 --  T.trace (show $ program) $ return()
   let mem = S.fromList program
   let c = Minimal64 { registers = S.empty,
@@ -750,33 +743,36 @@ runLitmusFile asmfile postfile = do
   where initList = [(i,Set.empty) | i <- [0..31]]:: [(Register,Events)]
 
 checkLitmusPosts :: [(Int64, Minimal64)] -> MapMemory Int -> [Condition] -> IO Bool
-checkLitmusPosts endStates endMem (RegCond (tid, reg, val) : tl) = do
-  case L.find (\(t,_) -> t == tid) endStates of
-    Just (_, endState) -> do
-      case S.lookup reg (registers endState) of
-        Just regVal -> 
-          if regVal == val then
-            checkLitmusPosts endStates endMem tl
-          else do
-            putStrLn "\n\"exists\" postconditions pass\n"
-            return True
-        Nothing -> do
-          putStrLn $ "condition supplied for register " ++ show reg ++ " which was not set"
-          checkLitmusPosts endStates endMem tl
-    Nothing -> do
-      putStrLn $ "condition supplied for tid " ++ show tid ++ " which does not exist"
-      checkLitmusPosts endStates endMem tl
-checkLitmusPosts endStates endMem (MemCond (addr, val) : tl) = do
-  let memVal = M.loadByte endMem addr
-  T.trace ("\t\t\t addr = " ++ showHex addr "" ++ " val = " ++ show memVal) $ return ()
-  if memVal == val then
-    checkLitmusPosts endStates endMem tl
-  else do
-    putStrLn "\n\"exists\" postconditions pass\n"
-    return True  
-checkLitmusPosts endStates endMem [] = do
-  putStrLn "\n\n\nFAILURE: all \"exists\" postconditions were met, indicating failure\n\n\n"
-  return False
+checkLitmusPosts endStates endMem [] = return True -- empty condition always holds
+checkLitmusPosts endStates endMem conds = helper endStates endMem conds where
+  helper :: [(Int64, Minimal64)] -> MapMemory Int -> [Condition] -> IO Bool
+  helper endStates endMem (RegCond (tid, reg, val) : tl) = do
+    case L.find (\(t,_) -> t == tid) endStates of
+      Just (_, endState) -> do
+        case S.lookup reg (registers endState) of
+          Just regVal -> 
+            if regVal == val then
+              helper endStates endMem tl
+            else do
+              putStrLn "\n\"exists\" postconditions pass\n"
+              return True
+          Nothing -> do
+            putStrLn $ "condition supplied for register " ++ show reg ++ " which was not set"
+            helper endStates endMem tl
+      Nothing -> do
+        putStrLn $ "condition supplied for tid " ++ show tid ++ " which does not exist"
+        helper endStates endMem tl
+{-   helper endStates endMem (MemCond (addr, val) : tl) = do
+    let memVal = M.loadByte endMem addr
+    T.trace ("\t\t\t addr = " ++ showHex addr "" ++ " val = " ++ show memVal) $ return ()
+    if memVal == val then
+      helper endStates endMem tl
+    else do
+      putStrLn "\n\"exists\" postconditions pass\n"
+      return True   -}
+  helper endStates endMem [] = do
+    putStrLn "\nCase found where all \"exists\" postconditions were met, could indicate a bug or an interesting execution\n"
+    return False
 
 runTime :: Minimal64 -> [(Int64, Int64)] -> ReaderT Ptrs IO [Execution]
 runTime init threads = do
@@ -802,9 +798,9 @@ runTime init threads = do
         endMem <- lift $ readIORef (r_mem refs)
         condsOk <- lift $ checkLitmusPosts endStates endMem postExists
         unless condsOk $ do
-          lift $ print postExists
+{-        lift $ print postExists
           lift $ print endStates
-          lift $ print endMem
+          lift $ print endMem -}
           lift $ T.putStrLn alloyFile
           return ()
         nextRound
@@ -872,10 +868,10 @@ sbDataRev = Platform.MemoryModelTracking.runFile
  $ L.reverse [(0x10078,0x10098),(0x1009c,0x100b4)]
 
 sbLitmus = Platform.MemoryModelTracking.runLitmusFile
- "./test/litmus/SB.litmus.exe" "./test/litmus/SB.litmus.post"
+ "./test/litmus/SB.litmus"
 
 litmus22W = Platform.MemoryModelTracking.runLitmusFile
- "./test/litmus/2+2W.litmus.exe" "./test/litmus/2+2W.litmus.post"
+ "./test/litmus/2+2W.litmus"
 
 
 emptyEx = Execution {

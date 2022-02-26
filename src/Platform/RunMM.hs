@@ -85,10 +85,19 @@ import Numeric (showHex, readHex)
 --
 main :: IO ()
 main = do
-  putStrLn "\n\n\nSB.litmus.exe:\n"
-  readerRead sbLitmus
-  putStrLn "\n\n\n2+2W.litmus.exe:\n"
-  readerRead litmus22W
+  args <- getArgs
+  retval <- case args of
+    [filename] -> do 
+      putStrLn $ "\n\n\n" ++ filename ++ "\n\n"
+      readerRead $ runLitmusFile filename
+      return 0
+    _ -> do
+      putStr "ERROR: this program expects exactly one litmus file as command-line argument\n"
+      return 1
+  exitWith (if retval == 0 then ExitSuccess else ExitFailure $ (fromIntegral:: Int64 -> Int) retval)
+  
+  -- putStrLn "\n\n\n2+2W.litmus.exe:\n"
+  -- readerRead litmus22W
   -- putStrLn "\n\n\n\n\n\n\n\n\nmp"
   -- readerRead mp 
   {- putStrLn "\n\n\n\n\n\n\n\n\nmpRev"
@@ -99,7 +108,6 @@ main = do
   readerRead sbData 
   putStrLn "\n\n\n\n\n\n\n\n\nsbDataRev"
   readerRead sbDataRev -}
-  return ()
   --  do
   --args <- getArgs
   --retval <- case args of

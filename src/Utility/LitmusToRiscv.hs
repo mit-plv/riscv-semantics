@@ -1,6 +1,6 @@
+module Utility.LitmusToRiscv where
 import System.IO
 import Text.ParserCombinators.Parsec
-import System.Environment
 import System.Process
 import qualified Data.Set as Set
 import Debug.Trace as T
@@ -19,7 +19,8 @@ instance Show LitmusInit where
 newtype LitmusThread = LThread String -- just the list of instructions separated by \n
 instance Show LitmusThread where
   show (LThread s) = "LT " ++ show s
-data SymCondition = RegCond (Int64, Register, Int64) | MemCond (String, Word8) deriving Show
+data SymCondition = SRegCond (Int64, Register, Int64) | SMemCond (String, Word8) deriving Show
+newtype Condition = RegCond (Int64, Register, Int64) deriving Show
 newtype LitmusFile = LFile ([LitmusInit], (LitmusThread, LitmusThread), [SymCondition])
 instance Show LitmusFile where
   show (LFile (inits, (t0, t1), conds)) = "L (" ++ show inits ++ ", (" ++ show t0 ++ ", " ++ show t1++ ")," ++ show conds ++ ")"
@@ -67,21 +68,21 @@ parseThreads = do
 
 parseCond :: Parser SymCondition
 parseCond = do
-  parseRegCond <|> parseMemCond
+  parseSRegCond <|> parseSMemCond
   where
-    parseRegCond = do
+    parseSRegCond = do
       thread <- read <$> many1 digit
       char ':'
       char 'x'
       regNum <- read <$> many1 digit
       char '='
       regVal <- read <$> many1 digit
-      return $ RegCond (thread, regNum, regVal)
-    parseMemCond = do
+      return $ SRegCond (thread, regNum, regVal)
+    parseSMemCond = do
       ptrName <- many1 lower
       char '='
       regVal <- read <$> many1 digit
-      return $ MemCond (ptrName, regVal)
+      return $ SMemCond (ptrName, regVal)
 
 parseConds :: Parser [SymCondition]
 parseConds = do
@@ -139,8 +140,8 @@ preamble = "\
   \  .globl _endTh1\n\
   \"
 
-compileMemConds :: [SymCondition] -> (String, String, [SymCondition])
-compileMemConds conds = 
+compileSMemConds :: [SymCondition] -> (String, String, [Condition])
+compileSMemConds conds = 
   -- This function uses registers x18 and up to read values in memory locations
   -- For the basic 2-thread tests, only registers x5-x10 are used, so no conflicts occur
   -- More complex litmus tests may require a more sophisticated register choice strategy
@@ -149,18 +150,18 @@ compileMemConds conds =
      if t1checks == "" then "" else "  fence\n" ++ t1checks,
      newConds)
   where
-    helper (RegCond r) (t0acc, t1acc, condacc, n) = (t0acc, t1acc, RegCond r : condacc, n)
-    helper (MemCond (ptr, val)) (t0acc, t1acc, condacc, n) = 
+    helper (SRegCond r) (t0acc, t1acc, condacc, n) = (t0acc, t1acc, RegCond r : condacc, n)
+    helper (SMemCond (ptr, val)) (t0acc, t1acc, condacc, n) = 
       (t0acc ++ "  lw x" ++ show n ++ "," ++ ptr ++ "\n",
        t0acc ++ "  lw x" ++ show n ++ "," ++ ptr ++ "\n",
        RegCond (0, n, fromIntegral val) : RegCond (1, n, fromIntegral val) : condacc,
        n + 1
       )
 
-compileLitmusFile :: LitmusFile -> ([SymCondition], String)
+compileLitmusFile :: LitmusFile -> ([Condition], String)
 compileLitmusFile (LFile (inits, (LThread t0, LThread t1), conds)) =
   let (t0inits, t1inits, symptrs) = compileInits inits in
-  let (t0memChecks, t1memChecks, newConds) = compileMemConds conds in
+  let (t0memChecks, t1memChecks, newConds) = compileSMemConds conds in
     (newConds, preamble
                 ++ "_start:\n"
                 ++ "_startTh0:\n"
@@ -177,37 +178,39 @@ compileLitmusFile (LFile (inits, (LThread t0, LThread t1), conds)) =
                 ++ symptrs
     )
 
-litmusToRiscv :: IO [SymCondition]
-litmusToRiscv = do
+litmusToRiscv :: String -> IO (String, [Condition])
+litmusToRiscv filename = do
   -- TODO fix hardcoding of filename
-  args <- getArgs
-  let filename = head args
   litmusFile <- openFile filename ReadMode
   litmusStr <- hGetContents litmusFile
   --putStrLn litmusStr
-  putStrLn filename
+  --putStrLn filename
   case parse parseLitmusFile "blah" litmusStr of
     Left _ -> do
       putStrLn "Parse error"
       hClose litmusFile
-      return []
+      return ("", [])
     Right lfile -> do
-      print lfile
+      -- print lfile
       let (newConds, asmStr) = compileLitmusFile lfile
       putStrLn asmStr
-      print newConds
+      -- print newConds
       writeFile (filename ++ ".S") asmStr
       let callGccO = proc "riscv-none-embed-gcc" ["-march=rv64im", "-mabi=lp64", "-static", "-nostdlib", "-nostartfiles", "-mcmodel=medany", "-c", filename ++ ".S", "-o", filename ++ ".o"]
       let callGccExe = proc "riscv-none-embed-gcc" ["-march=rv64im", "-mabi=lp64", "-static", "-nostdlib", "-nostartfiles", "-mcmodel=medany", "-o", filename ++ ".exe", filename ++ ".o"]
       (exitCodeO, stdoutO, stderrO) <- readCreateProcessWithExitCode callGccO "stdin"
-      putStrLn $ "first gcc call returned:\n" ++ show exitCodeO ++ "\n stdOut: " ++ stdoutO ++ "\n stderr:" ++ stderrO
+      -- putStrLn $ "first gcc call returned:\n" ++ show exitCodeO ++ "\n stdOut: " ++ stdoutO ++ "\n stderr:" ++ stderrO
       (exitCodeExe, stdoutExe, stderrExe) <- readCreateProcessWithExitCode callGccExe "stdin"
-      putStrLn $ "second gcc call returned:\n" ++ show exitCodeExe ++ "\n stdOut: " ++ stdoutExe ++ "\n stderr:" ++ stderrExe
+      -- putStrLn $ "second gcc call returned:\n" ++ show exitCodeExe ++ "\n stdOut: " ++ stdoutExe ++ "\n stderr:" ++ stderrExe
       hClose litmusFile
-      return newConds
+      return (filename ++ ".exe", newConds)
   
-main :: IO ()
-main = litmusToRiscv >> return ()
+{- main :: IO ()
+main = do
+  args <- getArgs
+  let filename = head args
+  litmusToRiscv filename 
+  return () -}
 
 -- TODOS:
 -- - parse postconditions

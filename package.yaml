@@ -63,6 +63,7 @@ executables:
       - Utility.ListMemory
       - Utility.MapMemory
       - Utility.Utility
+      - Utility.LitmusToRiscv
 
 
   riscv-semantics:
@@ -205,6 +206,3 @@ executables:
       - Utility.ListMemory
       - Utility.MapMemory
       - Utility.Utility
-
-  litmus-to-riscv:
-    main:             src/Utility/LitmusToRiscv.hs
