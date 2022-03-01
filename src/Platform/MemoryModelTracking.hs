@@ -130,7 +130,7 @@ instance Pretty Execution where
                      ,": MemoryEvent,"]
                 ,let a = punctuate comma fenceEvents
                  in
-                    if length a /= 0 then sep ["disj", sep a, ": FenceTSO,"] else emptyDoc
+                    if length a /= 0 then sep ["disj", sep a, ": Fence.pr.pw.sr.sw,"] else emptyDoc
                 ,sep ["disj"
                      ,sep $ punctuate comma addressesEvent
                      ,": Address,"]
