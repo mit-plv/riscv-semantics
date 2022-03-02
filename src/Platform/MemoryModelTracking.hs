@@ -347,62 +347,72 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
        return $  (fromIntegral:: Word32 -> Int32) $ M.loadWord b0 ((fromIntegral :: s -> Int) ad)
   loadWord Execute ad = do
       refs <- ask
-      tid <- lift . lift $ readIORef (r_currentThread refs)
-      iid <- lift . lift $ readIORef (r_currentIid refs)
-      lift . lift $ writeIORef (r_currentIid refs) (iid + 1)
-      execution <- lift . lift $ readIORef (r_currentExecution refs)
-      if ( Set.member (Node (tid, iid)) (domain execution))
-        then do
-            let rf' = fromJust $ S.lookup  (Node (tid, iid)) (rf execution)
-            case rf' of
-              Init _ -> return 0
-              Node (tid', iid') -> do
-                let lab' = fromJust $ S.lookup  (Node (tid', iid')) (lab execution)
-                case lab' of
-                  EWrite _ d -> return d
-                  _ -> error "Not a write in rf"
+      (ev, execution) <- readEnv refs
+      if Set.member ev (domain execution)
+        then getValFromDomain ev execution
         else do
-          -- Update the revisit set to add this reads
-          t <- lift . lift $ readIORef (r_revisitSet refs)
-          lift . lift $ writeIORef (r_revisitSet refs)
-            (Set.union (Set.singleton (Node(tid,iid))) t)
-          let all_write_same_loc = fmap fst . S.toList $ S.filter (\l -> case l of
-                        EWrite a _b -> a == fromIntegral ad
-                        _ -> False) ( S.insert (Init $ fromIntegral ad) (EWrite (fromIntegral ad) 0) $ lab execution)
-          case all_write_same_loc of
-            [] -> error "reading uninitialized location"
-            w0:q -> do -- q are the alternative writes to push in the alternativeExploration structure 
-              m <- lift . lift $ readIORef (r_threads refs)
-              let ctrlDep = dep_ctrl m
-              let dataDep = dep_data m
-              let addrDep = dep_addr m
-              let newexecution = (execution{
-                  domain = Set.union (domain execution) (Set.singleton (Node(tid,iid))),
-                  lab = S.insert (Init $ fromIntegral ad) (EWrite (fromIntegral ad) 0) (S.insert (Node(tid,iid)) (ERead $ fromIntegral ad) (lab execution)),
-                  rf = S.insert (Node(tid,iid)) w0 (rf execution),
-                  addr = S.insert (Node(tid,iid)) addrDep (addr execution),
-                  ctrl = S.insert (Node(tid,iid)) ctrlDep (ctrl execution),
-                  depdata = S.insert (Node(tid,iid)) dataDep (depdata execution)
-                })
-              -- add the alternative executions
-              --let prefixexecution = prefix (Set.singleton (Node (tid,iid) )) newexecution
-              foldM (\_acc el -> do
-                        expls <- lift . lift $ readIORef (r_alternativeExplorations refs)
-                        --T.trace ("One more load exploration: " ++ (show $ ((Node (tid,iid),el, emptyEx):expls))) return ()
-                        lift. lift $ writeIORef (r_alternativeExplorations refs) ((Node (tid,iid),el, emptyEx):expls)) () q
-              -- update the current execution
-              lift. lift $ writeIORef (r_currentExecution refs) newexecution
-              -- finally check the memory model 
-              mmOk <- liftIO $ checkGraph newexecution
-              if mmOk
-              then do
-                    let lab' = fromJust $ S.lookup  w0 (lab newexecution)
-                    case lab' of
-                      EWrite _ d -> return d
-                      _ -> error "Not a write in rf"
-              else do
-                MaybeT (return Nothing) -- b is of type (MaybeT p) a
-
+          updateRevisitSet refs ev
+          (writeToReadFrom, newExec, altExecs) <- generateExecs refs ev
+          lift . lift $ writeIORef (r_currentExecution refs) newExec
+          storeAltExecs refs altExecs
+          checkAlloyModel writeToReadFrom newExec
+    where 
+      readEnv refs = do
+        tid <- lift . lift $ readIORef (r_currentThread refs)
+        iid <- lift . lift $ readIORef (r_currentIid refs)
+        execution <- lift . lift $ readIORef (r_currentExecution refs)
+        lift . lift $ writeIORef (r_currentIid refs) (iid + 1)
+        let ev = Node (tid, iid)
+        return (ev, execution)
+      getValFromDomain ev execution = do
+        let rf' = fromJust $ S.lookup ev (rf execution)
+        case rf' of
+          Init _ -> return 0
+          Node (tid', iid') -> do
+            let lab' = fromJust $ S.lookup (Node (tid', iid')) (lab execution)
+            case lab' of
+              EWrite _ d -> return d
+              _ -> error "Not a write in rf"
+      updateRevisitSet refs ev = do 
+        t <- lift . lift $ readIORef (r_revisitSet refs)
+        lift . lift $ writeIORef (r_revisitSet refs)
+          (Set.union (Set.singleton ev) t)
+      generateExecs refs ev = do
+        execution <- lift . lift $ readIORef (r_currentExecution refs)
+        let all_write_same_loc = fmap fst . S.toList $ S.filter (\l -> case l of
+                      EWrite a _b -> a == fromIntegral ad
+                      _ -> False) ( S.insert (Init $ fromIntegral ad) (EWrite (fromIntegral ad) 0) $ lab execution)
+        case all_write_same_loc of
+          [] -> error "reading uninitialized location"
+          w0:q -> do -- q are the alternative writes to push in the alternativeExploration structure 
+            m <- lift . lift $ readIORef (r_threads refs)
+            let ctrlDep = dep_ctrl m
+            let dataDep = dep_data m
+            let addrDep = dep_addr m
+            let newexecution = (execution{
+                domain = Set.union (domain execution) (Set.singleton ev),
+                lab = S.insert (Init $ fromIntegral ad) (EWrite (fromIntegral ad) 0) (S.insert ev (ERead $ fromIntegral ad) (lab execution)),
+                rf = S.insert ev w0 (rf execution),
+                addr = S.insert ev addrDep (addr execution),
+                ctrl = S.insert ev ctrlDep (ctrl execution),
+                depdata = S.insert ev dataDep (depdata execution)
+              })
+            let altExecs = map (\el -> (ev, el, emptyEx)) q
+            return (w0, newexecution, altExecs)
+      storeAltExecs refs altExecs = do
+        expls <- lift . lift $ readIORef (r_alternativeExplorations refs)
+        lift . lift $ writeIORef (r_alternativeExplorations refs) (altExecs ++ expls)
+      checkAlloyModel writeToReadFrom newExec = do
+        -- finally check the memory model 
+        mmOk <- liftIO $ checkGraph newExec
+        if mmOk
+        then do
+              let lab' = fromJust $ S.lookup writeToReadFrom (lab newExec)
+              case lab' of
+                EWrite _ d -> return d
+                _ -> error "Not a write in rf"
+        else do
+          MaybeT (return Nothing) -- b is of type (MaybeT p) a -}
 
   storeWord :: forall s. (Integral s, Bits s) => SourceType -> s -> Int32 -> (MaybeT IORead) ()
   storeWord Execute ad val = do
