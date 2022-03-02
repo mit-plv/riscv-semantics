@@ -146,8 +146,8 @@ compileSMemConds conds =
   -- For the basic 2-thread tests, only registers x5-x10 are used, so no conflicts occur
   -- More complex litmus tests may require a more sophisticated register choice strategy
   let (t0checks, t1checks, newConds, _) = foldr helper ("", "", [], 18) conds in
-    (if t0checks == "" then "" else "  fence\n" ++ t0checks,
-     if t1checks == "" then "" else "  fence\n" ++ t1checks,
+    (if t0checks == "" then "" else "  fence rw,rw\n" ++ t0checks,
+     if t1checks == "" then "" else "  fence rw,rw\n" ++ t1checks,
      newConds)
   where
     helper (SRegCond r) (t0acc, t1acc, condacc, n) = (t0acc, t1acc, RegCond r : condacc, n)

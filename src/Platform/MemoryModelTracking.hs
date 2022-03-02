@@ -352,7 +352,7 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
         then getValFromDomain ev execution
         else do
           updateRevisitSet refs ev
-          (writeToReadFrom, newExec, altExecs) <- generateExecs refs ev
+          (writeToReadFrom, newExec, altExecs) <- generateReadExecs refs ev execution ad
           lift . lift $ writeIORef (r_currentExecution refs) newExec
           storeAltExecs refs altExecs
           checkAlloyModel writeToReadFrom newExec
@@ -377,7 +377,7 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
         t <- lift . lift $ readIORef (r_revisitSet refs)
         lift . lift $ writeIORef (r_revisitSet refs)
           (Set.union (Set.singleton ev) t)
-      generateExecs refs ev = do
+      generateReadExecs refs ev execution ad = do
         execution <- lift . lift $ readIORef (r_currentExecution refs)
         let all_write_same_loc = fmap fst . S.toList $ S.filter (\l -> case l of
                       EWrite a _b -> a == fromIntegral ad
@@ -417,65 +417,76 @@ instance{-# OVERLAPPING #-} RiscvMachine (MaybeT IORead) Int64 where
   storeWord :: forall s. (Integral s, Bits s) => SourceType -> s -> Int32 -> (MaybeT IORead) ()
   storeWord Execute ad val = do
       refs <- ask
-      tid <- lift. lift $ readIORef (r_currentThread refs)
-      iid <- lift . lift $ readIORef (r_currentIid refs)
-      lift.lift $ writeIORef (r_currentIid refs) (iid + 1)
-      execution <- lift . lift $ readIORef (r_currentExecution refs)
-      revisitSet <- lift . lift $ readIORef (r_revisitSet refs)
-      if ( Set.member (Node (tid, iid)) (domain execution))
-        then do
-          return ()
+      (ev, execution, revisitSet) <- readEnv refs
+      if Set.member ev (domain execution)
+        then return ()
         else do
-          -- find all the reads which are not in the prefix of a which
-          let all_read_same_loc =  Set.filter
-                                (\l -> case S.lookup l (lab execution) of
-                                                 Just (ERead a) -> a == fromIntegral ad
-                                                 _ -> False) revisitSet
-          --T.trace ("Revisit set on store: " ++ show all_read_same_loc) $ return()
-          m <- lift . lift $ readIORef (r_threads refs)
-          let ctrlDep = dep_ctrl m
-          let dataDep = dep_data m
-          let addrDep = dep_addr m
-          let newexecution = (execution{
-                  domain = Set.union (domain execution) (Set.singleton (Node(tid, iid))),
-                  lab = S.insert (Init $ fromIntegral ad) (EWrite (fromIntegral ad) 0) $ S.insert (Node(tid, iid)) (EWrite (fromIntegral ad) (fromIntegral val)) (lab execution),
-                  addr = S.insert (Node(tid,iid)) addrDep (addr execution),
-                  ctrl = S.insert (Node(tid,iid)) ctrlDep (ctrl execution),
-                  depdata = S.insert (Node(tid,iid)) dataDep (depdata execution)
-                })
-          let prefixexecution = prefix (Set.singleton (Node (tid,iid) )) newexecution
+          (newExec, altExecs) <- generateWriteExecs refs revisitSet ev execution ad
+          lift . lift $ writeIORef (r_currentExecution refs) newExec
+          storeAltExecs refs altExecs
+    where
+      readEnv refs = do
+        tid <- lift . lift $ readIORef (r_currentThread refs)
+        iid <- lift . lift $ readIORef (r_currentIid refs)
+        execution <- lift . lift $ readIORef (r_currentExecution refs)
+        revisitSet <- lift . lift $ readIORef (r_revisitSet refs)
+        lift . lift $ writeIORef (r_currentIid refs) (iid + 1)
+        let ev = Node (tid, iid)
+        return (ev, execution, revisitSet)
+      generateWriteExecs refs revisitSet ev execution ad = do
+        let all_read_same_loc =  Set.filter
+                              (\l -> case S.lookup l (lab execution) of
+                                                Just (ERead a) -> a == fromIntegral ad
+                                                _ -> False) revisitSet
+        m <- lift . lift $ readIORef (r_threads refs)
+        let ctrlDep = dep_ctrl m
+        let dataDep = dep_data m
+        let addrDep = dep_addr m
+        let newexecution = (execution{
+                domain = Set.union (domain execution) (Set.singleton ev),
+                lab = S.insert (Init $ fromIntegral ad) (EWrite (fromIntegral ad) 0) $ S.insert ev (EWrite (fromIntegral ad) (fromIntegral val)) (lab execution),
+                addr = S.insert ev addrDep (addr execution),
+                ctrl = S.insert ev ctrlDep (ctrl execution),
+                depdata = S.insert ev dataDep (depdata execution)
+              })
+        let prefixexecution = prefix (Set.singleton ev) newexecution
+        --T.trace ("Prefix exec: " ++ show prefixexecution) $ return()
+        let all_read_not_prefix = Set.toList $ all_read_same_loc Set.\\ domain prefixexecution
+        let altExecs = map (\el -> (el, ev, prefixexecution)) all_read_not_prefix
+        return (newexecution, altExecs)
+      storeAltExecs refs altExecs = do
+        expls <- lift . lift $ readIORef (r_alternativeExplorations refs)
+        lift . lift $ writeIORef (r_alternativeExplorations refs) (altExecs ++ expls)
 
-          --T.trace ("Prefix exec: " ++ show prefixexecution) $ return()
-          let all_read_not_prefix = all_read_same_loc Set.\\ (domain prefixexecution)
-              -- add the alternative executions 
-          foldM (\_acc el -> do
-                    expls <- lift .lift $ readIORef (r_alternativeExplorations refs)
-                    --T.trace ("One more store exploration: " ++ (show $ ((el,Node (tid,iid), prefixexecution):expls))) return ()
-                    lift. lift $ writeIORef (r_alternativeExplorations refs) ((el,Node (tid,iid), prefixexecution):expls)) () all_read_not_prefix
-          -- update the current execution
-          lift .lift $ writeIORef (r_currentExecution refs) newexecution
-  fence _start  _end= do --FIXME Todo, for now only supports full fence
+  fence start end 
+    | start == rw, end == rw = do --FIXME Todo, for now only supports full fence
       refs <- ask
-      tid <- lift. lift $ readIORef (r_currentThread refs)
-      iid <- lift . lift $ readIORef (r_currentIid refs)
-      lift.lift $ writeIORef (r_currentIid refs) (iid + 1)
-      execution <- lift . lift $ readIORef (r_currentExecution refs)
-      if ( Set.member (Node (tid, iid)) (domain execution))
-        then do
-          return ()
+      (ev, execution) <- readEnv refs
+      if Set.member ev (domain execution)
+        then return ()
         else do
-          -- find all the reads which are not in the prefix of a which
+          newExec <- generateFenceExec refs ev execution
+          lift . lift $ writeIORef (r_currentExecution refs) newExec
+    where
+      rw = 3 -- encoding for full fence
+      readEnv refs = do
+        tid <- lift. lift $ readIORef (r_currentThread refs)
+        iid <- lift . lift $ readIORef (r_currentIid refs)
+        lift.lift $ writeIORef (r_currentIid refs) (iid + 1)
+        execution <- lift . lift $ readIORef (r_currentExecution refs)
+        let ev = Node (tid, iid)
+        return (ev, execution)
+      generateFenceExec refs ev execution = do    
           m <- lift . lift $ readIORef (r_threads refs)
           let ctrlDep = dep_ctrl m
           let newexecution = (execution{
-                  domain  = Set.union (domain execution) (Set.singleton (Node(tid, iid))),
-                  lab     = S.insert (Node(tid, iid)) EFence (lab execution),
-                  addr    = (addr execution),
-                  ctrl    = S.insert (Node(tid,iid)) ctrlDep (ctrl execution),
-                  depdata = (depdata execution)
+                  domain  = Set.union (domain execution) (Set.singleton ev),
+                  lab     = S.insert ev EFence (lab execution),
+                  addr    = addr execution,
+                  ctrl    = S.insert ev ctrlDep (ctrl execution),
+                  depdata = depdata execution
                 })
-          lift .lift $ writeIORef (r_currentExecution refs) newexecution
-
+          return newexecution
 
 
 checkGraph :: Execution -> IO Bool
