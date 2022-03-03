@@ -28,7 +28,7 @@ dependencies:
 - prettyprinter >=1.2
 - text >=1.2
 - process >=1.6
-
+- parsec
 
 executables:
   riscv-mm:
@@ -63,6 +63,7 @@ executables:
       - Utility.ListMemory
       - Utility.MapMemory
       - Utility.Utility
+      - Utility.LitmusToRiscv
 
 
   riscv-semantics:
