@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a06bdd2b071bcfceb29aad0ce96a6aba30513fbed00d13854b31dce666cfd599
+-- hash: 428448078ae45c86903d5ae821cc4be5aaeec937a2e16df7bdb0b983bcccbd8d
 
 name:           riscv-semantics
 version:        0.1.0.0
@@ -47,6 +47,7 @@ executable riscv-mm
       Utility.ListMemory
       Utility.MapMemory
       Utility.Utility
+      Utility.LitmusToRiscv
   hs-source-dirs:
       src
   ghc-options: -fexpose-all-unfoldings -fspecialise-aggressively -funfolding-use-threshold=50 -funfolding-creation-threshold=100 -fstatic-argument-transformation -O2 -optc-O3 -threaded
@@ -62,11 +63,12 @@ executable riscv-mm
     , ilist >=0.3
     , mtl >=2.2 && <2.4
     , nondeterminism >=1.4
+    , parsec
     , prettyprinter >=1.2
     , process >=1.6
     , softfloat-hs ==0.1.0
     , text >=1.2
-    , transformers >=0.5 && <0.6
+    , transformers ==0.5.*
     , unix >=2.7
   default-language: Haskell2010
 
@@ -129,11 +131,12 @@ executable riscv-semantics
     , ilist >=0.3
     , mtl >=2.2 && <2.4
     , nondeterminism >=1.4
+    , parsec
     , prettyprinter >=1.2
     , process >=1.6
     , softfloat-hs ==0.1.0
     , text >=1.2
-    , transformers >=0.5 && <0.6
+    , transformers ==0.5.*
     , unix >=2.7
   default-language: Haskell2010
 
@@ -196,11 +199,12 @@ executable riscv-semantics-rv32im-compliance
     , ilist >=0.3
     , mtl >=2.2 && <2.4
     , nondeterminism >=1.4
+    , parsec
     , prettyprinter >=1.2
     , process >=1.6
     , softfloat-hs ==0.1.0
     , text >=1.2
-    , transformers >=0.5 && <0.6
+    , transformers ==0.5.*
     , unix >=2.7
   default-language: Haskell2010
 
@@ -263,10 +267,11 @@ executable riscv-semantics-tests
     , ilist >=0.3
     , mtl >=2.2 && <2.4
     , nondeterminism >=1.4
+    , parsec
     , prettyprinter >=1.2
     , process >=1.6
     , softfloat-hs ==0.1.0
     , text >=1.2
-    , transformers >=0.5 && <0.6
+    , transformers ==0.5.*
     , unix >=2.7
   default-language: Haskell2010
