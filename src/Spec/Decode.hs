@@ -456,6 +456,7 @@ funct3_BLT  :: MachineInt;    funct3_BLT  = 0b100
 funct3_BGE  :: MachineInt;    funct3_BGE  = 0b101
 funct3_BLTU :: MachineInt;    funct3_BLTU = 0b110
 funct3_BGEU :: MachineInt;    funct3_BGEU = 0b111
+funct3_JALR :: MachineInt;    funct3_JALR = 0b000
 
 -- SYSTEM sub-opcodes
 funct3_PRIV   :: MachineInt;    funct3_PRIV   = 0b000
@@ -682,8 +683,8 @@ decode iset inst =
       | opcode==opcode_BRANCH, funct3==funct3_BLTU = Bltu rs1 rs2 sbimm12
       | opcode==opcode_BRANCH, funct3==funct3_BGEU = Bgeu rs1 rs2 sbimm12
 
-      | opcode==opcode_JALR = Jalr rd rs1 oimm12
-      | opcode==opcode_JAL  = Jal  rd jimm20
+      | opcode==opcode_JALR, funct3==funct3_JALR = Jalr rd rs1 oimm12
+      | opcode==opcode_JAL = Jal rd jimm20
 
       | True = InvalidI
 
