@@ -7,7 +7,7 @@ import Spec.CSRFile
 import qualified Spec.CSRField as Field
 import qualified Spec.Memory as M
 import Utility.MapMemory
-import Data.Bits
+import Data.Bits hiding (Xor, And, Or)
 import Data.Int
 import qualified Data.List as L
 import Data.Word

@@ -55,7 +55,7 @@
    <type name="Address"/>
 </node>
 
-<edge visible="no">
+<edge visible="yes">
    <relation name="$fr"> <type name="Event"/> <type name="Event"/> </relation>
    <relation name="$po_loc"> <type name="Event"/> <type name="Event"/> </relation>
    <relation name="$ppo"> <type name="Event"/> <type name="Event"/> </relation>

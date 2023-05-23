@@ -58,9 +58,10 @@ checkExternalInterrupt = do
   else return DoNothing
 
 runProgram :: Maybe Int64 -> Minimal64 -> IO (Int64, Minimal64)
-runProgram maybeToHostAddress c =
+runProgram maybeToHostAddress c = do
+  putStrLn "Start"
   runStateT (stepHelper RV64IMAF maybeToHostAddress (do 
-                                                        liftIO checkExternalInterrupt) (return (mtimecmp_addr,0)) (\inst -> return False) endCycle ) c 
+                                                        liftIO checkExternalInterrupt) (return (mtimecmp_addr,0)) (\inst -> return (inst /= 0x6f)) (return ()) ) c 
 
 
 
@@ -106,6 +107,8 @@ main = do
     [] -> do
       putStr "ERROR: this program expects one or more elf files as command-line arguments\n"
       return 1
-    [file] -> runFile file
+    [file] -> do
+        putStrLn "Run file"
+        runFile file
     files -> runFiles files
   exitWith (if retval == 0 then ExitSuccess else ExitFailure $ (fromIntegral:: Int64 -> Int) retval)

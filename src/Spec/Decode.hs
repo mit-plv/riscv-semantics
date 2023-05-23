@@ -3,7 +3,7 @@ module Spec.Decode where
 
 -- Haskell lib imports
 
-import Data.Bits    -- For bit-wise 'and' (.&.) etc.
+import Data.Bits hiding (Xor, And, Or)   -- For bit-wise 'and' (.&.) etc.
 import Data.Word    -- For Word32 type (unsigned 32-bit ints)
 import Prelude
 -- Local imports

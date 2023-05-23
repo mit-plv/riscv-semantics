@@ -76,7 +76,7 @@ runProgram maybeToHostAddress = runStateT (stepHelper RV32IM maybeToHostAddress 
                                        instret <- getCSRField Field.MInstRet
                                        if (instret > 5000)
                                          then liftIO . exitWith .  ExitFailure $ 1
-                                         else liftIO checkInterrupt) (return (mtimecmp_addr,0)) (\inst -> return False) endCycle :: IOState Minimal32 Int32)
+                                         else liftIO checkInterrupt) (return (mtimecmp_addr,0)) (\inst -> return True) (return ()):: IOState Minimal32 Int32)
 -- Small MMIO hack to step each cycle
 
 
