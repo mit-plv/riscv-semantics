@@ -17,8 +17,8 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver:
-  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/22.yaml
+resolver: lts-19.33
+  #  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/22.yaml
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -37,6 +37,14 @@ packages:
 # forks / in-progress versions pinned to a git hash. For example:
 #
 # extra-deps:
+# - clash-lib-1.6.4@sha256:336e57d424852f2ad9285b6fa820e634f32d39d52755d3245d5f4ac04ea37f85,13688
+# - clash-prelude-1.6.4@sha256:b8c8b679236828d59e0f0c01658437a44ffa4fad6a72743459084ed4942f9899,16769
+# - concurrent-supply-0.1.8@sha256:9373f4868ad28936a7b93781b214ef4afdeacf377ef4ac729583073491c9f9fb,1627
+# - ghc-9.0.2@sha256:78f4f85452ba55974ec2dafd3d556f9deb7cc7917544edc8f42870a2bff3a923,18043
+# - ghc-boot-9.0.1@sha256:dc127d8b4b43eb54167f9befd51b2948e9084b8dfc18b88728148b719fa2287c,2347
+# - ghc-prim-0.7.0@sha256:2f19d2e36a6675c873024a2d152c79846d6bec1fe2c80154692d7367bd593821,2629
+# - ghci-8.10.2@sha256:5b6dfdc3358aca87891fb1e2e03656431ef65af7401c868f4050bbc51fc81fd4,2225
+# - template-haskell-2.17.0.0@sha256:5a7c40bddd235aaf5d58632a63758bc0b5ebf98232d8dea7294b5ca5226ca577,2152
 # - acme-missiles-0.3
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
