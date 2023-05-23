@@ -62,7 +62,6 @@ To run the default 64-bit executable simulator on riscv-tests:
 
 # Generation of Verilog (work in progress)
 
-    $ ./install-clash.sh
     $ ./make-circuit.sh
 
 The output will be in `src/verilog`.
