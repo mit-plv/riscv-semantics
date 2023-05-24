@@ -3,7 +3,7 @@ module Spec.Decode where
 
 -- Haskell lib imports
 
-import Data.Bits hiding (Xor, And, Or)   -- For bit-wise 'and' (.&.) etc.
+import Data.Bits    -- For bit-wise 'and' (.&.) etc.
 import Data.Word    -- For Word32 type (unsigned 32-bit ints)
 import Prelude
 -- Local imports
@@ -567,13 +567,13 @@ decode iset inst =
     results :: [Instruction]
     results =
       resultI ++
--- REDACTED to make clash work
--- REDACTED to make clash work
--- REDACTED to make clash work
--- REDACTED to make clash work
--- REDACTED to make clash work
--- REDACTED to make clash work
--- REDACTED to make clash work
+      (if supportsM iset then resultM else []) ++
+      (if supportsA iset then resultA else []) ++
+      (if supportsF iset then resultF else []) ++
+      (if bitwidth iset == 64 then resultI64 else []) ++
+      (if bitwidth iset == 64 && supportsM iset then resultM64 else []) ++
+      (if bitwidth iset == 64 && supportsA iset then resultA64 else []) ++
+      (if bitwidth iset == 64 && supportsF iset then resultF64 else []) ++
       resultCSR
 
     resultI = if isValidI decodeI then [IInstruction decodeI] else []
